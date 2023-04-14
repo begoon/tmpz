@@ -1,0 +1,1 @@
+import{S as o,i as r,s as c,e as i,a as l,b as m,n,d}from"./index.e06ff22c.js";function p(s){let t;return{c(){t=i("div"),t.textContent="I'm ROOT!!!",l(t,"class","text-8xl")},m(e,a){m(e,t,a)},p:n,i:n,o:n,d(e){e&&d(t)}}}class u extends o{constructor(t){super(),r(this,t,null,p,c,{})}}new u({target:document.getElementById("root")});

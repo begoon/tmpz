@@ -1,0 +1,1 @@
+import{S as o,i as r,s as c,e as i,a as l,b as d,n,d as m}from"./index.e06ff22c.js";function p(s){let t;return{c(){t=i("div"),t.textContent="I'm BLOG!",l(t,"class","text-8xl p-4")},m(e,a){d(e,t,a)},p:n,i:n,o:n,d(e){e&&m(t)}}}class u extends o{constructor(t){super(),r(this,t,null,p,c,{})}}new u({target:document.body});

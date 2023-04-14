@@ -1,2 +1,3 @@
 client_secret_*.apps.googleusercontent.com.json
 *.env
+svelte-z/node_modules
