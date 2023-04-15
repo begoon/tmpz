@@ -51,6 +51,27 @@ func h() (s string, err error) {
 	return
 }
 
+func k() (s *string, err error) {
+	i, err := 0, fmt.Errorf("error K")
+	_ = i
+	defer func() {
+		err = fmt.Errorf("deferred error H")
+	}()
+	t := "local s"
+	return &t, nil
+}
+
+func l() (s *string, err error) {
+	i, err := 0, fmt.Errorf("error L")
+	_ = i
+	defer func() {
+		err = fmt.Errorf("deferred error L")
+		s = nil
+	}()
+	t := "local s"
+	return &t, nil
+}
+
 func main() {
 	fmt.Println(a())
 	fmt.Println(b())
@@ -60,4 +81,6 @@ func main() {
 	fmt.Println(f())
 	fmt.Println(g())
 	fmt.Println(h())
+	fmt.Println(k())
+	fmt.Println(l())
 }
