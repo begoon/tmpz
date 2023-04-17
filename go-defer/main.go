@@ -72,6 +72,15 @@ func l() (s *string, err error) {
 	return &t, nil
 }
 
+func m() (s *string, err error) {
+	i, err := 0, fmt.Errorf("error M")
+	_ = i
+	defer func() {
+		err = nil
+	}()
+	return nil, fmt.Errorf("explicit error M")
+}
+
 func main() {
 	fmt.Println(a())
 	fmt.Println(b())
@@ -83,4 +92,5 @@ func main() {
 	fmt.Println(h())
 	fmt.Println(k())
 	fmt.Println(l())
+	fmt.Println(m())
 }
