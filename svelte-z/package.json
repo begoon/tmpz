@@ -12,13 +12,14 @@
         "autoprefixer": "^10.4.13",
         "postcss": "^8.4.19",
         "svelte": "^3.52.0",
+        "svelte-preprocess": "^5.0.3",
         "tailwindcss": "^3.2.4",
+        "typescript": "^4.9.5",
         "vite": "^3.2.0"
     },
     "dependencies": {
         "gridjs": "^6.0.6",
         "gridjs-svelte": "^2.1.1",
-        "svelte-loading-spinners": "^0.3.4",
-        "svelte-preprocess": "^4.10.7"
+        "svelte-loading-spinners": "^0.3.4"
     }
 }
