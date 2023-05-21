@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="//unpkg.com/alpinejs" defer></script>
+        <script src="//unpkg.com/htmx.org@1.9.2"></script>
+        <script src="//cdn.tailwindcss.com"></script>
+    </head>
+
+    <body>
+        <h1 class="text-4xl">alpinejs/htmx</h1>
+        <button
+            hx-get="https://alexander.ingress.iproov.io/health"
+            hx-target="#console"
+            hx-swap="innerHTML"
+            hx-indicator="#indicator"
+            class="ml-1 bg-blue-500 text-white p-4 rounded-lg"
+        >
+            load
+        </button>
+        <div id="indicator" class="htmx-indicator">loading...</div>
+        <pre id="console"></pre>
+    </body>
+</html>
