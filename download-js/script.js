@@ -35,7 +35,7 @@ async function download(url) {
         },
     };
 
-    bar = progressbar.init();
+    const bar = progressbar.init();
 
     console.log("downloading " + url);
     let response = await fetch(url, { mode: "cors" });
