@@ -78,13 +78,7 @@ async function download(url, progressbar = defaultProgressBar) {
 
     const tarred = await uncompress(bytes);
     const files = untar(tarred);
-    const blobs = files.map((file) => {
-        new Blob([file.file], {
-            type: file.name.includes(".json")
-                ? "application/json"
-                : "image/png",
-        });
-    });
+
     for (let { name, size, file } of files) {
         let element;
         if (name.includes(".json")) {
