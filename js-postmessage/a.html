@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <button id="send" onclick="send()">send</button>
+        <script>
+            let i = 1024;
+            function send() {
+                let child;
+                const ack = (event) => {
+                    console.log(event.data);
+                    const name = "filename " + i;
+                    const content = new ArrayBuffer(1024 * i);
+                    child.postMessage({ name, content }, "*");
+                    window.removeEventListener("message", ack);
+                    i += 1;
+                };
+                window.addEventListener("message", ack);
+                child = window.open("b.html");
+            }
+        </script>
+    </body>
+</html>

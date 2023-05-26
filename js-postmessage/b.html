@@ -1,0 +1,23 @@
+I'm B!
+
+<html>
+    <body onload="ready()">
+        <script>
+            function ready() {
+                window.opener.postMessage({ message: "loaded" }, "*");
+                console.log("ready");
+
+                const msg = (event) => {
+                    console.log(event);
+                    const { name, content } = event.data;
+                    const length = content.byteLength;
+                    console.log("content length", length);
+                    console.log("name", name);
+                    document.write(name, " ", length);
+                    window.removeEventListener("message", msg);
+                };
+                window.addEventListener("message", msg);
+            }
+        </script>
+    </body>
+</html>
