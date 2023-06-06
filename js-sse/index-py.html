@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SSE</title>
+        <script>
+            const sse = new EventSource("/sse");
+            sse.onmessage = function (event) {
+                console.log("onmessage", event);
+            };
+            sse.onerror = function (event) {
+                console.log("onerror", event);
+            };
+            sse.onopen = function (event) {
+                console.log("onopen", event);
+            };
+            function time() {
+                (async () => {
+                    const response = await fetch("/time");
+                    console.log(response.status, response.statusText);
+                    const v = await response.text();
+                    console.log(response, v);
+                })();
+            }
+        </script>
+        <h1>SSE</h1>
+        <button onclick="time()">time</button>
+    </head>
+    <body></body>
+</html>

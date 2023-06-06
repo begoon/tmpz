@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "js-sse"
+version = "0.1.0"
+description = ""
+authors = ["Alexander Demin <ademin@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.1"
+sse-starlette = "^1.6.1"
+uvicorn = "^0.22.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
