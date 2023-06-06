@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>dropzone.js</title>
+        <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
+            type="text/css"
+        />
+        <style>
+            body {
+                font-family: helvetica, arial, sans-serif;
+                padding: 6rem;
+            }
+            main {
+                max-width: 40rem;
+                margin: 0 auto;
+            }
+            .dropzone {
+                width: 100px;
+                border: 4px solid blueviolet;
+                color: blueviolet;
+                margin: 2rem 0;
+            }
+            small {
+                display: block;
+                text-align: center;
+            }
+            h1 {
+                font-size: 1em;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <form action="/upload" id="uploader" class="dropzone"></form>
+            <pre id="output"></pre>
+        </main>
+        <script>
+            const output = document.querySelector("#output");
+
+            Dropzone.options.uploader = {
+                accept: function (file, done) {
+                    output.innerHTML += `<div>added: ${file.name}</div>`;
+                    done();
+                },
+            };
+        </script>
+    </body>
+</html>
