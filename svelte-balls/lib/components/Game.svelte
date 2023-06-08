@@ -14,19 +14,19 @@
     let update = 0;
 
     const frame = () => {
-        for (const b of balls) {
-            b.angle += 1;
-            if (b.angle >= 360) b.angle = 0;
-            b.x += b.dx * speed;
-            if (b.x < 0 || b.x > wx - size) b.dx = -b.dx;
-            b.y += b.dy * speed;
-            if (b.y < 0 || b.y > wy - size) b.dy = -b.dy;
+        for (const ball of balls) {
+            ball.angle += 1;
+            if (ball.angle >= 360) ball.angle = 0;
+            ball.x += ball.dx * speed;
+            if (ball.x < 0 || ball.x > wx - size) ball.dx = -ball.dx;
+            ball.y += ball.dy * speed;
+            if (ball.y < 0 || ball.y > wy - size) ball.dy = -ball.dy;
         }
         update += 1;
     };
-    function clicked(b) {
-        b.shape = (b.shape + 1) % shapes.length;
-        b.scores += 1;
+    function clicked(ball) {
+        ball.shape = (ball.shape + 1) % shapes.length;
+        ball.scores += 1;
         update += 1;
     }
     const r = () => Math.random();
@@ -79,18 +79,18 @@
         bind:clientHeight={wy}
     >
         {#key update}
-            {#each balls as b}
+            {#each balls as ball}
                 <span
-                    on:mousedown={() => clicked(b)}
-                    on:touchstart={() => clicked(b)}
+                    on:mousedown={() => clicked(ball)}
+                    on:touchstart={() => clicked(ball)}
                     style:position="absolute"
                     style:display="inline-block"
                     style:user-select="none"
                     style:font-size="{size}px"
                     style:width="{size}px"
-                    style:transform={`rotate(${b.angle}deg)`}
-                    style:left="{b.x}px"
-                    style:top="{b.y}px">{shapes[b.shape]}</span
+                    style:transform={`rotate(${ball.angle}deg)`}
+                    style:left="{ball.x}px"
+                    style:top="{ball.y}px">{shapes[ball.shape]}</span
                 >
             {/each}
         {/key}
@@ -173,6 +173,7 @@
         position: fixed;
         top: 0;
         right: 0;
+        font-size: 25px;
         @media (max-width: 600px) {
             font-size: 20px;
         }
@@ -189,21 +190,15 @@
         }
     }
     button {
-        font-size: 30px;
-        grid-column: 1/2;
-        margin-left: 30px;
-        border: 2px solid #999;
-        border-radius: 10px;
-        border-style: outset;
+        border: 1px solid #999;
+        border-radius: 6px;
         box-shadow: inset 0 0 10px #999;
-        background: #eee;
     }
     input[type="range"] {
         appearance: none;
         width: 200px;
         height: 20px;
-        background: #ddd;
-        opacity: 0.7;
-        border-radius: 10px;
+        opacity: 0.6;
+        border-radius: 6px;
     }
 </style>
