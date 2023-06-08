@@ -41,6 +41,7 @@
                 dy: r() < 0.5 ? 1 : -1,
                 shape: Math.floor(r() * shapes.length),
                 scores: 0,
+                angle: 0,
             };
             balls.push(ball);
         }
