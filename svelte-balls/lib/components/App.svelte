@@ -2,6 +2,18 @@
     import Game from "./Game.svelte";
 </script>
 
-<div style:height="{window.screen.height}px">
+<div>
     <Game />
 </div>
+
+<style>
+    :global(body) {
+        margin: 0;
+        padding: 0;
+    }
+    div {
+        height: 100vh;
+        width: 100rvw;
+        background: orange;
+    }
+</style>

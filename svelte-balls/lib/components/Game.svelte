@@ -45,6 +45,7 @@
             };
             balls.push(ball);
         }
+        height = window.innerHeight;
     }
 
     onMount(() => {
@@ -54,97 +55,143 @@
     const action = 1;
 
     action ? setInterval(frame, delay) : frame();
+
+    $: height = window.innerHeight;
 </script>
 
 <svelte:window on:resize={reset} />
 
-<footer>The aim of the game is to click on moving balls!</footer>
-
-<div class="controls">
-    <label>
-        <span>
-            Speed {speed}
-        </span>
-        <input type="range" bind:value={speed} min="1" max="9" />
-    </label>
-
-    <label style="margin-left: auto">
-        <span>
-            Ball size {size}
-        </span>
-        <input
-            type="range"
-            bind:value={size}
-            min="10"
-            max="200"
-            on:change={reset}
-        />
-    </label>
-</div>
-
-<span style="position: fixed; top: 0; right: 0">
-    Field size: {wx}x{wy}
+<span class="dimentions">
+    {wx}x{wy}
 </span>
 
-<div
-    style:width="100%"
-    style:height="60%"
-    style:line-height="{size}px"
-    style:outline="6px solid #ccc"
-    style:border-radius="2px"
-    bind:clientWidth={wx}
-    bind:clientHeight={wy}
->
-    {#key update}
-        {#each balls as b}
-            <span
-                on:mousedown={() => clicked(b)}
-                style:position="absolute"
-                style:display="inline-block"
-                style:user-select="none"
-                style:font-size="{size}px"
-                style:transform={`rotate(${b.angle}deg)`}
-                style:left="{b.x}px"
-                style:top="{b.y}px">{shapes[b.shape]}</span
-            >
-        {/each}
-    {/key}
-</div>
-
-<div class="scores">
-    <div>
-        Scores:
+<div style:height="{height}px">
+    <div
+        style:width="100%"
+        style:height="calc(100% - 60px)"
+        style:top="30px"
+        style:bottom="30px"
+        style:line-height="{size}px"
+        style:text-align="center"
+        style:border-radius="2px"
+        style:overflow="clip"
+        bind:clientWidth={wx}
+        bind:clientHeight={wy}
+    >
         {#key update}
             {#each balls as b}
-                <span>
-                    {shapes[b.shape]}
-                    {b.scores}
-                </span>
+                <span
+                    on:mousedown={() => clicked(b)}
+                    style:position="absolute"
+                    style:display="inline-block"
+                    style:user-select="none"
+                    style:font-size="{size}px"
+                    style:width="{size}px"
+                    style:transform={`rotate(${b.angle}deg)`}
+                    style:left="{b.x}px"
+                    style:top="{b.y}px">{shapes[b.shape]}</span
+                >
             {/each}
         {/key}
     </div>
-    <div style="margin-left: auto">
-        <button on:click={reset}> Reset </button>
+    <div class="controls">
+        <label>
+            <span>
+                Speed {speed}
+            </span>
+            <input type="range" bind:value={speed} min="1" max="9" />
+        </label>
+
+        <label style="margin-left: auto">
+            <span>
+                Ball size {size}
+            </span>
+            <input
+                type="range"
+                bind:value={size}
+                min="10"
+                max="200"
+                on:change={reset}
+            />
+        </label>
     </div>
+    <div class="scores">
+        <div>
+            Scores:
+            {#key update}
+                {#each balls as b}
+                    <span>
+                        {shapes[b.shape]}
+                        {b.scores}
+                    </span>
+                {/each}
+            {/key}
+        </div>
+    </div>
+    <div class="title">Click on the balls to change their shape</div>
+    <button on:click={reset} class="reset">Reset</button>
 </div>
 
 <style>
-    footer {
-        font-size: 30px;
-        padding-bottom: 1em;
+    .dimentions {
+        position: fixed;
+        top: 0;
+        right: 0;
+        font-size: 16px;
+        font-family: tahoma;
+        padding: 2px;
+        background: #eee;
+        opacity: 0.7;
     }
     .controls {
-        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
         font-size: 20px;
-        padding-bottom: 1em;
+        @media (max-width: 600px) {
+            display: none;
+        }
     }
     .controls span {
         vertical-align: top;
     }
     .scores {
-        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
         font-size: 30px;
-        padding-top: 1em;
+        @media (max-width: 600px) {
+            font-size: 20px;
+        }
+    }
+    .reset {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        @media (max-width: 600px) {
+            font-size: 20px;
+        }
+    }
+    .title {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        font-size: 30px;
+        color: #fff;
+        transform: translateX(-40%);
+        @media (max-width: 600px) {
+            display: none;
+        }
+    }
+    button {
+        font-size: 30px;
+        grid-column: 1/2;
+        margin-left: 30px;
+        border: 2px solid #999;
+        border-radius: 10px;
+        border-style: outset;
+        box-shadow: inset 0 0 10px #999;
+        background: #eee;
     }
     input[type="range"] {
         appearance: none;
