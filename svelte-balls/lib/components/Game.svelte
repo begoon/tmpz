@@ -96,25 +96,20 @@
         {/key}
     </div>
     <div class="controls">
-        <label>
-            <span>
-                Speed {speed}
-            </span>
-            <input type="range" bind:value={speed} min="1" max="9" />
-        </label>
-
-        <label style="margin-left: auto">
-            <span>
-                Ball size {size}
-            </span>
-            <input
-                type="range"
-                bind:value={size}
-                min="10"
-                max="200"
-                on:change={reset}
-            />
-        </label>
+        <b>
+            Speed {speed}
+        </b>
+        <input type="range" bind:value={speed} min="1" max="9" />
+        <b>
+            Ball size {size}
+        </b>
+        <input
+            type="range"
+            bind:value={size}
+            min="10"
+            max="200"
+            on:change={reset}
+        />
     </div>
     <div class="scores">
         <div>
@@ -155,12 +150,14 @@
         position: fixed;
         bottom: 0;
         left: 0;
-        font-size: 20px;
+        font-size: 24px;
+        font-weight: 200;
+        text-transform: lowercase;
         @media (max-width: 600px) {
             display: none;
         }
     }
-    .controls span {
+    .controls b {
         vertical-align: top;
     }
     .scores {
