@@ -95,14 +95,14 @@
             {/each}
         {/key}
     </div>
-    <div class="controls">
-        <b>
+    <div class="settings">
+        <span>
             Speed {speed}
-        </b>
+        </span>
         <input type="range" bind:value={speed} min="1" max="9" />
-        <b>
+        <span>
             Ball size {size}
-        </b>
+        </span>
         <input
             type="range"
             bind:value={size}
@@ -112,17 +112,15 @@
         />
     </div>
     <div class="scores">
-        <div>
-            Scores:
-            {#key update}
-                {#each balls as b}
-                    <span>
-                        {shapes[b.shape]}
-                        {b.scores}
-                    </span>
-                {/each}
-            {/key}
-        </div>
+        Scores:
+        {#key update}
+            {#each balls as b}
+                <span>
+                    {shapes[b.shape]}
+                    {b.scores}
+                </span>
+            {/each}
+        {/key}
     </div>
     <div class="title">Click on the balls to change their shape</div>
     <button on:click={reset} class="reset">Reset</button>
@@ -146,7 +144,7 @@
             width: 100%;
         }
     }
-    .controls {
+    .settings {
         position: fixed;
         bottom: 0;
         left: 0;
@@ -157,9 +155,18 @@
             display: none;
         }
     }
-    .controls b {
+    .settings span {
         vertical-align: top;
+        font-weight: bold;
     }
+    .settings input[type="range"] {
+        appearance: none;
+        width: 200px;
+        height: 20px;
+        opacity: 0.6;
+        border-radius: 6px;
+    }
+
     .scores {
         position: fixed;
         top: 0;
@@ -174,6 +181,11 @@
         top: 0;
         right: 0;
         font-size: 25px;
+
+        border: 1px solid #999;
+        border-radius: 6px;
+        box-shadow: inset 0 0 10px #999;
+
         @media (max-width: 600px) {
             font-size: 20px;
         }
@@ -188,17 +200,5 @@
         @media (max-width: 600px) {
             display: none;
         }
-    }
-    button {
-        border: 1px solid #999;
-        border-radius: 6px;
-        box-shadow: inset 0 0 10px #999;
-    }
-    input[type="range"] {
-        appearance: none;
-        width: 200px;
-        height: 20px;
-        opacity: 0.6;
-        border-radius: 6px;
     }
 </style>
