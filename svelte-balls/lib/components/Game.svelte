@@ -136,17 +136,24 @@
 <style>
     .dimentions {
         position: fixed;
-        top: 0;
+        bottom: 0;
         right: 0;
         font-size: 16px;
         font-family: tahoma;
         padding: 2px;
         background: #eee;
         opacity: 0.7;
+        @media (max-width: 600px) {
+            font-size: 20px;
+            transform: translateX(-50%);
+            left: 50%;
+            text-align: center;
+            width: 100%;
+        }
     }
     .controls {
         position: fixed;
-        top: 0;
+        bottom: 0;
         left: 0;
         font-size: 20px;
         @media (max-width: 600px) {
@@ -158,7 +165,7 @@
     }
     .scores {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         font-size: 30px;
         @media (max-width: 600px) {
@@ -167,7 +174,7 @@
     }
     .reset {
         position: fixed;
-        bottom: 0;
+        top: 0;
         right: 0;
         @media (max-width: 600px) {
             font-size: 20px;
@@ -175,7 +182,7 @@
     }
     .title {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 50%;
         font-size: 30px;
         color: #fff;
