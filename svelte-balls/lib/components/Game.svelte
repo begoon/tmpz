@@ -82,6 +82,7 @@
             {#each balls as b}
                 <span
                     on:mousedown={() => clicked(b)}
+                    on:touchstart={() => clicked(b)}
                     style:position="absolute"
                     style:display="inline-block"
                     style:user-select="none"
