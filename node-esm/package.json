@@ -1,0 +1,5 @@
+{
+  "name": "project",
+  "type": "module",
+  "main": "index.js"
+}
