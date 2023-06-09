@@ -136,6 +136,7 @@
         padding: 2px;
         background: #eee;
         opacity: 0.7;
+
         @media (max-width: 600px) {
             font-size: 20px;
             transform: translateX(-50%);
@@ -164,7 +165,8 @@
         width: 200px;
         height: 20px;
         opacity: 0.6;
-        border-radius: 6px;
+        border-radius: 15px;
+        background-color: #999;
     }
 
     .scores {
