@@ -4,7 +4,7 @@
     const BORDER_WIDTH = 2;
     const BORDER_HEIGHT = 2;
 
-    const WIDTH = 64;
+    const WIDTH = 60;
     const HEIGHT = 25;
 
     const types = {
@@ -78,6 +78,7 @@
     }
 
     const R = () => Math.random();
+    const IR = (max) => Math.floor(R());
 
     const balls = [];
     for (let i = 0; i < 5; i++) {
@@ -92,30 +93,46 @@
     }
 
     function move_balls() {
-        for (const ball of balls) {
-            if (
-                field.get(ball.x - 1, ball.y) == types.BORDER ||
-                field.get(ball.x + 1, ball.y) == types.BORDER
-            ) {
-                ball.dx *= -1;
-            }
-            if (
-                field.get(ball.x, ball.y - 1) == types.BORDER ||
-                field.get(ball.x, ball.y + 1) == types.BORDER
-            ) {
-                ball.dy *= -1;
-            }
-            ball.x += ball.dx;
-            ball.y += ball.dy;
+        for (const v of balls) {
+            const n = { x: v.x + v.dx, y: v.y + v.dy };
+            if (n.x < BORDER_WIDTH || n.x >= WIDTH - BORDER_WIDTH) v.dx *= -1;
+            if (n.y < BORDER_HEIGHT || n.y >= HEIGHT - BORDER_HEIGHT)
+                v.dy *= -1;
+            v.x += v.dx;
+            v.y += v.dy;
         }
         updated = true;
     }
 
-    const hunters = [{ x: WIDTH - 1, y: HEIGHT - 1, dx: -1, dy: -1 }];
+    const hunters = [
+        { x: WIDTH - 1, y: HEIGHT - 1, dx: 1, dy: 1 },
+        { x: 0, y: HEIGHT - 1, dx: 1, dy: 1 },
+    ];
+
     function move_hunters() {
         for (const v of hunters) {
-            // ???
+            const n = { x: v.x + v.dx, y: v.y + v.dy };
+            const ex = n.x < 0 || n.x >= WIDTH;
+            const ey = n.y < 0 || n.y >= HEIGHT;
+            if (ex) v.dx *= -1;
+            if (ey) v.dy *= -1;
+            if (!(ex || ey)) {
+                const outside = field.get(n.x, n.y) != types.BORDER;
+                const bx = v.x < BORDER_WIDTH || v.x >= WIDTH - BORDER_WIDTH;
+                const by = v.y < BORDER_HEIGHT || v.y >= HEIGHT - BORDER_HEIGHT;
+                if (outside) {
+                    if (bx && by) {
+                        R() < 0.5 ? (v.dx *= -1) : (v.dy *= -1);
+                    } else {
+                        if (bx) v.dx *= -1;
+                        if (by) v.dy *= -1;
+                    }
+                }
+            }
+            v.x += v.dx;
+            v.y += v.dy;
         }
+        console.log(hunters[0]);
         updated = true;
     }
 
