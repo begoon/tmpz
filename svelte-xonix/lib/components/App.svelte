@@ -5,7 +5,7 @@
     const BORDER_HEIGHT = 2;
 
     const WIDTH = 60;
-    const HEIGHT = 25;
+    const HEIGHT = 30;
 
     const types = {
         PLAYER: "player",
@@ -159,7 +159,6 @@
         frame.field = structuredClone(field.field);
 
         frame.set(player.x, player.y, types.PLAYER);
-
         for (const ball of balls) {
             frame.set(ball.x, ball.y, types.BALL);
         }

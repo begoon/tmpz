@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                margin: 0;
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+            html,
+            body {
+                height: 100vh;
+                margin: 0;
+                padding: 0;
+                perspective: 2000px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .grid {
+                display: grid;
+                grid-template-rows: repeat(1, 1fr);
+                perspective: 3000px;
+                height: 150%;
+                width: fit-content;
+                margin-left: 10%;
+                margin-right: 10%;
+                justify-items: center;
+                align-items: center;
+                transform: rotateX(60deg) translateY(-10%);
+            }
+            .grid > * {
+                background-color: hsl(120, 100%, 50%);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                --y: 0;
+                --x: 0;
+                transform: translateZ(
+                    calc(
+                        sin(var(--y) * 1deg) * cos(var(--x) * 1deg) * 300px -
+                            150px
+                    )
+                );
+                opacity: calc(
+                    sin(var(--y) * 1deg) * cos(var(--x) * 1deg) * 0.3 + 0.7
+                );
+                transform-style: preserve-3d;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="grid"></div>
+        <script>
+            const grid = document.querySelector(".grid");
+            const h = 80;
+            const w = 40;
+            grid.style.gridTemplateColumns = `repeat(${h}, 1fr)`;
+            grid.style.gridTemplateRows = `repeat(${w}, 1fr)`;
+            for (let i = 0; i < h * w; i++) {
+                const div = document.createElement("div");
+                div.style.width = "2vmin";
+                div.style.height = "1vmax";
+                grid.appendChild(div);
+            }
+            let last = 0;
+            let time = 0;
+            requestAnimationFrame(function update(when) {
+                const delta = when - last;
+                let i = 0;
+                for (let v = grid.firstChild; v !== null; v = v.nextSibling) {
+                    const x = (i % w) + time;
+                    const y = i / w + time;
+                    v.style.setProperty("--x", (x / w) * 360);
+                    v.style.setProperty("--y", (y / h) * 360);
+                    i += 1;
+                }
+                time += 1;
+                requestAnimationFrame(update);
+            });
+
+            const sin = Math.sin;
+            const cos = Math.cos;
+            const sqrt = Math.sqrt;
+
+            function z_offset(x, y, time) {
+                x = 2 * x;
+                y = 2 * y;
+                const x2 = 2 * x;
+                const y2 = 2 * y;
+                return (
+                    sin(cos(time) + x) +
+                    cos(sin(time) + y) +
+                    0.5 * sin(0.3 * time + sqrt(x2 * x2 + y2 * y2))
+                );
+            }
+        </script>
+    </body>
+</html>
