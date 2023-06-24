@@ -18,14 +18,17 @@
     }
 
     .board > * {
-        display: inline-block;
         width: 100%;
         height: 100%;
-        background-color: hsl(0, 0%, 90%);
+        background-color: hsl(0, 0%, 50%);
+    }
+
+    .board > [data-type="border"] {
+        background-color: hsl(50, 50%, 50%);
     }
 
     .board > [data-type="player"] {
-        background-color: green;
+        background-color: hsl(0, 50%, 50%);
     }
 
     .board > [data-type="ball"] {
@@ -34,9 +37,5 @@
 
     .board > [data-type="hunter"] {
         background-color: hsl(180, 50%, 50%);
-    }
-
-    .board > [data-type="border"] {
-        background-color: hsl(50, 50%, 50%);
     }
 </style>
