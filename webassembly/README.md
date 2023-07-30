@@ -52,15 +52,7 @@ where `main.c` is:
 ```c
 unsigned char mem[0x10000];
 
-int accumulate(unsigned char *addr, int sz)
-{
-    int sum = 0;
-    for (int i = 0; i < sz; i++)
-        sum += mem[i];
-    return sum;
-}
-
-char *upper(char *str, int sz)
+const char *const upper(char *const str, const int sz)
 {
     for (int i = 0; i < sz; i++)
         if (str[i] >= 'a' && str[i] <= 'z')
@@ -75,7 +67,7 @@ This trivial example demonstrates basic needs to the simple C-to-WASM interface:
 
 - an ability to use pre-allocated static memory buffer (for example, of size
   64KB)
-- an ability to call C functions from JavaScript and passing primitive types
+- an ability to call C functions from JavaScript and pass primitive types
   (integers, pointers, etc.) as arguments
 - an ability to return primitive types from C functions
 - an ability to observe the memory buffer changes from JavaScript
@@ -137,6 +129,16 @@ Use the following `main.html` file to run the WASM module in the browser:
     </body>
 </html>
 ```
+
+The `main.html` and the `main.wasm` files need to be served by a web server.
+
+A convenient option is Python's SimpleHTTPServer:
+
+```python
+python -m SimpleHTTPServer
+```
+
+or VSCode's Live Server extension.
 
 You should see something like this in the browser and in the console:
 
