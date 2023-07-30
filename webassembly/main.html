@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html>
+    <body>
+        <script type="module">
+            const log = console.log;
+            console.log = (...x) => {
+                document.body.innerHTML += x.join(" ") + "<br>";
+                log(...x);
+            };
+            const wa = await WebAssembly.instantiateStreaming(
+                fetch("main.wasm"),
+                { js: { mem: new WebAssembly.Memory({ initial: 0 }) } }
+            );
+            const memPtr = wa.instance.exports.mem.value;
+            console.log("memPtr", memPtr);
+
+            const mem = new Uint8Array(wa.instance.exports.memory.buffer);
+
+            const str = "Hello, world!";
+            new TextEncoder().encodeInto(
+                str,
+                mem.subarray(memPtr, memPtr + str.length)
+            );
+            console.log(
+                "upper()",
+                wa.instance.exports.upper(memPtr, str.length)
+            );
+            console.log(
+                new TextDecoder().decode(
+                    mem.subarray(memPtr, memPtr + str.length)
+                )
+            );
+        </script>
+    </body>
+</html>
