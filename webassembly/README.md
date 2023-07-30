@@ -38,16 +38,7 @@ llc --version | grep wasm
 
 ## Compile C to WASM
 
-```bash
-clang \
---target=wasm32 \
---no-standard-libraries \
--Wl,--export-all -Wl,--no-entry \
--o main.wasm \
-main.c
-```
-
-where `main.c` is:
+`main.c` is:
 
 ```c
 unsigned char mem[0x10000];
@@ -59,6 +50,17 @@ const char *const upper(char *const str, const int sz)
             str[i] -= 0x20;
     return str;
 }
+```
+
+compile it to WASM:
+
+```bash
+clang \
+--target=wasm32 \
+--no-standard-libraries \
+-Wl,--export-all -Wl,--no-entry \
+-o main.wasm \
+main.c
 ```
 
 The command creates a file `main.wasm` which is a binary WASM module.
@@ -76,16 +78,16 @@ The standard C library is not linked to the WASM module, so the C functions
 should not use any standard C functions.
 
 Interestingly, the result of the function `upper()`, which is a pointer, is
-returned to JavaScript as a number (not as a pointer). This number is an offset
-from the beginning of the memory buffer on the JavaScript side.
+returned to JavaScript as a number, not as a pointer. This number is an offset
+from the beginning of the WebAssembly memory buffer on the JavaScript side.
 
-C deals with pointers, but JavaScript see the memory buffer as a flat array
+C deals with pointers, but JavaScript sees the memory buffer as a flat array
 and uses offsets to access its elements.
 
 In fact, WASM "direct memory access" is not what it literally means. WASM
-memory is a reguar JavaScript object, which is a flat array of bytes. It is
+memory is a reguar JavaScript object, which is a flat array of bytes. Its
 lifecycle is managed by JavaScript garbage collector as any other JavaScript
-object.
+objects.
 
 ## Run WASM in the browser
 
@@ -132,7 +134,7 @@ Use the following `main.html` file to run the WASM module in the browser:
 
 The `main.html` and the `main.wasm` files need to be served by a web server.
 
-A convenient option is Python's SimpleHTTPServer:
+For instance, by by Python's SimpleHTTPServer:
 
 ```python
 python -m SimpleHTTPServer
@@ -140,7 +142,7 @@ python -m SimpleHTTPServer
 
 or VSCode's Live Server extension.
 
-You should see something like this in the browser and in the console:
+You should see something like this in the browser and in the devtool console:
 
 ```text
 memPtr 1024
@@ -148,10 +150,10 @@ upper() 1024
 HELLO, WORLD!
 ```
 
-The `1024` is in fact "a pointer". `1024` is an offset from the beginning of
+`1024` is in fact "a pointer". `1024` is an offset from the beginning of
 the `mem` C array in the WASM module memory.
 
 The `upper()` function converts "Hello, world!" to upper case and returns the
-same pointer `1024` to JavaScript.
+same "pointer" `1024` to JavaScript.
 
 That is it. The WASM module is compiled and run in the browser.
