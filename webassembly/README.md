@@ -85,7 +85,7 @@ C deals with pointers, but JavaScript sees the memory buffer as a flat array
 and uses offsets to access its elements.
 
 In fact, WASM "direct memory access" is not what it literally means. WASM
-memory is a reguar JavaScript object, which is a flat array of bytes. Its
+memory is a regular JavaScript object, which is a flat array of bytes. Its
 lifecycle is managed by JavaScript garbage collector as any other JavaScript
 objects.
 
