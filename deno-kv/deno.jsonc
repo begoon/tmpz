@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "dev": "PORT=9000 deno run --unstable -A --watch main.ts"
+  }
+}
