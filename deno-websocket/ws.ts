@@ -1,4 +1,4 @@
-const ws = new WebSocket("ws://localhost:10000");
+const ws = new WebSocket("wss://ws-chatter.deno.dev");
 function shell() {
     const message = prompt("@ ");
     if (message === ".exit") {
