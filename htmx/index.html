@@ -3,12 +3,27 @@
     <head>
         <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
         <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
+        <script src="https://unpkg.com/nunjucks@latest"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/remove-me.js"></script>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>HTML</title>
     </head>
     <body hx-boost="true">
-        <button hx-get="/health" hx-swap="outerHTML">health</button>
+        <script>
+            document.body.addEventListener("htmx:sseOpen", function (event) {
+                console.log("sseOpen", event);
+            });
+            document.body.addEventListener("htmx:sseError", function (event) {
+                console.log("sseError", event);
+            });
+        </script>
+        <h1 hx-get="/health" hx-swap="innerHTML" hx-trigger="load delay:2s">
+            health
+        </h1>
+        <h1>queue/kv/sse</h1>
         <form method="POST" action="/enqueue">
             <label>
                 <input type="text" name="message" />
@@ -22,8 +37,32 @@
             hx-target="#output"
             hx-swap-oob="#when"
         ></output>
-        <div hx-sse="connect:/sse swap:message" hx-swap="beforebegin"></div>
+        <div
+            hx-ext="sse"
+            sse-connect="/sse"
+            sse-swap="message"
+            hx-swap="beforebegin"
+        ></div>
         history <span id="when" style="display: inline"></span>
         <output id="output"></output>
+        <h1>templates</h1>
+        <div hx-ext="remove-me">
+            <mark remove-me="3s">remove in 3 seconds...</mark>
+        </div>
+        <div hx-ext="client-side-templates" style="font-size: 10px">
+            <div style="height: 30em; overflow: scroll;">
+            <div
+                hx-get="/env"
+                hx-swap="innerHTML"
+                nunjucks-template="env"
+                hx-trigger="load"
+            ></div>
+            <template id="env">
+                {% for k, v in env %}
+                <div>[{{k}}]: [{{v}}]</div>
+                {% endfor %}
+            </template>
+        </div>
+
     </body>
 </html>
