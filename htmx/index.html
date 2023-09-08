@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HTML</title>
+    </head>
+    <body hx-boost="true">
+        <button hx-get="/health" hx-swap="outerHTML">health</button>
+        <form method="POST" action="/enqueue">
+            <label>
+                <input type="text" name="message" />
+            </label>
+            <button hx-post="/enqueue" hx-target="#status">send</button>
+            <mark id="status"></mark>
+        </form>
+        <output
+            hx-get="/queue"
+            hx-trigger="every 1s"
+            hx-target="#output"
+            hx-swap-oob="#when"
+        ></output>
+        <div hx-sse="connect:/sse swap:message" hx-swap="beforebegin"></div>
+        history <span id="when" style="display: inline"></span>
+        <output id="output"></output>
+    </body>
+</html>
