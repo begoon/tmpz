@@ -17,7 +17,7 @@ async function handler(req: Request): Promise<Response> {
 
 Deno.serve(
     {
-        port: 10001,
+        port: Number(Deno.env.get("PORT")) || 10001,
         onListen: (params) => {
             console.log(`listening on ${Deno.inspect(params)}`);
         },
