@@ -7,6 +7,10 @@
         <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
         <script src="https://unpkg.com/nunjucks@latest"></script>
         <script src="https://unpkg.com/htmx.org/dist/ext/remove-me.js"></script>
+        <script
+            type="module"
+            src="https://unpkg.com/ninja-keys?module"
+        ></script>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>HTML</title>
@@ -19,6 +23,58 @@
             document.body.addEventListener("htmx:sseError", function (event) {
                 console.log("sseError", event);
             });
+        </script>
+        <ninja-keys></ninja-keys>
+        <script>
+            // https://github.com/ssleptsov/ninja-keys
+            const ninja = document.querySelector("ninja-keys");
+            ninja.data = [
+                {
+                    id: "Alert",
+                    title: "Modal alert",
+                    handler: () => {
+                        alert("Your logic to handle");
+                    },
+                },
+                {
+                    id: "Google",
+                    title: "Navigate to google.com",
+                    children: ["Google UK", "Google RU"],
+                    keywords: "search engine google",
+                    section: "Search",
+                    handler: () => {
+                        document.location.href = "https://google.com";
+                        return { keepOpen: true };
+                    },
+                },
+                {
+                    id: "Google UK",
+                    title: "Navigate to google.co.uk",
+                    parent: "Google",
+                    keywords: "search engine google uk",
+                    section: "Search",
+                    handler: () => {
+                        document.location.href = "https://google.co.uk";
+                    },
+                },
+                {
+                    id: "Google RU",
+                    title: "Navigate to google.ru",
+                    parent: "Google",
+                    keywords: "search engine google ru",
+                    section: "Search",
+                    handler: () => {
+                        document.location.href = "https://google.ru";
+                    },
+                },
+                {
+                    id: "Reload",
+                    title: "Reload page",
+                    handler: () => {
+                        document.location.reload();
+                    },
+                },
+            ];
         </script>
         <h1 hx-get="/health" hx-swap="innerHTML" hx-trigger="load delay:2s">
             health
@@ -45,24 +101,43 @@
         ></div>
         history <span id="when" style="display: inline"></span>
         <output id="output"></output>
-        <h1>templates</h1>
+        <h1>self-removing element</h1>
         <div hx-ext="remove-me">
             <mark remove-me="3s">remove in 3 seconds...</mark>
         </div>
-        <div hx-ext="client-side-templates" style="font-size: 10px">
-            <div style="height: 30em; overflow: scroll;">
-            <div
-                hx-get="/env"
-                hx-swap="innerHTML"
-                nunjucks-template="env"
-                hx-trigger="load"
-            ></div>
-            <template id="env">
-                {% for k, v in env %}
-                <div>[{{k}}]: [{{v}}]</div>
-                {% endfor %}
-            </template>
+        <h1>templates</h1>
+        <div id="loading" class="htmx-indicator">
+            loading environment variables...
         </div>
-
+        <div hx-ext="client-side-templates" style="font-size: 10px">
+            <div style="height: 30em; overflow: scroll">
+                <div
+                    hx-get="/env"
+                    hx-swap="innerHTML"
+                    nunjucks-template="env"
+                    hx-trigger="load"
+                    hx-indicator="#loading"
+                >
+                    enviroment variables will be displayed here...
+                </div>
+                <template id="env">
+                    {% for k, v in env %}
+                    <div>[{{k}}]: [{{v}}]</div>
+                    {% endfor %}
+                </template>
+            </div>
+            <style>
+                .htmx-indicator {
+                    opacity: 0;
+                    transition: opacity 500ms ease-in;
+                }
+                .htmx-request .htmx-indicator {
+                    opacity: 1;
+                }
+                .htmx-request.htmx-indicator {
+                    opacity: 1;
+                }
+            </style>
+        </div>
     </body>
 </html>

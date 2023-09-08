@@ -42,8 +42,10 @@ let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
 async function handler(req: Request): Promise<Response> {
     const pathname = new URL(req.url).pathname;
     console.log("pathname", pathname);
-    if (pathname === "/env")
+    if (pathname === "/env") {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return new Response(JSON.stringify({ env: Deno.env.toObject() }));
+    }
     if (pathname === "/sse") {
         kv.listenQueue((value_) => {
             if (!controller) return;
