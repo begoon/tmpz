@@ -46,6 +46,28 @@ async function handler(req: Request): Promise<Response> {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         return new Response(JSON.stringify({ env: Deno.env.toObject() }));
     }
+    if (pathname === "/ws") {
+        if (req.headers.get("upgrade") != "websocket") {
+            return new Response(null, { status: 501 });
+        }
+        const { socket, response } = Deno.upgradeWebSocket(req);
+        socket.addEventListener("open", () => {
+            console.log("websocket connected");
+            socket.send(`<div id="notifications">hey!</div>`);
+        });
+        socket.addEventListener("close", (e) => {
+            console.log("websocket disconnected", e);
+        });
+        socket.addEventListener("message", (event) => {
+            const message = JSON.parse(event.data).message;
+            console.log("websocket message", message);
+            socket.send(
+                `<div id="response" hx-swap-oob="beforebegin">` +
+                    `<li>ack "${message}"</li></div>`
+            );
+        });
+        return response;
+    }
     if (pathname === "/sse") {
         kv.listenQueue((value_) => {
             if (!controller) return;

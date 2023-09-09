@@ -7,6 +7,7 @@
         <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
         <script src="https://unpkg.com/nunjucks@latest"></script>
         <script src="https://unpkg.com/htmx.org/dist/ext/remove-me.js"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
         <script
             type="module"
             src="https://unpkg.com/ninja-keys?module"
@@ -79,6 +80,15 @@
         <h1 hx-get="/health" hx-swap="innerHTML" hx-trigger="load delay:2s">
             health
         </h1>
+        <h1>WS</h1>
+        <div hx-ext="ws" ws-connect="/ws">
+            <div id="notifications"></div>
+            <div id="response"></div>
+            <form id="form" ws-send>
+                <input name="message" />
+                <button hx-trigger="click" ws-send>send</button>
+            </form>
+        </div>
         <h1>queue/kv/sse</h1>
         <form method="POST" action="/enqueue">
             <label>
