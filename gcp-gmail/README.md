@@ -1,6 +1,7 @@
 # Generate refresh token
 
 <https://www.youtube.com/watch?v=18qA61bpfUs>
+<https://stateful.com/blog/gmail-api-node-tutorial>
 
 - GCP "APIs and Services"
 - create credentials "OAuth2 2.0 ClientIDs"
@@ -23,3 +24,12 @@
 - click "Allow"
 - click "Exchange authorization code for tokens"
 - copy the refresh token
+
+## CLI
+
+```bash
+bun main.js --labels
+bun main.js <label>
+bun main.js <label> --messages
+bun main.js <label> --delete
+```
