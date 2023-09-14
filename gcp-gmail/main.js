@@ -66,12 +66,14 @@ if (!label) {
     process.exit(1);
 }
 
-const filter = [labels.get(label)];
-console.log(
-    `filter label "${label}"`,
-    filter.join(""),
-    labelIds.get(filter[0])
-);
+const labelID = labels.get(label);
+if (!labelID) {
+    console.log("label not found", label);
+    process.exit(1);
+}
+
+const filter = [labelID];
+console.log(`filter label "${label}"`, filter.join(""), labelIds.get(labelID));
 
 const options = {
     auth: oauth2Client,
@@ -128,35 +130,37 @@ if (!n) {
     process.exit(0);
 }
 
-const DELETED_LABEL = "DELETEDx";
-const DELETED_LABEL_ID = labels.get(DELETED_LABEL);
+if (process.argv.includes("--mark")) {
+    const DELETED_LABEL = "DELETEDx";
+    const DELETED_LABEL_ID = labels.get(DELETED_LABEL);
 
-if (!DELETED_LABEL_ID) {
-    console.log("creating label", DELETED_LABEL);
-    const createdLabelRequest = {
-        name: DELETED_LABEL,
-        messageListVisibility: "show",
-        labelListVisibility: "labelShow",
-        type: "user",
-    };
-    console.log("createdLabelRequest", createdLabelRequest.data);
-    const created = await gmail.users.labels.create({
+    if (!DELETED_LABEL_ID) {
+        console.log("creating label", DELETED_LABEL);
+        const createdLabelRequest = {
+            name: DELETED_LABEL,
+            messageListVisibility: "show",
+            labelListVisibility: "labelShow",
+            type: "user",
+        };
+        console.log("createdLabelRequest", createdLabelRequest.data);
+        const created = await gmail.users.labels.create({
+            auth: oauth2Client,
+            userId: "me",
+            requestBody: createdLabelRequest,
+        });
+        console.log("created", created);
+        process.exit(0);
+    }
+
+    console.log(`mark ${n} messages with ${DELETED_LABEL}/${DELETED_LABEL_ID}`);
+
+    const modified = await gmail.users.messages.batchModify({
         auth: oauth2Client,
         userId: "me",
-        requestBody: createdLabelRequest,
+        requestBody: { ids, addLabelIds: [DELETED_LABEL_ID] },
     });
-    console.log("created", created);
-    process.exit(0);
+    console.log("modified", modified.status);
 }
-
-console.log(`labeling ${n} message with ${DELETED_LABEL}/${DELETED_LABEL_ID}`);
-
-const modified = await gmail.users.messages.batchModify({
-    auth: oauth2Client,
-    userId: "me",
-    requestBody: { ids, addLabelIds: [DELETED_LABEL_ID] },
-});
-console.log("modified", modified.status);
 
 if (process.argv.includes("--delete")) {
     console.log("deleting", ids.length, "messages");

@@ -13,12 +13,12 @@
 - add a test user in there which will be used to authorise "mail.google.com" on
 - publish the app
 
-- go to https://developers.google.com/oauthplayground
+- go to <https://developers.google.com/oauthplayground>
 - click the settings icon (top right)
 - check "Use your own OAuth credentials"
 - enter your client ID and client secret
 - click "Close"
-- in the left pane, scroll down to "Gmail API v1" (or "https://mail.google.com")
+- in the left pane, scroll down to "Gmail API v1" (or "<https://mail.google.com>")
 - click the checkbox
 - click "Authorize APIs"
 - click "Allow"
@@ -30,6 +30,7 @@
 ```bash
 bun main.js --labels
 bun main.js <label>
+bun main.js <label> --mark
 bun main.js <label> --messages
 bun main.js <label> --delete
 ```
