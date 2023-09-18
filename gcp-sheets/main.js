@@ -28,3 +28,44 @@ console.log(
     (await sheets.spreadsheets.values.get({ spreadsheetId, range: "data" }))
         .data
 );
+
+console.time("configuration");
+const configuration = Object.fromEntries(
+    (
+        await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: "configuration",
+        })
+    ).data.values
+);
+console.timeEnd("configuration");
+configuration.list = JSON.parse(configuration.list);
+configuration.dict = JSON.parse(configuration.dict);
+configuration.counter = Number(configuration.counter);
+configuration.updated_at = new Date(configuration.updated_at);
+console.log(configuration);
+
+await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: "configuration!counter",
+    valueInputOption: "USER_ENTERED",
+    resource: {
+        values: [[configuration.counter * 2]],
+    },
+});
+await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: [
+            {
+                range: "configuration!counter",
+                values: [[configuration.counter * 2]],
+            },
+            {
+                range: "configuration!updated_at",
+                values: [[new Date().toISOString()]],
+            },
+        ],
+    },
+});
