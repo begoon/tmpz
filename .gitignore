@@ -2,3 +2,4 @@
 js-sse/__pycache__
 svelte-balls/node_modules
 cloudinary/.env
+hono-bun/public

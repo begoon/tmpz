@@ -3,5 +3,6 @@
     "./"
   ],
   "deno.enable": true,
+  "deno.cacheOnSave": true,
   "editor.inlayHints.enabled": "off"
 }
