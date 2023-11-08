@@ -1,35 +1,89 @@
 import fs from "fs";
+import { LoremIpsum } from "lorem-ipsum";
 import pdfmake from "pdfmake";
 
-var greeting = "Can you see me";
-var url = "http://pdfmake.org";
-var longText =
-    "The amount of data that can be stored in the QR code symbol depends on the datatype (mode, or input character set), version (1, …, 40, indicating the overall dimensions of the symbol), and error correction level. The maximum storage capacities occur for 40-L symbols (version 40, error correction level L):";
-
-function header(text) {
-    return { text: text, margins: [0, 0, 0, 8] };
-}
+const lorem = new LoremIpsum({
+    sentencesPerParagraph: {
+        max: 8,
+        min: 4,
+    },
+    wordsPerSentence: {
+        max: 16,
+        min: 4,
+    },
+});
 
 const doc = {
     pageMargins: [10, 10, 10, 10],
+    pageOrientation: "landscape",
+    watermark: {
+        text: "freemynd.io",
+        color: "blue",
+        opacity: 0.1,
+        bold: true,
+        italics: false,
+    },
+    patterns: {
+        stripe45d: {
+            boundingBox: [1, 1, 4, 4],
+            xStep: 3,
+            yStep: 3,
+            pattern: "1 w 0 1 m 4 5 l s 2 0 m 5 3 l s",
+        },
+    },
+    background: {
+        canvas: [
+            {
+                type: "rect",
+                x: 0,
+                y: 0,
+                w: "1000",
+                h: 400,
+                color: "lightblue",
+                fillOpacity: 0.5,
+            },
+        ],
+    },
     content: [
-        header(greeting),
-        { qr: greeting },
+        {
+            text: "Карта твоего характера",
+            margins: [0, 0, 0, 8],
+            fontSize: 60,
+        },
+        { qr: lorem.generateWords(16), fit: 100, alignment: "right" },
         "\n",
-
-        header("Colored QR"),
-        { qr: greeting, foreground: "red", background: "yellow" },
+        {
+            text: lorem.generateSentences(5),
+            margins: [0, 0, 0, 8],
+            fontSize: 20,
+        },
         "\n",
-
-        header(url),
-        { qr: url },
+        {
+            columns: [
+                {
+                    text: lorem.generateParagraphs(7),
+                    alignment: "left",
+                },
+                {
+                    text: lorem.generateParagraphs(7),
+                    alignment: "right",
+                },
+            ],
+        },
         "\n",
-
-        header("A very long text (" + longText.length + " chars)"),
-        { qr: longText },
-        "\n",
-        header("same long text with fit = 100 and alignment = right"),
-        { qr: longText, fit: 150, alignment: "right" },
+        {
+            canvas: [
+                {
+                    type: "rect",
+                    x: 0,
+                    y: 0,
+                    w: 600,
+                    h: 400,
+                    color: "yellow",
+                    fillOpacity: 0.5,
+                },
+            ],
+        },
     ],
 };
 
