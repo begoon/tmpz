@@ -1,6 +1,7 @@
 import fs from "fs";
 import { LoremIpsum } from "lorem-ipsum";
 import pdfmake from "pdfmake";
+import { block } from "./doc.js";
 
 const lorem = new LoremIpsum({
     sentencesPerParagraph: {
@@ -46,11 +47,13 @@ const doc = {
     },
     content: [
         {
-            text: "Карта твоего характера",
+            text: ["Карта ", { text: "твоего", bold: true }, " характера"],
             margins: [0, 0, 0, 8],
             fontSize: 60,
         },
         { qr: lorem.generateWords(16), fit: 100, alignment: "right" },
+        "\n",
+        ...block,
         "\n",
         {
             text: lorem.generateSentences(5),
