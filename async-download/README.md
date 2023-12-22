@@ -117,5 +117,5 @@ throughput: 3.78 MB/s
 
 ## Conclusion
 
-1. Both Python and JavaScript download speed is about the same.
-2. In result, The order of resolved Promises in JavaScript and Async Tasks in Python is preserved.
+1. Both Python and JavaScript download speeds are about the same.
+2. As a result, the order of resolved Promises in JavaScript and Async Tasks in Python is preserved.
