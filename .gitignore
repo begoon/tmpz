@@ -5,3 +5,4 @@ cloudinary/.env
 hono-bun/public
 js-pdf/node_modules
 *.pdf
+js-mysql/.env
