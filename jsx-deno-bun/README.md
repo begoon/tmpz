@@ -1,11 +1,12 @@
 # JSX in Deno and Bun
 
-<https://bun.sh/docs/runtime/jsx>
-<https://docs.deno.com/runtime/manual/advanced/jsx_dom/jsx>
+- <https://bun.sh/docs/runtime/jsx>
+- <https://docs.deno.com/runtime/manual/advanced/jsx_dom/jsx>
 
 <https://github.com/preactjs/preact-render-to-string>
 
 <https://github.com/denoland/deno/issues/20582>
+
 <https://github.com/denoland/deno/issues/21927>
 
 ## Deno with preact/preact-render-to-string
