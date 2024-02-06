@@ -4,8 +4,9 @@ import process from "node:process";
 const env = process.env;
 const { WP_API, WP_API_USER, WP_API_PASSWORD } = env;
 
-const endpoint = WP_API + "/wc/v3/customers";
 const auth = "Basic " + encodeBase64(WP_API_USER + ":" + WP_API_PASSWORD);
+
+const customers_endpoint = WP_API + "/wc/v3/customers";
 
 async function print(str: string) {
     await Deno.stdout.write(new TextEncoder().encode(str));
@@ -17,7 +18,7 @@ if (!needle) {
     process.exit(1);
 }
 
-const url = `${endpoint}?search=${needle}&role=administrator`;
+const url = `${customers_endpoint}?search=${needle}&role=administrator`;
 console.log(url);
 
 await print(`\r\x1b[2Ksearching for "${needle}"... `);
@@ -49,6 +50,29 @@ if (!data.length) {
 
 const { id, username, first_name, last_name, email } = data[0];
 console.log(id, username, first_name, last_name, email);
+
+const orders_endpoint = WP_API + "/wc/v3/orders";
+const orders_url = `${orders_endpoint}?customer=${id}`;
+const orders_response = await fetch(orders_url, {
+    method: "GET",
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: auth,
+    },
+});
+
+const orders_data = (await orders_response.json()) as {
+    id: number;
+    status: string;
+    line_items: { product_id: number; name: string }[];
+}[];
+
+const orders = orders_data.map((o) => [
+    o.id,
+    o.status,
+    o.line_items.map((i) => [i.product_id, i.name]),
+]);
+console.log(orders);
 
 const password = process.argv[3];
 if (password) {
