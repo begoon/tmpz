@@ -7,5 +7,10 @@
 			"path": "./project-a"
 		}
 	],
-	"settings": {}
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"ms-python.black-formatter"
+		]
+	}
 }
