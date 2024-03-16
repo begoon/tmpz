@@ -1,8 +1,19 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="deno.unstable" />
+
 const kv = await Deno.openKv();
 
 let n = 0;
 
-kv.listenQueue(async (msg: unknown) => {
+type Message = {
+    key: Deno.KvKey;
+    value: {
+        when: string;
+        n: number;
+    };
+};
+
+kv.listenQueue((msg: Message) => {
     console.log("RECEIVED", msg);
     const delta = Date.now() - new Date(msg.value["when"]).getTime();
     console.log("DELTA", delta);
