@@ -7,9 +7,10 @@
         <style>
             div {
                 text-align: center;
-                padding: 2em;
+                padding: 1.5em;
                 margin: 2em;
                 transition: 0.5s ease-in-out;
+                animation: all 0.2s ease-in-out;
                 columns: 1;
                 border: 1px solid black;
                 display: flex;
@@ -18,8 +19,10 @@
             }
             div:hover {
                 scale: 1.02;
+                rotate: 2deg;
                 transition: 0.5s ease-in-out;
                 justify-content: end;
+                transform-origin: center;
             }
             abbr {
                 width: 400px;
@@ -34,6 +37,30 @@
         </style>
     </head>
     <body>
+        <div
+            style="
+                display: grid;
+                place-content: center;
+                border: 1px solid yellowgreen;
+            "
+        >
+            Lorem ipsum, dolor sit amet consectetur adipisicing elit. Optio
+            corporis, eveniet facere repellat quae odit recusandae quia
+            dignissimos obcaecati ducimus doloremque esse ratione. Animi
+            delectus quos quam, suscipit necessitatibus sapiente.
+        </div>
+        <div
+            style="
+                display: flex;
+                place-content: center;
+                border: 1px solid green;
+            "
+        >
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestias,
+            excepturi perferendis. Explicabo atque placeat eligendi expedita
+            aliquid minima totam distinctio ex molestiae a quibusdam blanditiis
+            hic dignissimos accusamus, itaque nihil?
+        </div>
         <div>
             <p>
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
