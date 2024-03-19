@@ -1,0 +1,28 @@
+- name: Test commands
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+      v1: {"s": "abc", "n": 123}
+  tasks:
+      - name: Test local action
+        ansible.builtin.command: echo "hello world"
+        changed_when: false
+      - name: Debug
+        ansible.builtin.debug:
+            msg: "Hello world {{ v1.keys() }} {{ v1['s'].upper() }} {{ ansible_play_name }}."
+        register: result
+      - name: Debug 1
+        ansible.builtin.debug:
+            msg: "Result as YAML {{ result | to_yaml }}."
+      - name: Looper
+        ansible.builtin.debug:
+            msg: "{{ item.key }} - {{ item.value }}"
+        loop: "{{ v1 | dict2items }}"
+        register: result2
+      - name: Debug 2
+        ansible.builtin.debug:
+            msg: "Looper result as YAML {{ result2 }}."
+      - name: Basic usage
+        ansible.builtin.debug:
+            msg: "HOME={{ lookup('env', 'HOME') }}"
