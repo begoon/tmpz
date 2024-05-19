@@ -1,5 +1,6 @@
 {
     "dependencies": {
+        "@aws-sdk/client-ec2": "^3.577.0",
         "aws-sdk": "^2.1622.0"
     },
     "type": "module"
