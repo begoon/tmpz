@@ -8,6 +8,8 @@ const cmd = process.argv[2];
 
 const ec2 = new AWS.EC2({ apiVersion: "2016-11-15" });
 
+const now = new Date().toISOString();
+
 async function start(tags) {
     const instance = await ec2
         .runInstances({
@@ -21,7 +23,8 @@ async function start(tags) {
                     "sudo yum update -y",
                     "sudo yum install docker -y",
                     "sudo systemctl start docker",
-                    "sudo docker run -d -p :80:80 yeasy/simple-web:latest",
+                    `sudo echo "webserver started at ${now}" >index.html`,
+                    "sudo docker run -d -v $PWD/index.html:/usr/share/caddy/index.html -p :80:80 caddy",
                 ].join("\n")
             ).toString("base64"),
             SecurityGroupIds: ["sg-046938788a0c5da74"],
