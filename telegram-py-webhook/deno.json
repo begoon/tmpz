@@ -1,0 +1,19 @@
+{
+    "version": "0.4.6",
+    "unstable": ["kv", "cron"],
+    "tasks": {
+        "tunnel": "deno run -A --watch=tunnel.ts,ngrok/ ./tunnel.ts",
+        "webhook": "deno run -A ./webhook.ts"
+    },
+    "compilerOptions": {
+        "allowJs": true,
+        "strict": true
+    },
+    "lint": {
+        "include": ["*.ts"],
+        "exclude": ["./z/**"]
+    },
+    "imports": {
+        "std/": "https://deno.land/std@0.211.0/"
+    }
+}
