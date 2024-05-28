@@ -1,9 +1,13 @@
-import asyncio
 import json
+import os
 
-import bot
+import bot_sync as bot
 
-asyncio.run(bot.starter())
+wh = os.getenv("WH")
+if wh:
+    wh += "/bot"
+
+bot.starter(wh)
 
 
 def lambda_handler(event, context):
@@ -17,7 +21,7 @@ def lambda_handler(event, context):
 
     if http["method"] == "POST" and http["path"] == "/bot":
         body = json.loads(event["body"])
-        asyncio.run(bot.update(body))
+        bot.update(body)
         return {'statusCode': 200}
 
     return {"statusCode": 418, "body": "Ha?"}

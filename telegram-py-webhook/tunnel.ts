@@ -9,3 +9,8 @@ const url = `https://${host}/bot`;
 console.log({ tunnel: url });
 
 await installWebhook(url);
+
+Deno.writeFileSync(
+    "wh.json",
+    new TextEncoder().encode(JSON.stringify({ url }))
+);
