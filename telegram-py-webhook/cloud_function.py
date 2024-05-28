@@ -23,7 +23,7 @@ def function_handler(request: flask.Request):
     if method == "POST" and path == "/bot":
         request_json = request.get_json(silent=True)
         if request_json is None:
-            return {"error": "invalid json"}
+            return {"error": "invalid json"}, 400
         print(request_json)
         bot.update(request_json)
         return {}
