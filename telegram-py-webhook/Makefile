@@ -47,7 +47,6 @@ gcp-pack:
 	cp cloud_function.py cloud_function/main.py
 	cp bot_sync.py requirements.txt cloud_function/
 
-
 gcp-deploy: gcp-pack
 	gcloud functions deploy bot \
 	--project $(GCP_PROJECT) \
