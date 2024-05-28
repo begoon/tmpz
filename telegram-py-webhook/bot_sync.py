@@ -4,6 +4,7 @@ from typing import Any
 
 from telegram import (
     Bot,
+    BotCommand,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     ParseMode,
@@ -58,6 +59,11 @@ def starter(wh: str | None = None):
                 [InlineKeyboardButton("/ping", callback_data="ping")],
             ]
         ),
+    )
+    application.set_my_commands(
+        [
+            BotCommand("/ping", "ping/pong"),
+        ]
     )
 
 
