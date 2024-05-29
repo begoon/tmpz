@@ -57,3 +57,31 @@ gcp-deploy: gcp-pack
 	--entry-point=function_handler \
 	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=$(NOW) \
 	--trigger-http
+
+az-pack:
+	rm -f bot_package.zip
+	cp ./azure_function.py ./package
+	cp ./host.json ./package
+	cp ./bot_sync.py ./package
+	(cd package && zip -r ../bot_package.zip .) 
+
+az-deploy: az-pack
+	az functionapp deployment source config-zip \
+	-g Services \
+	-n bot-function \
+	--src bot_package.zip
+
+az-settings:
+	az functionapp config appsettings list \
+	--name bot-function \
+	--resource-group Services \
+
+az-configure:
+	az functionapp config appsettings set \
+	--name bot-function \
+	--resource-group Services \
+	--settings \
+	BOT_TOKEN=$(BOT_TOKEN) \
+	ADMIN=$(ADMIN) \
+	WH=$(HOSTING) \
+	UPDATED_AT=$(NOW)
