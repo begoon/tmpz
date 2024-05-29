@@ -26,7 +26,7 @@ def health(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.route(route="bot")
-def botz(req: func.HttpRequest) -> func.HttpResponse:
+def bot_(req: func.HttpRequest) -> func.HttpResponse:
     method = req.method
 
     if method != "POST":

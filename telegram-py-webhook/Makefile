@@ -21,7 +21,7 @@ deps:
 health:
 	curl $(HOSTING)/health
 
-aws-pack:
+aws-pack: deps
 	rm -f bot_package.zip
 	cp ./lambda_function.py ./package
 	cp ./bot_sync.py ./package
@@ -58,9 +58,9 @@ gcp-deploy: gcp-pack
 	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=$(NOW) \
 	--trigger-http
 
-az-pack:
+az-pack: deps
 	rm -f bot_package.zip
-	cp ./azure_function.py ./package
+	cp ./azure_function.py ./package/function_app.py
 	cp ./host.json ./package
 	cp ./bot_sync.py ./package
 	(cd package && zip -r ../bot_package.zip .) 
