@@ -7,8 +7,8 @@ all:
 
 NOW=$(shell date +'%Y-%m-%d@%H:%M:%S')
 
-run:
-	uvicorn main:listener --host 0.0.0.0 --port 8000 --reload
+run-async:
+	uvicorn main_async:listener --host 0.0.0.0 --port 8000 --reload
 
 run-sync:
 	PYTHONPATH=./package \
@@ -38,7 +38,7 @@ aws-configure:
 	aws lambda update-function-configuration \
 	--profile $(AWS_PROFILE) \
 	--function-name bot \
-	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=`date +'%Y-%m-%d %H:%M:%S'`}" \
+	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),WHERE=aws,UPDATED_AT=`date +'%Y-%m-%d %H:%M:%S'`}" \
 	--no-cli-pager
 
 gcp-pack:
@@ -55,7 +55,7 @@ gcp-deploy: gcp-pack
 	--runtime=python311 \
 	--source=./cloud_function \
 	--entry-point=function_handler \
-	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=$(NOW) \
+	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=$(NOW),WHERE=gcp \
 	--trigger-http
 
 az-pack: deps
@@ -84,4 +84,5 @@ az-configure:
 	BOT_TOKEN=$(BOT_TOKEN) \
 	ADMIN=$(ADMIN) \
 	WH=$(HOSTING) \
-	UPDATED_AT=$(NOW)
+	WHERE=azure \
+	UPDATED_AT=$(NOW) \

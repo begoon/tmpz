@@ -1,13 +1,8 @@
 import json
-import os
 
 import bot_sync as bot
 
-wh = os.getenv("WH")
-if wh:
-    wh += "/bot"
-
-bot.starter(wh)
+bot.starter()
 
 
 def lambda_handler(event, context):

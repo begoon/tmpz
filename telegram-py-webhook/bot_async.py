@@ -1,10 +1,11 @@
+import json
 import logging
 import os
+import pathlib
 from typing import Any
 
-from telegram.constants import ParseMode
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
 from telegram.ext import Application
 
 logging.basicConfig(
@@ -22,14 +23,24 @@ application = Application.builder().token(BOT_TOKEN).build()
 ADMIN = os.environ["ADMIN"]
 
 
-async def starter(wh: str | None = None):
-    if wh:
+async def starter():
+    wh_default = None
+    wh_file = pathlib.Path("wh.json")
+    if wh_file.exists():
+        with wh_file.open() as f:
+            wh_default = json.load(f)["url"]  # noqa: F821
+            logger.info("webhook/wh.json %s", wh_default)
+
+    if wh := os.getenv("WH", wh_default):
+        if not wh.endswith("/bot"):
+            wh += "/bot"
         whi = await application.bot.get_webhook_info()
         logger.info("webhook %s", whi.url)
         if whi.url != wh:
             await application.bot.set_webhook(
                 url=wh,
                 allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
             )
         me = await application.bot.get_me()
         logger.info("me %s", me.username)
@@ -37,7 +48,7 @@ async def starter(wh: str | None = None):
     logger.info("wheel %s", ADMIN)
     await application.bot.send_message(
         ADMIN,
-        "bot <b>started</b>",
+        "bot <b>started</b> - [<code>" + __file__.split("/")[-1] + "</code>]",
         parse_mode=ParseMode.HTML,
     )
     if wh:
@@ -63,7 +74,11 @@ async def finisher():
 
 
 def health() -> dict[str, Any]:
-    return {"status": "alive", "updated_at": os.getenv("UPDATED_AT", "?")}
+    return {
+        "status": "alive",
+        "updated_at": os.getenv("UPDATED_AT", "?"),
+        "where": os.getenv("WHERE", "?"),
+    }
 
 
 async def ping(update: Update) -> None:

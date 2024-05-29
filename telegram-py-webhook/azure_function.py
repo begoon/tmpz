@@ -1,15 +1,10 @@
 import json
-import os
 
 import azure.functions as func
 
 import bot_sync as bot
 
-wh = os.getenv("WH")
-if wh:
-    wh += "/bot"
-
-bot.starter(wh)
+bot.starter()
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -17,9 +12,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="health")
 def health(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(
-        json.dumps(
-            {"status": "alive", "updated_at": os.getenv("UPDATED_AT", "?")}
-        ),
+        json.dumps(bot.health()),
         status_code=200,
         headers={"Content-Type": "application/json"},
     )

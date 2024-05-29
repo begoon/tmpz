@@ -7,7 +7,7 @@ from fastapi import FastAPI, Response
 
 load_dotenv()
 
-import bot  # noqa: E402
+import bot_async  # noqa: E402
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(listener: FastAPI):
-    await bot.starter()
+    await bot_async.starter()
     yield
-    await bot.finisher()
+    await bot_async.finisher()
 
 
 listener = FastAPI(lifespan=lifespan)
@@ -30,10 +30,10 @@ listener = FastAPI(lifespan=lifespan)
 
 @listener.post("/bot")
 async def update(request: dict[str, Any]) -> Response:
-    await bot.update(request)
+    await bot_async.update(request)
     return Response()
 
 
 @listener.get("/health")
 async def health() -> dict[str, Any]:
-    return bot.health()
+    return bot_async.health()

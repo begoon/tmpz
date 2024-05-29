@@ -1,15 +1,9 @@
-import os
-
 import flask
 import functions_framework
 
 import bot_sync as bot
 
-wh = os.getenv("WH")
-if wh:
-    wh += "/bot"
-
-bot.starter(wh)
+bot.starter()
 
 
 @functions_framework.http

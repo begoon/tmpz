@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import pathlib
 from typing import Any
 
 from telegram import (
@@ -21,36 +23,46 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 logger.info("bot token: %s", BOT_TOKEN)
 
-application = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN)
 
 ADMIN = os.environ["ADMIN"]
 
 
-def starter(wh: str | None = None):
-    if wh:
-        whi = application.get_webhook_info()
+def starter():
+    wh_default = None
+    wh_file = pathlib.Path("wh.json")
+    if wh_file.exists():
+        with wh_file.open() as f:
+            wh_default = json.load(f)["url"]  # noqa: F821
+            logger.info("webhook/wh.json %s", wh_default)
+
+    if wh := os.getenv("WH", wh_default):
+        if not wh.endswith("/bot"):
+            wh += "/bot"
+        whi = bot.get_webhook_info()
         logger.info("webhook %s", whi.url)
         if whi.url != wh:
-            application.set_webhook(
+            bot.set_webhook(
                 url=wh,
                 allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
             )
-        me = application.get_me()
+        me = bot.get_me()
         logger.info("me %s", me.username)
 
     logger.info("wheel %s", ADMIN)
-    application.send_message(
+    bot.send_message(
         ADMIN,
-        "bot <b>started</b>",
+        "bot <b>started</b> - [<code>" + __file__.split("/")[-1] + "</code>]",
         parse_mode=ParseMode.HTML,
     )
     if wh:
-        application.send_message(
+        bot.send_message(
             ADMIN,
             f"webhook {wh}",
             parse_mode=ParseMode.HTML,
         )
-    application.send_message(
+    bot.send_message(
         ADMIN,
         "menu",
         parse_mode=ParseMode.HTML,
@@ -60,7 +72,7 @@ def starter(wh: str | None = None):
             ]
         ),
     )
-    application.set_my_commands(
+    bot.set_my_commands(
         [
             BotCommand("/ping", "ping/pong"),
         ]
@@ -68,11 +80,15 @@ def starter(wh: str | None = None):
 
 
 def finisher():
-    application.send_message(ADMIN, "we're done")
+    bot.send_message(ADMIN, "we're done")
 
 
 def health() -> dict[str, Any]:
-    return {"status": "alive", "updated_at": os.getenv("UPDATED_AT", "?")}
+    return {
+        "status": "alive",
+        "updated_at": os.getenv("UPDATED_AT", "?"),
+        "where": os.getenv("WHERE", "?"),
+    }
 
 
 def ping(update: Update) -> None:
@@ -80,11 +96,11 @@ def ping(update: Update) -> None:
         update.message.reply_html(text="pong")
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
-        application.send_message(from_user_id, "query pong")
+        bot.send_message(from_user_id, "query pong")
 
 
 def update(request: dict[str, Any]) -> None:
-    update = Update.de_json(data=request, bot=application)
+    update = Update.de_json(data=request, bot=bot)
     assert update, "update should be present"
     message = update.message
     if message:
