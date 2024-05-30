@@ -1,3 +1,4 @@
 functions-framework==3.*
 python-telegram-bot==13.15
 urllib3==1.26.15
+ping3==4.0.8

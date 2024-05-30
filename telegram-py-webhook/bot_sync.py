@@ -2,8 +2,9 @@ import json
 import logging
 import os
 import pathlib
-from typing import Any
+from typing import Any, Callable
 
+import ping3
 from telegram import (
     Bot,
     BotCommand,
@@ -91,12 +92,31 @@ def health() -> dict[str, Any]:
     }
 
 
-def ping(update: Update) -> None:
+def ping(update: Update, args: list[str]) -> None:
     if update.message:
         update.message.reply_html(text="pong")
+        if not args:
+            bot.send_message(ADMIN, "usage: /ping <host>")
+            return
+        host = args[0]
+        response_time = ping3.ping(host)
+        if response_time:
+            bot.send_message(
+                ADMIN,
+                f"{host} is up! response time {response_time:.2f} ms",
+            )
+        else:
+            bot.send_message(ADMIN, f"{host} is down!")
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
-        bot.send_message(from_user_id, "query pong")
+        bot.send_message(from_user_id, "query/pong")
+
+
+def file(update: Update, args: list[str]) -> None:
+    if not args:
+        update.message.reply_text("usage: /file <file_id>")
+    file_id = args[0]
+    bot.send_document(ADMIN, file_id)
 
 
 def update(request: dict[str, Any]) -> None:
@@ -107,18 +127,40 @@ def update(request: dict[str, Any]) -> None:
         text = message.text
         if text:
             if text.startswith("/"):
-                cmd = text.split()[0]
-                commands = {"/ping": ping}
+                cmd, *args = text.split()
+                print(f'cmd: {cmd}, args: {args}')
+                commands: dict[str, Callable] = {"/ping": ping, "/file": file}
                 action = commands.get(cmd)
                 if not action:
                     message.reply_text("ha?")
                 else:
-                    action(update)
+                    action(update, args)
             else:
                 message.reply_text(text + " - ha?")
+        audio = message.audio
+        if audio:
+            print(audio, json.dumps(audio.to_dict(), indent=2))
+            message.reply_text("audio " + audio.file_id)
+        video = message.video
+        if video:
+            print(video, json.dumps(video.to_dict(), indent=2))
+            message.reply_text("video " + video.file_id)
+        voice = message.voice
+        if voice:
+            print(voice, json.dumps(voice.to_dict(), indent=2))
+            message.reply_text("voice " + voice.file_id)
+        document = message.document
+        if document:
+            print(document, json.dumps(document.to_dict(), indent=2))
+            message.reply_text("document " + document.file_id)
+        photo = message.photo
+        if photo:
+            print(photo, json.dumps(photo[-1].to_dict(), indent=2))
+            message.reply_text("photo " + photo[-1].file_id)
+
     callback_query = update.callback_query
     if callback_query:
         callback_query.answer()
         data = callback_query.data
         if data == "ping":
-            ping(update)
+            ping(update, [])

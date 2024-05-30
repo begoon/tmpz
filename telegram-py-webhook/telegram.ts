@@ -80,7 +80,10 @@ export class Telegram {
     }
 
     async setWebhook(url: string) {
-        return await this._command("setWebhook", { url });
+        return await this._command("setWebhook", {
+            url,
+            drop_pending_updates: true,
+        });
     }
 
     async deleteWebhook() {
