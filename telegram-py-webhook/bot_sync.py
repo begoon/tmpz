@@ -3,9 +3,10 @@ import logging
 import os
 import pathlib
 import random
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import ping3
+import redis
 from telegram import (
     Bot,
     BotCommand,
@@ -29,6 +30,14 @@ logger.info("bot token: %s", BOT_TOKEN)
 bot = Bot(token=BOT_TOKEN)
 
 ADMIN = os.environ["ADMIN"]
+
+
+r = redis.Redis(
+    host=os.environ["REDIS_HOST"],
+    port=os.environ["REDIS_PORT"],
+    password=os.environ["REDIS_PASSWORD"],
+    ssl=True,
+)
 
 
 def starter():
@@ -118,7 +127,25 @@ def file(update: Update, args: list[str]) -> None:
     if not args:
         update.message.reply_text("usage: /file <file_id>")
     file_id = args[0]
-    bot.send_document(ADMIN, file_id)
+    needle = cast(bytes, r.get("files:" + file_id))
+    print(needle)
+    if not needle:
+        update.message.reply_text("file not found")
+        return
+    file_dict = json.loads(needle)
+    file_type = file_dict["type"]
+    if file_type == "audio":
+        bot.send_audio(ADMIN, file_id)
+    elif file_type == "video":
+        bot.send_video(ADMIN, file_id)
+    elif file_type == "voice":
+        bot.send_voice(ADMIN, file_id)
+    elif file_type == "document":
+        bot.send_document(ADMIN, file_id)
+    elif file_type == "photo":
+        bot.send_photo(ADMIN, file_id)
+    else:
+        bot.send_message(ADMIN, f"unknown file type [{file_type}]")
 
 
 HTML = f"""<b>bold</b>, <strong>bold</strong>
@@ -176,6 +203,37 @@ def markdown(update: Update, args: list[str]) -> None:
     bot.send_message(ADMIN, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
 
 
+def ls(update: Update, args: list[str]) -> None:
+    keys = r.keys("files:*")
+    if not keys:
+        update.message.reply_text("no files")
+        return
+    for key in keys:
+        file_id = key.decode("utf-8").split(":")[1]
+        file_dict = json.loads(r.get(key))
+        file_type = file_dict["type"]
+        if file_type == "photo":
+            text = (
+                f"photo {file_dict['file_size']}"
+                f" {file_dict['width']}x{file_dict['height']}"
+                f"\n{file_id}"
+            )
+        elif file_type == "audio":
+            text = f"audio {file_dict['file_size']}\n{file_id}"
+        elif file_type == "video":
+            text = f"video {file_dict['file_size']}\n{file_id}"
+        elif file_type == "voice":
+            text = f"voice {file_dict['file_size']}\n{file_id}"
+        elif file_type == "document":
+            text = (
+                f"document {file_dict['file_size']} "
+                f"\n{file_dict['file_name']}\n{file_id}"
+            )
+        else:
+            text = f"unknown\n{file_id}"
+        update.message.reply_text(text)
+
+
 def update(request: dict[str, Any]) -> None:
     update = Update.de_json(data=request, bot=bot)
     assert update, "update should be present"
@@ -187,9 +245,10 @@ def update(request: dict[str, Any]) -> None:
             print(f'cmd: {cmd}, args: {args}')
             commands: dict[str, Callable] = {
                 "/ping": ping,
-                "/file": file,
                 "/html": html,
                 "/markdown": markdown,
+                "file": file,
+                "ls": ls,
             }
             action = commands.get(cmd)
             if not action:
@@ -218,24 +277,44 @@ def update(request: dict[str, Any]) -> None:
                 action(update, args)
         audio = message.audio
         if audio:
-            print(audio, json.dumps(audio.to_dict(), indent=2))
+            print(audio)
+            audio_dict = audio.to_dict()
+            audio_dict["type"] = "audio"
+            audio_dict_str = json.dumps(audio_dict, indent=2)
             message.reply_text("audio " + audio.file_id)
+            r.set("files:" + audio.file_id, audio_dict_str)
         video = message.video
         if video:
-            print(video, json.dumps(video.to_dict(), indent=2))
+            print(video)
+            video_dict = video.to_dict()
+            video_dict["type"] = "video"
+            video_dict_str = json.dumps(video_dict, indent=2)
             message.reply_text("video " + video.file_id)
+            r.set("files:" + video.file_id, video_dict_str)
         voice = message.voice
         if voice:
-            print(voice, json.dumps(voice.to_dict(), indent=2))
+            print(voice)
+            voice_dict = voice.to_dict()
+            voice_dict["type"] = "voice"
+            voice_dict_str = json.dumps(voice_dict, indent=2)
             message.reply_text("voice " + voice.file_id)
+            r.set("files:" + voice.file_id, voice_dict_str)
         document = message.document
         if document:
-            print(document, json.dumps(document.to_dict(), indent=2))
+            print(document)
+            document_dict = document.to_dict()
+            document_dict["type"] = "document"
+            document_dict_str = json.dumps(document_dict, indent=2)
             message.reply_text("document " + document.file_id)
+            r.set("files:" + document.file_id, document_dict_str)
         photo = message.photo
         if photo:
-            print(photo, json.dumps(photo[-1].to_dict(), indent=2))
+            print(photo)
+            photo_dict = photo[-1].to_dict()
+            photo_dict["type"] = "photo"
+            photo_dict_str = json.dumps(photo_dict, indent=2)
             message.reply_text("photo " + photo[-1].file_id)
+            r.set("files:" + photo[-1].file_id, photo_dict_str)
 
     callback_query = update.callback_query
     if callback_query:

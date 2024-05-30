@@ -14,7 +14,10 @@ run-sync:
 
 deps:
 	-rm -rf package
-	pip install --target ./package python-telegram-bot==13.15 ping3==4.0.8
+	pip install --target ./package \
+	python-telegram-bot==13.15 \
+	ping3==4.0.8 \
+	redis==5.0.4
 
 health:
 	curl $(HOSTING)/health
@@ -39,7 +42,7 @@ aws-configure:
 	aws lambda update-function-configuration \
 	--profile $(AWS_PROFILE) \
 	--function-name bot \
-	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,UPDATED_AT=`date +'%Y-%m-%d %H:%M:%S'`}" \
+	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW)`}" \
 	--no-cli-pager
 
 gcp-health:
@@ -59,7 +62,7 @@ gcp-deploy: gcp-pack
 	--runtime=python311 \
 	--source=./cloud_function \
 	--entry-point=function_handler \
-	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),UPDATED_AT=$(NOW),WHERE=gcp \
+	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW),WHERE=gcp \
 	--trigger-http
 
 az-health:
@@ -92,4 +95,7 @@ az-configure:
 	ADMIN=$(ADMIN) \
 	WH=$(AZ_HOSTING) \
 	WHERE=azure \
-	UPDATED_AT=$(NOW) \
+	REDIS_HOST=$(REDIS_HOST) \
+	REDIS_PORT=$(REDIS_PORT) \
+	REDIS_PASSWORD=$(REDIS_PASSWORD) \
+	UPDATED_AT=$(NOW)
