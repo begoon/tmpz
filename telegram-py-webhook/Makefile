@@ -1,7 +1,5 @@
 include .env
 export
-include .env-hosting
-export
 
 all:
 
@@ -21,6 +19,9 @@ deps:
 health:
 	curl $(HOSTING)/health
 
+aws-health:
+	curl $(AWS_HOSTING)/health
+
 aws-pack: deps
 	rm -f bot_package.zip
 	cp ./lambda_function.py ./package
@@ -38,8 +39,11 @@ aws-configure:
 	aws lambda update-function-configuration \
 	--profile $(AWS_PROFILE) \
 	--function-name bot \
-	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),WHERE=aws,UPDATED_AT=`date +'%Y-%m-%d %H:%M:%S'`}" \
+	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,UPDATED_AT=`date +'%Y-%m-%d %H:%M:%S'`}" \
 	--no-cli-pager
+
+gcp-health:
+	curl $(GCP_HOSTING)/health
 
 gcp-pack:
 	-rm -rf cloud_function
@@ -55,8 +59,11 @@ gcp-deploy: gcp-pack
 	--runtime=python311 \
 	--source=./cloud_function \
 	--entry-point=function_handler \
-	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(HOSTING),UPDATED_AT=$(NOW),WHERE=gcp \
+	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),UPDATED_AT=$(NOW),WHERE=gcp \
 	--trigger-http
+
+az-health:
+	curl $(AZ_HOSTING)/health
 
 az-pack: deps
 	rm -f bot_package.zip
@@ -83,6 +90,6 @@ az-configure:
 	--settings \
 	BOT_TOKEN=$(BOT_TOKEN) \
 	ADMIN=$(ADMIN) \
-	WH=$(HOSTING) \
+	WH=$(AZ_HOSTING) \
 	WHERE=azure \
 	UPDATED_AT=$(NOW) \
