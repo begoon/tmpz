@@ -14,7 +14,7 @@ run-sync:
 
 deps:
 	-rm -rf package
-	pip install --target ./package python-telegram-bot==13.15 ping3=4.0.8
+	pip install --target ./package python-telegram-bot==13.15 ping3==4.0.8
 
 health:
 	curl $(HOSTING)/health
