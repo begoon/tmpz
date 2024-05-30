@@ -23,3 +23,24 @@ export async function installWebhook(url: string) {
         console.error(red("health check failed"));
     }
 }
+
+export async function deleteWebhook() {
+    const BOT_TOKEN = Deno.env.get("BOT_TOKEN");
+    if (!BOT_TOKEN) throw new Error("BOT_TOKEN is not set");
+
+    console.log({ bot: BOT_TOKEN });
+    const telegram = new Telegram(BOT_TOKEN);
+    if (!(await telegram.deleteWebhook()))
+        throw new Error("deleteWebhook failed");
+
+    console.info("webhook deleted");
+}
+
+export async function webhookInfo() {
+    const BOT_TOKEN = Deno.env.get("BOT_TOKEN");
+    if (!BOT_TOKEN) throw new Error("BOT_TOKEN is not set");
+
+    console.log({ bot: BOT_TOKEN });
+    const telegram = new Telegram(BOT_TOKEN);
+    console.log(await telegram.getWebhookInfo());
+}

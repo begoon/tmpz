@@ -83,6 +83,10 @@ export class Telegram {
         return await this._command("setWebhook", { url });
     }
 
+    async deleteWebhook() {
+        return await this._command("deleteWebhook");
+    }
+
     async getWebhookInfo() {
         return await this._command("getWebhookInfo");
     }
