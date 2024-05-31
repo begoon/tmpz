@@ -40,7 +40,7 @@ r = redis.Redis(
 )
 
 
-def starter():
+def set_webhook() -> str | None:
     whi = bot.get_webhook_info()
     logger.info("active webhook %s", whi.url)
 
@@ -58,13 +58,19 @@ def starter():
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
             )
-        me = bot.get_me()
-        logger.info("me %s", me.username)
+    return wh
+
+
+def starter():
+    wh = set_webhook()
+
+    me = bot.get_me()
+    logger.info("me %s", me.username)
 
     logger.info("wheel %s", ADMIN)
     bot.send_message(
         ADMIN,
-        "bot <b>started</b> - [<code>" + __file__.split("/")[-1] + "</code>]",
+        "bot <b>started</b>\n[<code>" + __file__.split("/")[-1] + "</code>]",
         parse_mode=ParseMode.HTML,
     )
     if wh:
@@ -83,11 +89,8 @@ def starter():
             ]
         ),
     )
-    bot.set_my_commands(
-        [
-            BotCommand("/ping", "ping/pong"),
-        ]
-    )
+
+    set_commands()
 
 
 def finisher():
@@ -110,6 +113,8 @@ def health() -> dict[str, Any]:
 
 
 def ping(update: Update, args: list[str]) -> None:
+    """ping/pong"""
+
     if update.message:
         update.message.reply_html(text="pong")
         if not args:
@@ -130,6 +135,8 @@ def ping(update: Update, args: list[str]) -> None:
 
 
 def file(update: Update, args: list[str]) -> None:
+    """file info"""
+
     if not args:
         update.message.reply_text("usage: /file <file_id>")
     file_id = args[0]
@@ -160,6 +167,7 @@ HTML = (ASSET / "tg.html").read_text().replace("{ADMIN}", ADMIN)
 
 
 def html(update: Update, args: list[str]) -> None:
+    """html message"""
     bot.send_message(ADMIN, HTML, parse_mode=ParseMode.HTML)
 
 
@@ -167,10 +175,12 @@ MARKDOWN = (ASSET / "tg.md").read_text().replace("{ADMIN}", ADMIN)
 
 
 def markdown(update: Update, args: list[str]) -> None:
+    """markdown message"""
     bot.send_message(ADMIN, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
 
 
 def ls(update: Update, args: list[str]) -> None:
+    """list files"""
     keys = cast(list[bytes], r.keys("files:*"))
     if not keys:
         update.message.reply_text("no files")
@@ -201,6 +211,23 @@ def ls(update: Update, args: list[str]) -> None:
         update.message.reply_text(text)
 
 
+COMMANDS: dict[str, Callable] = {
+    "/ping": ping,
+    "/html": html,
+    "/markdown": markdown,
+    "/file": file,
+    "/ls": ls,
+}
+
+
+def set_commands() -> None:
+    commands = [
+        BotCommand(cmd, handler.__doc__ or "")
+        for cmd, handler in COMMANDS.items()
+    ]
+    bot.set_my_commands(commands)
+
+
 def update(request: dict[str, Any]) -> None:
     update = Update.de_json(data=request, bot=bot)
     assert update, "update should be present"
@@ -210,14 +237,7 @@ def update(request: dict[str, Any]) -> None:
         if text:
             cmd, *args = text.split()
             print(f'cmd: {cmd}, args: {args}')
-            commands: dict[str, Callable] = {
-                "/ping": ping,
-                "/html": html,
-                "/markdown": markdown,
-                "file": file,
-                "ls": ls,
-            }
-            action = commands.get(cmd)
+            action = COMMANDS.get(cmd)
             if not action:
                 message.reply_text(text + " - ha?")
 
