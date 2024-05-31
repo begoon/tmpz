@@ -5,7 +5,7 @@ import { installWebhook } from "./wh.ts";
 
 const host = (await connect({ protocol: "http", port: 8000 }).next()).value;
 
-const url = `https://${host}/bot`;
+const url = `https://${host}`;
 console.log({ tunnel: url });
 
 await installWebhook(url);

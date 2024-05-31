@@ -1,6 +1,9 @@
 include .env
 export
 
+include .env-hosting
+export
+
 all:
 
 NOW=$(shell date +'%Y-%m-%d@%H:%M:%S')

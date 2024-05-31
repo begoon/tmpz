@@ -16,5 +16,5 @@ if (Deno.args.includes("--info")) {
 const HOSTING = Deno.env.get("HOSTING");
 if (!HOSTING) throw new Error("HOSTING is not set");
 
-const url = HOSTING + "/bot";
+const url = HOSTING;
 await installWebhook(url);
