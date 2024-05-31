@@ -92,7 +92,6 @@ def starter():
             ]
         ),
     )
-
     set_commands()
 
 
@@ -214,12 +213,25 @@ def ls(update: Update, args: list[str]) -> None:
         update.message.reply_text(text)
 
 
+def me(update: Update, args: list[str]) -> None:
+    """me"""
+    info = {
+        "WHERE": os.getenv("WHERE", "?"),
+        "WH": os.getenv("WH", "?"),
+        "REDIS_HOST": os.getenv("REDIS_HOST", "?"),
+        "UPDATED_AT": os.getenv("UPDATED_AT", "?"),
+    }
+    if update.message:
+        update.message.reply_text(json.dumps(info, indent=2))
+
+
 COMMANDS: dict[str, Callable] = {
     "/ping": ping,
     "/html": html,
     "/markdown": markdown,
     "/file": file,
     "/ls": ls,
+    "/me": me,
 }
 
 

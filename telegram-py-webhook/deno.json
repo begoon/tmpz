@@ -3,8 +3,9 @@
     "unstable": ["kv", "cron"],
     "tasks": {
         "tunnel": "deno run -A --watch=tunnel.ts,ngrok/ ./tunnel.ts",
-        "webhook": "deno run -A ./webhook.ts",
-        "webhook:set": "deno run -A ./webhook.ts",
+        "webhook:aws": "deno run -A ./webhook.ts aws",
+        "webhook:gcp": "deno run -A ./webhook.ts gcp",
+        "webhook:az": "deno run -A ./webhook.ts az",
         "webhook:info": "deno run -A ./webhook.ts --info",
         "webhook:delete": "deno run -A ./webhook.ts --delete"
     },
