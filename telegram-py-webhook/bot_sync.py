@@ -41,18 +41,17 @@ r = redis.Redis(
 
 
 def starter():
-    wh_default = None
-    wh_file = pathlib.Path("wh.json")
-    if wh_file.exists():
-        with wh_file.open() as f:
-            wh_default = json.load(f)["url"]  # noqa: F821
-            logger.info("webhook/wh.json %s", wh_default)
+    whi = bot.get_webhook_info()
+    logger.info("active webhook %s", whi.url)
 
-    if wh := os.getenv("WH", wh_default):
+    tunnel = None
+    if (tunnel_file := pathlib.Path("wh.json")).exists():
+        tunnel = json.loads(pathlib.Path(tunnel_file).read_text())["url"]
+        logger.info("webhook/overriden %s", tunnel)
+
+    if wh := os.getenv("WH", tunnel):
         if not wh.endswith("/bot"):
             wh += "/bot"
-        whi = bot.get_webhook_info()
-        logger.info("webhook %s", whi.url)
         if whi.url != wh:
             bot.set_webhook(
                 url=wh,
@@ -148,55 +147,16 @@ def file(update: Update, args: list[str]) -> None:
         bot.send_message(ADMIN, f"unknown file type [{file_type}]")
 
 
-HTML = f"""<b>bold</b>, <strong>bold</strong>
-<i>italic</i>, <em>italic</em>
-<u>underline</u>, <ins>underline</ins>
-<s>strikethrough</s>, <strike>strikethrough</strike>, <del>strikethrough</del>
-<span class="tg-spoiler">spoiler</span>, <tg-spoiler>spoiler</tg-spoiler>
-<b>bold <i>italic bold <s>italic bold strikethrough <span class="tg-spoiler">italic bold strikethrough spoiler</span></s> <u>underline italic bold</u></i> bold</b>
-<a href="http://www.example.com/">inline URL</a>
-<a href="tg://user?id={ADMIN}">inline mention of a user</a>
-<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>
-<code>inline fixed-width code</code>
-<pre>pre-formatted fixed-width code block</pre>
-<pre><code class="language-python">pre-formatted fixed-width code block written in the Python programming language</code></pre>
-<blockquote>Block quotation started\nBlock quotation continued\nThe last line of the block quotation</blockquote>
-<blockquote expandable>Expandable block quotation started\nExpandable block quotation continued\nExpandable block quotation continued\nHidden by default part of the block quotation started\nExpandable block quotation continued\nThe last line of the block quotation</blockquote>
-"""
+ASSET = pathlib.Path(__file__).parent / "asset"
+
+HTML = (ASSET / "tg.html").read_text().replace("{ADMIN}", ADMIN)
 
 
 def html(update: Update, args: list[str]) -> None:
     bot.send_message(ADMIN, HTML, parse_mode=ParseMode.HTML)
 
 
-MARKDOWN = f"""*bold \*text*
-_italic \*text_
-__underline__
-~strikethrough~
-||spoiler||
-*bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*
-[inline URL](http://www.example.com/)
-[inline mention of a user](tg://user?id=123456789)
-![👍](tg://emoji?id=5368324170671202286)
-`inline fixed-width code`
-```
-pre-formatted fixed-width code block
-```
-```python
-pre-formatted fixed-width code block written in the Python programming language
-```
->Block quotation started
->Block quotation continued
->Block quotation continued
->Block quotation continued
->The last line of the block quotation
-**>The expandable block quotation started right after the previous block quotation
->It is separated from the previous block quotation by an empty bold entity
->Expandable block quotation continued
->Hidden by default part of the expandable block quotation started
->Expandable block quotation continued
->The last line of the expandable block quotation with the expandability mark||
-"""
+MARKDOWN = (ASSET / "tg.md").read_text().replace("{ADMIN}", ADMIN)
 
 
 def markdown(update: Update, args: list[str]) -> None:
@@ -204,13 +164,13 @@ def markdown(update: Update, args: list[str]) -> None:
 
 
 def ls(update: Update, args: list[str]) -> None:
-    keys = r.keys("files:*")
+    keys = cast(list[bytes], r.keys("files:*"))
     if not keys:
         update.message.reply_text("no files")
         return
     for key in keys:
         file_id = key.decode("utf-8").split(":")[1]
-        file_dict = json.loads(r.get(key))
+        file_dict = json.loads(cast(bytes, r.get(key)))
         file_type = file_dict["type"]
         if file_type == "photo":
             text = (

@@ -2,4 +2,10 @@
     "python.analysis.extraPaths": [
         "./package"
     ],
+    "files.associations": {
+        "tg.html": "raw",
+    },
+    "[raw]": {
+        "editor.formatOnSave": false
+    }
 }

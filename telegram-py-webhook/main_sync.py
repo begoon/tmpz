@@ -1,6 +1,4 @@
-import json
 import logging
-import pathlib
 from typing import Any
 
 from dotenv import load_dotenv
@@ -10,22 +8,9 @@ load_dotenv()
 
 import bot_sync as bot  # noqa: E402
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-logging.getLogger("httpx").setLevel(logging.ERROR)
-
 logger = logging.getLogger(__name__)
 
-wh: str | None = None
-
-wh_file = pathlib.Path("wh.json")
-if wh_file.exists():
-    with wh_file.open() as f:
-        wh = json.load(f)["url"]
-        logger.info("webhook %s", wh)
-
+bot.starter()
 
 listener = Flask(__name__)
 

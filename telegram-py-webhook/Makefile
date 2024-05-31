@@ -5,12 +5,20 @@ all:
 
 NOW=$(shell date +'%Y-%m-%d@%H:%M:%S')
 
+TUNNEL=$(shell curl -s http://localhost:4040/api/tunnels | jq '.tunnels[0].public_url')
+
+tunnel:
+	@echo $(TUNNEL)
+
 run-async:
 	uvicorn main_async:listener --host 0.0.0.0 --port 8000 --reload
 
 run-sync:
 	PYTHONPATH=./package \
-	flask -A main_sync:listener run -p 8000 -h 0.0.0.0 --reload
+	flask -A main_sync:listener run \
+	-p 8000 -h 0.0.0.0 \
+	--reload \
+	--extra-files wh.json
 
 deps:
 	-rm -rf package
@@ -29,6 +37,7 @@ aws-pack: deps
 	rm -f bot_package.zip
 	cp ./lambda_function.py ./package
 	cp ./bot_sync.py ./package
+	cp -R ./asset ./package
 	(cd package && zip -r ../bot_package.zip .) 
 
 aws-deploy: aws-pack
@@ -53,6 +62,7 @@ gcp-pack:
 	mkdir cloud_function
 	cp cloud_function.py cloud_function/main.py
 	cp bot_sync.py requirements.txt cloud_function/
+	cp -R ./asset ./package
 
 gcp-deploy: gcp-pack
 	gcloud functions deploy bot \
@@ -73,6 +83,7 @@ az-pack: deps
 	cp ./azure_function.py ./package/function_app.py
 	cp ./host.json ./package
 	cp ./bot_sync.py ./package
+	cp -R ./asset ./package
 	(cd package && zip -r ../bot_package.zip .) 
 
 az-deploy: az-pack
