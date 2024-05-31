@@ -54,7 +54,17 @@ aws-configure:
 	aws lambda update-function-configuration \
 	--profile $(AWS_PROFILE) \
 	--function-name bot \
-	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW)}" \
+	--environment "Variables={ \
+		BOT_TOKEN=$(BOT_TOKEN), \
+		TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN), \
+		ADMIN=$(ADMIN), \
+		WH=$(AWS_HOSTING), \
+		WHERE=aws, \
+		REDIS_HOST=$(REDIS_HOST), \
+		REDIS_PORT=$(REDIS_PORT), \
+		REDIS_PASSWORD=$(REDIS_PASSWORD), \
+		UPDATED_AT=$(NOW) \
+	}" \
 	--no-cli-pager
 
 gcp-health:
@@ -75,7 +85,15 @@ gcp-deploy: gcp-pack
 	--runtime=python311 \
 	--source=./cloud_function \
 	--entry-point=function_handler \
-	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW),WHERE=gcp \
+	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN) \
+	--set-env-vars=TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN) \
+	--set-env-vars=ADMIN=$(ADMIN) \
+	--set-env-vars=WH=$(GCP_HOSTING) \
+	--set-env-vars=WHERE=gcp \
+	--set-env-vars=REDIS_HOST=$(REDIS_HOST) \
+	--set-env-vars=REDIS_PORT=$(REDIS_PORT) \
+	--set-env-vars=REDIS_PASSWORD=$(REDIS_PASSWORD) \
+	--set-env-vars=UPDATED_AT=$(NOW) \
 	--trigger-http
 
 az-health:
