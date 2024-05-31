@@ -51,7 +51,7 @@ aws-configure:
 	aws lambda update-function-configuration \
 	--profile $(AWS_PROFILE) \
 	--function-name bot \
-	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW)`}" \
+	--environment "Variables={BOT_TOKEN=$(BOT_TOKEN),TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN),ADMIN=$(ADMIN),WH=$(AWS_HOSTING),WHERE=aws,REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW)}" \
 	--no-cli-pager
 
 gcp-health:
@@ -62,7 +62,7 @@ gcp-pack:
 	mkdir cloud_function
 	cp cloud_function.py cloud_function/main.py
 	cp bot_sync.py requirements.txt cloud_function/
-	cp -R ./asset ./package
+	cp -R ./asset cloud_function/
 
 gcp-deploy: gcp-pack
 	gcloud functions deploy bot \
@@ -72,7 +72,7 @@ gcp-deploy: gcp-pack
 	--runtime=python311 \
 	--source=./cloud_function \
 	--entry-point=function_handler \
-	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW),WHERE=gcp \
+	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN),TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN),ADMIN=$(ADMIN),WH=$(GCP_HOSTING),REDIS_HOST=$(REDIS_HOST),REDIS_PORT=$(REDIS_PORT),REDIS_PASSWORD=$(REDIS_PASSWORD),UPDATED_AT=$(NOW),WHERE=gcp \
 	--trigger-http
 
 az-health:
@@ -103,6 +103,7 @@ az-configure:
 	--resource-group Services \
 	--settings \
 	BOT_TOKEN=$(BOT_TOKEN) \
+	TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN) \
 	ADMIN=$(ADMIN) \
 	WH=$(AZ_HOSTING) \
 	WHERE=azure \

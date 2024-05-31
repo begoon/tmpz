@@ -1,3 +1,5 @@
+import { env } from "node:process";
+
 import type {
     BotCommand,
     File,
@@ -82,6 +84,7 @@ export class Telegram {
     async setWebhook(url: string) {
         return await this._command("setWebhook", {
             url,
+            secret_token: env.TELEGRAM_SECRET_TOKEN,
             drop_pending_updates: true,
         });
     }

@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 logger.info("bot token: %s", BOT_TOKEN)
 
+SECRET_TOKEN = os.environ["TELEGRAM_SECRET_TOKEN"]
+
 bot = Bot(token=BOT_TOKEN)
 
 ADMIN = os.environ["ADMIN"]
@@ -47,7 +49,7 @@ def set_webhook() -> str | None:
     tunnel = None
     if (tunnel_file := pathlib.Path("wh.json")).exists():
         tunnel = json.loads(pathlib.Path(tunnel_file).read_text())["url"]
-        logger.info("webhook/overriden %s", tunnel)
+        logger.info("webhook/override %s", tunnel)
 
     if wh := os.getenv("WH", tunnel):
         if not wh.endswith("/bot"):
@@ -57,6 +59,7 @@ def set_webhook() -> str | None:
                 url=wh,
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
+                secret_token=SECRET_TOKEN,
             )
     return wh
 
@@ -113,7 +116,7 @@ def health() -> dict[str, Any]:
 
 
 def ping(update: Update, args: list[str]) -> None:
-    """ping/pong"""
+    """ping-pong"""
 
     if update.message:
         update.message.reply_html(text="pong")
@@ -225,12 +228,19 @@ def set_commands() -> None:
         BotCommand(cmd, handler.__doc__ or "")
         for cmd, handler in COMMANDS.items()
     ]
+    [print(cmd.command, cmd.description) for cmd in commands]
     bot.set_my_commands(commands)
 
 
 def update(request: dict[str, Any]) -> None:
     update = Update.de_json(data=request, bot=bot)
     assert update, "update should be present"
+
+    effective_user = update.effective_user
+    if effective_user and effective_user.id != int(ADMIN):
+        bot.send_message(ADMIN, "are you talking to me?")
+        return
+
     message = update.message
     if message:
         text = message.text

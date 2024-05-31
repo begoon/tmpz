@@ -5,7 +5,7 @@ const {
     bold: { red },
 } = chalk;
 
-export async function installWebhook(url: string) {
+export async function installWebhook(url: string, secret_token?: string) {
     const BOT_TOKEN = Deno.env.get("BOT_TOKEN");
     if (!BOT_TOKEN) throw new Error("BOT_TOKEN is not set");
 

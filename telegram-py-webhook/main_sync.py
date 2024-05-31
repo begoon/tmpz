@@ -17,6 +17,10 @@ listener = Flask(__name__)
 
 @listener.post("/bot")
 def update() -> Response:
+    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if secret_token != bot.SECRET_TOKEN:
+        return Response(status=403)
+
     request_ = request.get_json()
     bot.update(request_)
     return Response()
