@@ -94,14 +94,18 @@ def finisher():
     bot.send_message(ADMIN, "we're done")
 
 
+def reduct(text: str, sz: int = 4) -> str:
+    return text[:sz] + "..." + text[-sz:]
+
+
 def health() -> dict[str, Any]:
     return {
         "status": "alive",
         "updated_at": os.getenv("UPDATED_AT", "?"),
         "where": os.getenv("WHERE", "?"),
-        "bot_token": BOT_TOKEN[:4] + "..." + BOT_TOKEN[-4:],
-        "wh": os.getenv("WH", "?").removeprefix("https://")[-16:],
-        "redis": os.getenv("REDIS_HOST", "?")[16:],
+        "bot_token": reduct(os.getenv("BOT_TOKEN", "?")),
+        "wh": reduct(os.getenv("WH", "?").removeprefix("https://"), 8),
+        "redis": reduct(os.getenv("REDIS_HOST", "?"), 8),
     }
 
 
