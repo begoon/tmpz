@@ -99,6 +99,9 @@ def health() -> dict[str, Any]:
         "status": "alive",
         "updated_at": os.getenv("UPDATED_AT", "?"),
         "where": os.getenv("WHERE", "?"),
+        "bot_token": BOT_TOKEN[:3] + "..." + BOT_TOKEN[-3:],
+        "wh": os.getenv("WH", "?").removeprefix("https://")[-16:],
+        "redis": os.getenv("REDIS_HOST", "?"),
     }
 
 
