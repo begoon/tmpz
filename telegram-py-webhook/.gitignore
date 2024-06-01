@@ -5,6 +5,6 @@ package
 bot_package.zip
 wh.json
 .terraform/
-private.tfvars
+*.tfvars
 *.tfstate*
 *.terraform*
