@@ -1,9 +1,6 @@
 include .env
 export
 
-include .env-hosting
-export
-
 all:
 
 NOW=$(shell date +'%Y-%m-%d@%H:%M:%S')
@@ -13,12 +10,9 @@ TUNNEL=$(shell curl -s http://localhost:4040/api/tunnels | jq '.tunnels[0].publi
 tunnel:
 	@echo $(TUNNEL)
 
-run-async:
-	uvicorn main_async:listener --host 0.0.0.0 --port 8000 --reload
-
-run-sync:
+run:
 	PYTHONPATH=./package \
-	flask -A main_sync:listener run \
+	flask -A main:listener run \
 	-p 8000 -h 0.0.0.0 \
 	--reload \
 	--extra-files wh.json
@@ -33,13 +27,15 @@ deps:
 health:
 	curl $(HOSTING)/health
 
+#
+
 aws-health:
 	curl $(AWS_HOSTING)/health
 
 aws-pack: deps
 	rm -f bot_package.zip
-	cp ./lambda_function.py ./package
-	cp ./bot_sync.py ./package
+	cp ./function_aws.py ./package
+	cp ./bot.py ./package
 	cp -R ./asset ./package
 	(cd package && zip -r ../bot_package.zip .) 
 
@@ -70,12 +66,13 @@ aws-configure:
 gcp-health:
 	curl $(GCP_HOSTING)/health
 
-gcp-pack:
-	-rm -rf cloud_function
-	mkdir cloud_function
-	cp cloud_function.py cloud_function/main.py
-	cp bot_sync.py requirements.txt cloud_function/
-	cp -R ./asset cloud_function/
+gcp-pack: deps
+	rm -f bot_package.zip
+	cp ./function_gcp.py ./package/main.py
+	cp ./bot.py ./package
+	cp -R ./asset ./package
+	(cd package && zip -r ../bot_package.zip .) 
+	gsutil cp bot_package.zip gs://bot-function/
 
 gcp-deploy: gcp-pack
 	gcloud functions deploy bot \
@@ -83,7 +80,7 @@ gcp-deploy: gcp-pack
 	--gen2 \
 	--region=europe-west2 \
 	--runtime=python311 \
-	--source=./cloud_function \
+	--source=gs://bot-function/bot_package.zip \
 	--entry-point=function_handler \
 	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN) \
 	--set-env-vars=TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN) \
@@ -101,9 +98,9 @@ az-health:
 
 az-pack: deps
 	rm -f bot_package.zip
-	cp ./azure_function.py ./package/function_app.py
+	cp ./function_azure.py ./package/function_app.py
 	cp ./host.json ./package
-	cp ./bot_sync.py ./package
+	cp ./bot.py ./package
 	cp -R ./asset ./package
 	(cd package && zip -r ../bot_package.zip .) 
 

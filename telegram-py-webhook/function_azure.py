@@ -2,7 +2,7 @@ import json
 
 import azure.functions as func
 
-import bot_sync as bot
+import bot as bot
 
 bot.starter()
 

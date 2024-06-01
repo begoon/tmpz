@@ -1,7 +1,7 @@
 import flask
 import functions_framework
 
-import bot_sync as bot
+import bot as bot
 
 bot.starter()
 

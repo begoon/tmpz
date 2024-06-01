@@ -4,4 +4,7 @@ __pycache__
 package
 bot_package.zip
 wh.json
-cloud_function/
+.terraform/
+private.tfvars
+*.tfstate*
+*.terraform*

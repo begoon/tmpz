@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-logger.info("bot token: %s", BOT_TOKEN)
+logger.info("bot token %s", BOT_TOKEN)
 
 SECRET_TOKEN = os.environ["TELEGRAM_SECRET_TOKEN"]
 
@@ -328,6 +328,6 @@ def update(request: dict[str, Any]) -> None:
     callback_query = update.callback_query
     if callback_query:
         callback_query.answer()
-        data = callback_query.data
-        if data == "ping":
+        query_data = callback_query.data
+        if query_data == "ping":
             ping(update, [])

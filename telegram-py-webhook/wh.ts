@@ -17,9 +17,10 @@ export async function installWebhook(base: string) {
     if (!(await telegram.setWebhook(wh))) throw new Error("setWebhook failed");
 
     try {
-        console.log({ base });
-        const health = await (await fetch(base + "/health")).json();
-        console.log(health);
+        const health = base + "/health";
+        console.log({ health });
+        const response = await (await fetch(health)).json();
+        console.log({ health: response });
     } catch (_e) {
         console.error(red("health check failed"));
     }

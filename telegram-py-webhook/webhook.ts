@@ -20,9 +20,11 @@ const envs: Record<string, string> = {
 };
 
 const env = Deno.args[0];
+if (!env) {
+    throw new Error("missing hosting: " + Object.keys(envs).join(" | "));
+}
+
 const HOSTING = Deno.env.get(envs[env]);
+if (!HOSTING) throw new Error(envs[env] + " is not set");
 
-if (!HOSTING) throw new Error("HOSTING is not set");
-
-const url = HOSTING;
-await installWebhook(url);
+await installWebhook(HOSTING);

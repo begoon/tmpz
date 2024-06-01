@@ -1,6 +1,6 @@
 import json
 
-import bot_sync as bot
+import bot as bot
 
 bot.starter()
 
