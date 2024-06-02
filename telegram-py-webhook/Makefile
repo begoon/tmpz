@@ -17,6 +17,12 @@ run:
 	--reload \
 	--extra-files wh.json
 
+run_:
+	PYTHONPATH=./package \
+	flask -A main_:listener run \
+	-p 8000 -h 0.0.0.0 \
+	--reload
+
 deps:
 	-rm -rf package
 	pip install --target ./package \
