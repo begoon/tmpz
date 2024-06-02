@@ -24,7 +24,11 @@ def starter():
         parse_mode="HTML",
         reply_markup={
             "inline_keyboard": [
-                [{"text": "callback", "callback_data": "ping"}]
+                [{"text": "callback", "callback_data": "calling back?"}],
+                [
+                    {"text": "/me", "callback_data": "/me"},
+                    {"text": "/you", "callback_data": "/you"},
+                ],
             ],
         },
     )
@@ -58,7 +62,11 @@ def me(user_id: int, update: dict[str, Any]) -> None:
 
 
 def you(user_id: int, update: dict[str, Any]) -> None:
-    bot.send_message(user_id, json.dumps(update, indent=2))
+    bot.send_message(
+        user_id,
+        "<code>" + json.dumps(update, indent=2) + "</code>",
+        parse_mode="HTML",
+    )
 
 
 COMMANDS: dict[str, Callable] = {
@@ -124,3 +132,11 @@ def update_(update: dict[str, Any]) -> None:
         query_data = callback_query["data"]
         print(f'callback {query_data=}')
         bot.send_message(user_id, f'callback {query_data=}')
+
+        cmd = query_data.split(maxsplit=1)[0]
+        print(f'{cmd=} {query_data=}')
+        action = COMMANDS.get(cmd)
+        if not action:
+            bot.send_message(user_id, f'{query_data["data"]} - query/ha?')
+        else:
+            action(user_id, update)
