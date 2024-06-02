@@ -36,7 +36,9 @@ class Telegram:
         if parse_mode:
             data["parse_mode"] = parse_mode
 
-        return self._command("sendMessage", data)
+        response = self._command("sendMessage", data)
+        print(response["message_id"])
+        return response
 
     def edit_message_text(
         self,
@@ -109,10 +111,8 @@ class Telegram:
         self._command("setMyCommands", {"commands": commands})
 
     def _command(self, cmd: str, data: dict | None = None) -> dict[str, Any]:
-        print(f'{cmd=}')
         url = f"{API}/bot{self.token}/{cmd}"
         if data:
-            print('data', data)
             response = requests.post(
                 url,
                 headers={"Content-Type": "application/json"},

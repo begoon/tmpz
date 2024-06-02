@@ -14,3 +14,8 @@ listener = Flask(__name__)
 def update() -> Response:
     bot.update_(request.get_json())
     return Response()
+
+
+@listener.get("/health")
+def health() -> Response:
+    return Response('{"status": "alive"}', 200)

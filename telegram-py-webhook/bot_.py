@@ -36,19 +36,37 @@ def echo(user_id: int, update: dict[str, Any]) -> None:
     bot.send_message(user_id, f'asking "{message["text"]}"?')
 
 
+def edit(user_id: int, update: dict[str, Any]) -> None:
+    message = update["message"]
+    _, *args = message["text"].split()
+    if not args:
+        bot.send_message(user_id, "edit what?")
+        return
+    message_id = int(args[0])
+    updated = f'EDITED "{message_id}"' if len(args) == 1 else args[1]
+    bot.edit_message_text(user_id, message_id, updated)
+
+
 def me(user_id: int, update: dict[str, Any]) -> None:
     info = {
         "WHERE": os.getenv("WHERE", "?"),
         "UPDATED_AT": os.getenv("UPDATED_AT", "?"),
     }
     bot.send_message(user_id, json.dumps(info, indent=2))
+    me_ = bot.get_me()
+    bot.send_message(user_id, json.dumps(me_, indent=2))
 
 
 def you(user_id: int, update: dict[str, Any]) -> None:
     bot.send_message(user_id, json.dumps(update, indent=2))
 
 
-COMMANDS: dict[str, Callable] = {"/echo": echo, "/me": me, "/you": you}
+COMMANDS: dict[str, Callable] = {
+    "/echo": echo,
+    "/me": me,
+    "/you": you,
+    "/edit": edit,
+}
 
 
 def set_commands() -> None:
