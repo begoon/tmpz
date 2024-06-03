@@ -6,7 +6,7 @@ from flask import Flask, Response, request
 
 load_dotenv()
 
-import bot as bot  # noqa: E402
+import bot  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

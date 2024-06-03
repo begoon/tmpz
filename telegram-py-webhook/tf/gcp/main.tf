@@ -1,3 +1,34 @@
+variable "function_name" {
+  default = "bot"
+}
+
+variable "function_entry_point" {
+  default = "function_handler"
+}
+
+variable "function_zip" {
+  default = "bot_package.zip"
+}
+
+variable "is_public" {
+  default = true
+}
+
+variable "project" {
+  default = "freemynd-karta"
+}
+
+variable "region" {
+  default = "europe-west2"
+}
+
+variable "BOT_TOKEN" {}
+variable "TELEGRAM_SECRET_TOKEN" {}
+variable "WHEEL" {}
+variable "REDIS_HOST" {}
+variable "REDIS_PORT" {}
+variable "REDIS_PASSWORD" {}
+
 provider "google" {
   project = var.project
   region  = var.region
@@ -9,7 +40,8 @@ resource "google_storage_bucket" "bucket" {
 }
 
 resource "google_storage_bucket_object" "zip" {
-  name   = var.function_zip
+  name = var.function_zip
+
   bucket = google_storage_bucket.bucket.name
   source = "../../${var.function_zip}"
 }
@@ -39,8 +71,7 @@ resource "google_cloudfunctions2_function" "function" {
     environment_variables = {
       BOT_TOKEN             = var.BOT_TOKEN
       TELEGRAM_SECRET_TOKEN = var.TELEGRAM_SECRET_TOKEN
-      ADMIN                 = var.ADMIN
-      WH                    = var.WH
+      WHEEL                 = var.WHEEL
       WHERE                 = "gcp"
       REDIS_HOST            = var.REDIS_HOST
       REDIS_PORT            = var.REDIS_PORT

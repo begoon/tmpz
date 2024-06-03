@@ -1,3 +1,22 @@
+variable "functionapp_name" {
+  default = "bot-function"
+}
+
+variable "function_zip" {
+  default = "bot_package.zip"
+}
+
+variable "region" {
+  default = "UK West"
+}
+
+variable "BOT_TOKEN" {}
+variable "TELEGRAM_SECRET_TOKEN" {}
+variable "WHEEL" {}
+variable "REDIS_HOST" {}
+variable "REDIS_PORT" {}
+variable "REDIS_PASSWORD" {}
+
 provider "azurerm" {
   features {}
 }
@@ -39,8 +58,7 @@ resource "azurerm_linux_function_app" "bot" {
   app_settings = {
     BOT_TOKEN             = var.BOT_TOKEN
     TELEGRAM_SECRET_TOKEN = var.TELEGRAM_SECRET_TOKEN
-    ADMIN                 = var.ADMIN
-    WH                    = var.WH
+    WHEEL                 = var.WHEEL
     WHERE                 = "az"
     REDIS_HOST            = var.REDIS_HOST
     REDIS_PORT            = var.REDIS_PORT

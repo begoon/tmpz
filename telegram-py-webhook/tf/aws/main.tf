@@ -1,3 +1,22 @@
+variable "function_name" {
+  default = "bot"
+}
+
+variable "function_zip" {
+  default = "bot_package.zip"
+}
+
+variable "region" {
+  default = "eu-west-2"
+}
+
+variable "BOT_TOKEN" {}
+variable "TELEGRAM_SECRET_TOKEN" {}
+variable "WHEEL" {}
+variable "REDIS_HOST" {}
+variable "REDIS_PORT" {}
+variable "REDIS_PASSWORD" {}
+
 provider "aws" {
   region = var.region
 }
@@ -44,7 +63,7 @@ resource "aws_lambda_function" "lambda" {
   filename         = "../../${var.function_zip}"
   function_name    = "bot"
   role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.lambda_handler"
+  handler          = "function_aws.lambda_handler"
   source_code_hash = filebase64sha256("../../${var.function_zip}")
 
   publish = true
@@ -53,8 +72,7 @@ resource "aws_lambda_function" "lambda" {
     variables = {
       BOT_TOKEN             = var.BOT_TOKEN
       TELEGRAM_SECRET_TOKEN = var.TELEGRAM_SECRET_TOKEN
-      ADMIN                 = var.ADMIN
-      WH                    = var.WH
+      WHEEL                 = var.WHEEL
       WHERE                 = "aws"
       REDIS_HOST            = var.REDIS_HOST
       REDIS_PORT            = var.REDIS_PORT

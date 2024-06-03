@@ -10,7 +10,7 @@ import telegram
 mime = MimeTypes()
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-ADMIN = os.environ["ADMIN"]
+WHEEL = os.environ["WHEEL"]
 
 bot = telegram.Bot(BOT_TOKEN)
 
@@ -42,7 +42,7 @@ else:
     kind = "document"
     sender = bot.send_document
 
-result = sender(ADMIN, content)
+result = sender(WHEEL, content)
 print(json.dumps(result.to_dict(), indent=2))
 
 if not isinstance(content, str):

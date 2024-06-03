@@ -59,8 +59,7 @@ aws-configure:
 	--environment "Variables={ \
 		BOT_TOKEN=$(BOT_TOKEN), \
 		TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN), \
-		ADMIN=$(ADMIN), \
-		WH=$(AWS_HOSTING), \
+		WHEEL=$(WHEEL), \
 		WHERE=aws, \
 		REDIS_HOST=$(REDIS_HOST), \
 		REDIS_PORT=$(REDIS_PORT), \
@@ -68,6 +67,20 @@ aws-configure:
 		UPDATED_AT=$(NOW) \
 	}" \
 	--no-cli-pager
+
+aws-tf-cmd:
+	cd tf/aws && terraform $(CMD) -var-file=../private.tfvars
+
+aws-tf-plan:
+	make aws-tf-cmd CMD=plan
+
+aws-tf-apply:
+	make aws-tf-cmd CMD=apply
+
+aws-tf-destroy:
+	make aws-tf-cmd CMD=destroy
+
+# GCP
 
 gcp-health:
 	curl $(GCP_HOSTING)/health
@@ -90,14 +103,27 @@ gcp-deploy: gcp-pack
 	--entry-point=function_handler \
 	--set-env-vars=BOT_TOKEN=$(BOT_TOKEN) \
 	--set-env-vars=TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN) \
-	--set-env-vars=ADMIN=$(ADMIN) \
-	--set-env-vars=WH=$(GCP_HOSTING) \
+	--set-env-vars=WHEEL=$(WHEEL) \
 	--set-env-vars=WHERE=gcp \
 	--set-env-vars=REDIS_HOST=$(REDIS_HOST) \
 	--set-env-vars=REDIS_PORT=$(REDIS_PORT) \
 	--set-env-vars=REDIS_PASSWORD=$(REDIS_PASSWORD) \
 	--set-env-vars=UPDATED_AT=$(NOW) \
 	--trigger-http
+
+gcp-tf-cmd:
+	cd tf/gcp && terraform $(CMD) -var-file=../private.tfvars
+
+gcp-tf-plan:
+	make gcp-tf-cmd CMD=plan
+
+gcp-tf-apply:
+	make gcp-tf-cmd CMD=apply
+
+gcp-tf-destroy:
+	make gcp-tf-cmd CMD=destroy
+
+# Azure
 
 az-health:
 	curl $(AZ_HOSTING)/health
@@ -128,10 +154,21 @@ az-configure:
 	--settings \
 	BOT_TOKEN=$(BOT_TOKEN) \
 	TELEGRAM_SECRET_TOKEN=$(TELEGRAM_SECRET_TOKEN) \
-	ADMIN=$(ADMIN) \
-	WH=$(AZ_HOSTING) \
+	WHEEL=$(WHEEL) \
 	WHERE=azure \
 	REDIS_HOST=$(REDIS_HOST) \
 	REDIS_PORT=$(REDIS_PORT) \
 	REDIS_PASSWORD=$(REDIS_PASSWORD) \
 	UPDATED_AT=$(NOW)
+
+az-tf-cmd:
+	cd tf/az && terraform $(CMD) -var-file=../private.tfvars
+
+az-tf-plan:
+	make az-tf-cmd CMD=plan
+
+az-tf-apply:
+	make az-tf-cmd CMD=apply
+
+az-tf-destroy:
+	make az-tf-cmd CMD=destroy

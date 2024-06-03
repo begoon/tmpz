@@ -5,7 +5,7 @@ __underline__
 ||spoiler||
 *bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*
 [inline URL](http://www.example.com/)
-[inline mention of a user](tg://user?id={ADMIN})
+[inline mention of a user](tg://user?id={WHEEL})
 ![👍](tg://emoji?id=5368324170671202286)
 `inline fixed-width code`
 ```

@@ -5,7 +5,7 @@ import pathlib
 import random
 from typing import Any, Callable, cast
 
-import ping3
+import ping3  # type: ignore
 import redis
 from telegram import (
     Bot,
@@ -31,7 +31,7 @@ SECRET_TOKEN = os.environ["TELEGRAM_SECRET_TOKEN"]
 
 bot = Bot(token=BOT_TOKEN)
 
-ADMIN = os.environ["ADMIN"]
+WHEEL = os.environ["WHEEL"]
 
 
 r = redis.Redis(
@@ -65,30 +65,36 @@ def set_webhook() -> str | None:
 
 
 def starter():
-    wh = set_webhook()
+    if False:
+        wh = set_webhook()
+        bot.send_message(WHEEL, f"webhook {wh}")
 
     me = bot.get_me()
     logger.info("me %s", me.username)
 
-    logger.info("wheel %s", ADMIN)
+    logger.info("wheel %s", WHEEL)
+    bot.send_message(WHEEL, "bot <b>started</b>", parse_mode=ParseMode.HTML)
+
     bot.send_message(
-        ADMIN,
-        "bot <b>started</b>\n[<code>" + __file__.split("/")[-1] + "</code>]",
-        parse_mode=ParseMode.HTML,
-    )
-    if wh:
-        bot.send_message(
-            ADMIN,
-            f"webhook {wh}",
-            parse_mode=ParseMode.HTML,
-        )
-    bot.send_message(
-        ADMIN,
+        WHEEL,
         "menu",
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("/ping", callback_data="ping")],
+                [
+                    InlineKeyboardButton("/ping", callback_data="/ping"),
+                    InlineKeyboardButton("/me", callback_data="/me"),
+                ],
+                [
+                    InlineKeyboardButton("/html", callback_data="/html"),
+                    InlineKeyboardButton(
+                        "/markdown", callback_data="/markdown"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton("/ls", callback_data="/ls"),
+                ],
+                [InlineKeyboardButton("what?", callback_data="what?")],
             ]
         ),
     )
@@ -96,44 +102,45 @@ def starter():
 
 
 def finisher():
-    bot.send_message(ADMIN, "we're done")
+    bot.send_message(WHEEL, "we're done")
 
 
-def reduct(text: str, sz: int = 4) -> str:
+def reduct(text: str, sz: int = 8) -> str:
     return text[:sz] + "..." + text[-sz:]
 
 
 def health() -> dict[str, Any]:
+    wh = bot.get_webhook_info().url
     return {
         "status": "alive",
         "updated_at": os.getenv("UPDATED_AT", "?"),
         "where": os.getenv("WHERE", "?"),
         "bot_token": reduct(os.getenv("BOT_TOKEN", "?")),
-        "wh": reduct(os.getenv("WH", "?").removeprefix("https://"), 8),
+        "webhook": wh.removeprefix("https://"),
         "redis": reduct(os.getenv("REDIS_HOST", "?"), 8),
     }
 
 
 def ping(update: Update, args: list[str]) -> None:
-    """ping-pong"""
+    """ping"""
 
     if update.message:
-        update.message.reply_html(text="pong")
+        update.message.reply_html(text="ping")
         if not args:
-            bot.send_message(ADMIN, "usage: /ping <host>")
+            bot.send_message(WHEEL, "usage: /ping <host>")
             return
         host = args[0]
         response_time = ping3.ping(host)
         if response_time:
             bot.send_message(
-                ADMIN,
+                WHEEL,
                 f"{host} is up! response time {response_time:.2f} ms",
             )
         else:
-            bot.send_message(ADMIN, f"{host} is down!")
+            bot.send_message(WHEEL, f"{host} is down!")
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
-        bot.send_message(from_user_id, "query/pong")
+        bot.send_message(from_user_id, "query/ping")
 
 
 def file(update: Update, args: list[str]) -> None:
@@ -143,42 +150,42 @@ def file(update: Update, args: list[str]) -> None:
         update.message.reply_text("usage: /file <file_id>")
     file_id = args[0]
     needle = cast(bytes, r.get("files:" + file_id))
-    print(needle)
+    logger.info(needle)
     if not needle:
         update.message.reply_text("file not found")
         return
     file_dict = json.loads(needle)
     file_type = file_dict["type"]
     if file_type == "audio":
-        bot.send_audio(ADMIN, file_id)
+        bot.send_audio(WHEEL, file_id)
     elif file_type == "video":
-        bot.send_video(ADMIN, file_id)
+        bot.send_video(WHEEL, file_id)
     elif file_type == "voice":
-        bot.send_voice(ADMIN, file_id)
+        bot.send_voice(WHEEL, file_id)
     elif file_type == "document":
-        bot.send_document(ADMIN, file_id)
+        bot.send_document(WHEEL, file_id)
     elif file_type == "photo":
-        bot.send_photo(ADMIN, file_id)
+        bot.send_photo(WHEEL, file_id)
     else:
-        bot.send_message(ADMIN, f"unknown file type [{file_type}]")
+        bot.send_message(WHEEL, f"unknown file type [{file_type}]")
 
 
 ASSET = pathlib.Path(__file__).parent / "asset"
 
-HTML = (ASSET / "tg.html").read_text().replace("{ADMIN}", ADMIN)
+HTML = (ASSET / "tg.html").read_text().replace("{WHEEL}", WHEEL)
 
 
 def html(update: Update, args: list[str]) -> None:
     """html message"""
-    bot.send_message(ADMIN, HTML, parse_mode=ParseMode.HTML)
+    bot.send_message(WHEEL, HTML, parse_mode=ParseMode.HTML)
 
 
-MARKDOWN = (ASSET / "tg.md").read_text().replace("{ADMIN}", ADMIN)
+MARKDOWN = (ASSET / "tg.md").read_text().replace("{WHEEL}", WHEEL)
 
 
 def markdown(update: Update, args: list[str]) -> None:
     """markdown message"""
-    bot.send_message(ADMIN, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
+    bot.send_message(WHEEL, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
 
 
 def ls(update: Update, args: list[str]) -> None:
@@ -210,19 +217,22 @@ def ls(update: Update, args: list[str]) -> None:
             )
         else:
             text = f"unknown\n{file_id}"
-        update.message.reply_text(text)
+        if update.message:
+            update.message.reply_text(text)
+        if update.callback_query:
+            from_user_id = update.callback_query.from_user.id
+            bot.send_message(from_user_id, text)
 
 
 def me(update: Update, args: list[str]) -> None:
     """me"""
-    info = {
-        "WHERE": os.getenv("WHERE", "?"),
-        "WH": os.getenv("WH", "?"),
-        "REDIS_HOST": os.getenv("REDIS_HOST", "?"),
-        "UPDATED_AT": os.getenv("UPDATED_AT", "?"),
-    }
+    info = health()
+    content = json.dumps(info, indent=2)
     if update.message:
-        update.message.reply_text(json.dumps(info, indent=2))
+        update.message.reply_text(content)
+    if update.callback_query:
+        from_user_id = update.callback_query.from_user.id
+        bot.send_message(from_user_id, content)
 
 
 COMMANDS: dict[str, Callable] = {
@@ -240,7 +250,8 @@ def set_commands() -> None:
         BotCommand(cmd, handler.__doc__ or "")
         for cmd, handler in COMMANDS.items()
     ]
-    [print(cmd.command, cmd.description) for cmd in commands]
+    for cmd in commands:
+        logger.info(f'{cmd.command} {cmd.description=}')
     bot.set_my_commands(commands)
 
 
@@ -249,8 +260,8 @@ def update(request: dict[str, Any]) -> None:
     assert update, "update should be present"
 
     effective_user = update.effective_user
-    if effective_user and effective_user.id != int(ADMIN):
-        bot.send_message(ADMIN, "are you talking to me?")
+    if effective_user and effective_user.id != int(WHEEL):
+        bot.send_message(WHEEL, "are you talking to me?")
         return
 
     message = update.message
@@ -258,7 +269,7 @@ def update(request: dict[str, Any]) -> None:
         text = message.text
         if text:
             cmd, *args = text.split()
-            print(f'cmd: {cmd}, args: {args}')
+            logger.info(f'{cmd=} {args=}')
             action = COMMANDS.get(cmd)
             if not action:
                 message.reply_text(text + " - ha?")
@@ -329,5 +340,10 @@ def update(request: dict[str, Any]) -> None:
     if callback_query:
         callback_query.answer()
         query_data = callback_query.data
-        if query_data == "ping":
-            ping(update, [])
+        cmd, *args = query_data.split()
+        logger.info(f'{cmd=} {args=}')
+        action = COMMANDS.get(cmd)
+        if action:
+            action(update, args)
+        else:
+            bot.send_message(WHEEL, query_data + " - query/ha?")
