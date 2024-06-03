@@ -123,7 +123,6 @@ def health() -> dict[str, Any]:
 
 def ping(update: Update, args: list[str]) -> None:
     """ping"""
-
     if update.message:
         update.message.reply_html(text="ping")
         if not args:
@@ -145,7 +144,6 @@ def ping(update: Update, args: list[str]) -> None:
 
 def file(update: Update, args: list[str]) -> None:
     """file info"""
-
     if not args:
         update.message.reply_text("usage: /file <file_id>")
     file_id = args[0]
