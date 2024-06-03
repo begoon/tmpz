@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -12,10 +13,11 @@ from telegram import (
     BotCommand,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ParseMode,
     Update,
 )
-from telegram.utils.types import JSONDict
+from telegram.constants import ParseMode
+
+loop = asyncio.new_event_loop()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -42,8 +44,8 @@ r = redis.Redis(
 )
 
 
-def set_webhook() -> str | None:
-    whi = bot.get_webhook_info()
+async def set_webhook() -> str | None:
+    whi = await bot.get_webhook_info()
     logger.info("active webhook %s", whi.url)
 
     tunnel = None
@@ -55,7 +57,7 @@ def set_webhook() -> str | None:
         if not wh.endswith("/bot"):
             wh += "/bot"
         if whi.url != wh:
-            bot.set_webhook(
+            await bot.set_webhook(
                 url=wh,
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
@@ -65,17 +67,25 @@ def set_webhook() -> str | None:
 
 
 def starter():
-    if False:
-        wh = set_webhook()
-        bot.send_message(WHEEL, f"webhook {wh}")
+    loop.run_until_complete(starter_async())
 
-    me = bot.get_me()
+
+async def starter_async():
+    if False:
+        wh = await set_webhook()
+        await bot.send_message(WHEEL, f"webhook {wh}")
+
+    me = await bot.get_me()
     logger.info("me %s", me.username)
 
     logger.info("wheel %s", WHEEL)
-    bot.send_message(WHEEL, "bot <b>started</b>", parse_mode=ParseMode.HTML)
+    await bot.send_message(
+        WHEEL,
+        "bot <b>started</b>",
+        parse_mode=ParseMode.HTML,
+    )
 
-    bot.send_message(
+    await bot.send_message(
         WHEEL,
         "menu",
         parse_mode=ParseMode.HTML,
@@ -98,11 +108,7 @@ def starter():
             ]
         ),
     )
-    set_commands()
-
-
-def finisher():
-    bot.send_message(WHEEL, "we're done")
+    await set_commands()
 
 
 def reduct(text: str, sz: int = 8) -> str:
@@ -110,7 +116,11 @@ def reduct(text: str, sz: int = 8) -> str:
 
 
 def health() -> dict[str, Any]:
-    wh = bot.get_webhook_info().url
+    return loop.run_until_complete(health_async())
+
+
+async def health_async() -> dict[str, Any]:
+    wh = (await bot.get_webhook_info()).url
     return {
         "status": "alive",
         "updated_at": os.getenv("UPDATED_AT", "?"),
@@ -121,51 +131,51 @@ def health() -> dict[str, Any]:
     }
 
 
-def ping(update: Update, args: list[str]) -> None:
+async def ping(update: Update, args: list[str]) -> None:
     """ping"""
     if update.message:
-        update.message.reply_html(text="ping")
+        await update.message.reply_html(text="ping")
         if not args:
-            bot.send_message(WHEEL, "usage: /ping <host>")
+            await bot.send_message(WHEEL, "usage: /ping <host>")
             return
         host = args[0]
         response_time = ping3.ping(host)
         if response_time:
-            bot.send_message(
+            await bot.send_message(
                 WHEEL,
                 f"{host} is up! response time {response_time:.2f} ms",
             )
         else:
-            bot.send_message(WHEEL, f"{host} is down!")
+            await bot.send_message(WHEEL, f"{host} is down!")
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
-        bot.send_message(from_user_id, "query/ping")
+        await bot.send_message(from_user_id, "query/ping")
 
 
-def file(update: Update, args: list[str]) -> None:
+async def file(update: Update, args: list[str]) -> None:
     """file info"""
-    if not args:
-        update.message.reply_text("usage: /file <file_id>")
+    if not args and update.message:
+        await update.message.reply_text("usage: /file <file_id>")
     file_id = args[0]
     needle = cast(bytes, r.get("files:" + file_id))
     logger.info(needle)
-    if not needle:
-        update.message.reply_text("file not found")
+    if not needle and update.message:
+        await update.message.reply_text("file not found")
         return
     file_dict = json.loads(needle)
     file_type = file_dict["type"]
     if file_type == "audio":
-        bot.send_audio(WHEEL, file_id)
+        await bot.send_audio(WHEEL, file_id)
     elif file_type == "video":
-        bot.send_video(WHEEL, file_id)
+        await bot.send_video(WHEEL, file_id)
     elif file_type == "voice":
-        bot.send_voice(WHEEL, file_id)
+        await bot.send_voice(WHEEL, file_id)
     elif file_type == "document":
-        bot.send_document(WHEEL, file_id)
+        await bot.send_document(WHEEL, file_id)
     elif file_type == "photo":
-        bot.send_photo(WHEEL, file_id)
+        await bot.send_photo(WHEEL, file_id)
     else:
-        bot.send_message(WHEEL, f"unknown file type [{file_type}]")
+        await bot.send_message(WHEEL, f"unknown file type [{file_type}]")
 
 
 ASSET = pathlib.Path(__file__).parent / "asset"
@@ -173,24 +183,24 @@ ASSET = pathlib.Path(__file__).parent / "asset"
 HTML = (ASSET / "tg.html").read_text().replace("{WHEEL}", WHEEL)
 
 
-def html(update: Update, args: list[str]) -> None:
+async def html(update: Update, args: list[str]) -> None:
     """html message"""
-    bot.send_message(WHEEL, HTML, parse_mode=ParseMode.HTML)
+    await bot.send_message(WHEEL, HTML, parse_mode=ParseMode.HTML)
 
 
 MARKDOWN = (ASSET / "tg.md").read_text().replace("{WHEEL}", WHEEL)
 
 
-def markdown(update: Update, args: list[str]) -> None:
+async def markdown(update: Update, args: list[str]) -> None:
     """markdown message"""
-    bot.send_message(WHEEL, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
+    await bot.send_message(WHEEL, MARKDOWN, parse_mode=ParseMode.MARKDOWN_V2)
 
 
-def ls(update: Update, args: list[str]) -> None:
+async def ls(update: Update, args: list[str]) -> None:
     """list files"""
     keys = cast(list[bytes], r.keys("files:*"))
-    if not keys:
-        update.message.reply_text("no files")
+    if not keys and update.message:
+        await update.message.reply_text("no files")
         return
     for key in keys:
         file_id = key.decode("utf-8").split(":")[1]
@@ -216,21 +226,21 @@ def ls(update: Update, args: list[str]) -> None:
         else:
             text = f"unknown\n{file_id}"
         if update.message:
-            update.message.reply_text(text)
+            await update.message.reply_text(text)
         if update.callback_query:
             from_user_id = update.callback_query.from_user.id
-            bot.send_message(from_user_id, text)
+            await bot.send_message(from_user_id, text)
 
 
-def me(update: Update, args: list[str]) -> None:
+async def me(update: Update, args: list[str]) -> None:
     """me"""
     info = health()
     content = json.dumps(info, indent=2)
     if update.message:
-        update.message.reply_text(content)
+        await update.message.reply_text(content)
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
-        bot.send_message(from_user_id, content)
+        await bot.send_message(from_user_id, content)
 
 
 COMMANDS: dict[str, Callable] = {
@@ -243,23 +253,27 @@ COMMANDS: dict[str, Callable] = {
 }
 
 
-def set_commands() -> None:
+async def set_commands() -> None:
     commands = [
         BotCommand(cmd, handler.__doc__ or "")
         for cmd, handler in COMMANDS.items()
     ]
     for cmd in commands:
         logger.info(f'{cmd.command} {cmd.description=}')
-    bot.set_my_commands(commands)
+    await bot.set_my_commands(commands)
 
 
-def update(request: dict[str, Any]) -> None:
+def update(request):
+    loop.run_until_complete(update_async(request))
+
+
+async def update_async(request: dict[str, Any]) -> None:
     update = Update.de_json(data=request, bot=bot)
     assert update, "update should be present"
 
     effective_user = update.effective_user
     if effective_user and effective_user.id != int(WHEEL):
-        bot.send_message(WHEEL, "are you talking to me?")
+        await bot.send_message(WHEEL, "are you talking to me?")
         return
 
     message = update.message
@@ -270,7 +284,7 @@ def update(request: dict[str, Any]) -> None:
             logger.info(f'{cmd=} {args=}')
             action = COMMANDS.get(cmd)
             if not action:
-                message.reply_text(text + " - ha?")
+                await message.reply_text(text + " - ha?")
 
                 reactions = (
                     "👍👎❤🔥🥰👏😁🤔🤯😱🤬😢🎉🤩🤮💩🙏👌🕊🤡🥱🥴😍🐳❤‍🔥🌚🌭💯🤣⚡🍌🏆💔🤨"
@@ -283,14 +297,11 @@ def update(request: dict[str, Any]) -> None:
                     "sad": "😢",
                 }
                 emoji = predefined.get(text, random.choice(reactions))
-                data: JSONDict = {
-                    'chat_id': message.chat.id,
-                    'message_id': message.message_id,
-                    'reaction': [{"type": "emoji", "emoji": emoji}],
-                    'is_big': 'a lot' in text,
-                }
-
-                bot._post('setMessageReaction', data)
+                await bot.set_message_reaction(
+                    message.chat.id,
+                    message.message_id,
+                    ("emoji", emoji),
+                )
             else:
                 action(update, args)
         audio = message.audio
@@ -299,7 +310,7 @@ def update(request: dict[str, Any]) -> None:
             audio_dict = audio.to_dict()
             audio_dict["type"] = "audio"
             audio_dict_str = json.dumps(audio_dict, indent=2)
-            message.reply_text("audio " + audio.file_id)
+            await message.reply_text("audio " + audio.file_id)
             r.set("files:" + audio.file_id, audio_dict_str)
         video = message.video
         if video:
@@ -307,7 +318,7 @@ def update(request: dict[str, Any]) -> None:
             video_dict = video.to_dict()
             video_dict["type"] = "video"
             video_dict_str = json.dumps(video_dict, indent=2)
-            message.reply_text("video " + video.file_id)
+            await message.reply_text("video " + video.file_id)
             r.set("files:" + video.file_id, video_dict_str)
         voice = message.voice
         if voice:
@@ -315,7 +326,7 @@ def update(request: dict[str, Any]) -> None:
             voice_dict = voice.to_dict()
             voice_dict["type"] = "voice"
             voice_dict_str = json.dumps(voice_dict, indent=2)
-            message.reply_text("voice " + voice.file_id)
+            await message.reply_text("voice " + voice.file_id)
             r.set("files:" + voice.file_id, voice_dict_str)
         document = message.document
         if document:
@@ -323,7 +334,7 @@ def update(request: dict[str, Any]) -> None:
             document_dict = document.to_dict()
             document_dict["type"] = "document"
             document_dict_str = json.dumps(document_dict, indent=2)
-            message.reply_text("document " + document.file_id)
+            await message.reply_text("document " + document.file_id)
             r.set("files:" + document.file_id, document_dict_str)
         photo = message.photo
         if photo:
@@ -331,17 +342,18 @@ def update(request: dict[str, Any]) -> None:
             photo_dict = photo[-1].to_dict()
             photo_dict["type"] = "photo"
             photo_dict_str = json.dumps(photo_dict, indent=2)
-            message.reply_text("photo " + photo[-1].file_id)
+            await message.reply_text("photo " + photo[-1].file_id)
             r.set("files:" + photo[-1].file_id, photo_dict_str)
 
     callback_query = update.callback_query
     if callback_query:
-        callback_query.answer()
+        await callback_query.answer()
         query_data = callback_query.data
-        cmd, *args = query_data.split()
-        logger.info(f'{cmd=} {args=}')
-        action = COMMANDS.get(cmd)
-        if action:
-            action(update, args)
-        else:
-            bot.send_message(WHEEL, query_data + " - query/ha?")
+        if query_data:
+            cmd, *args = query_data.split()
+            logger.info(f'{cmd=} {args=}')
+            action = COMMANDS.get(cmd)
+            if action:
+                await action(update, args)
+            else:
+                await bot.send_message(WHEEL, query_data + " - query/ha?")
