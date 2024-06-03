@@ -1,6 +1,6 @@
 import json
 
-import bot as bot
+import bot
 
 bot.starter()
 
