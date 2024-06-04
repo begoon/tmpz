@@ -85,6 +85,7 @@ def starter():
                 [
                     InlineKeyboardButton("/ping", callback_data="/ping"),
                     InlineKeyboardButton("/me", callback_data="/me"),
+                    InlineKeyboardButton("/you", callback_data="/you"),
                 ],
                 [
                     InlineKeyboardButton("/html", callback_data="/html"),
@@ -243,6 +244,16 @@ def me(update: Update, args: list[str]) -> None:
         bot.send_message(from_user_id, content)
 
 
+def you(update: Update, args: list[str]) -> None:
+    """you"""
+    content = json.dumps(update.to_dict(), indent=2)
+    if update.message:
+        update.message.reply_text(content, parse_mode=ParseMode.HTML)
+    if update.callback_query:
+        from_user_id = update.callback_query.from_user.id
+        bot.send_message(from_user_id, content, parse_mode=ParseMode.HTML)
+
+
 COMMANDS: dict[str, Callable] = {
     "/ping": ping,
     "/html": html,
@@ -250,6 +261,7 @@ COMMANDS: dict[str, Callable] = {
     "/file": file,
     "/ls": ls,
     "/me": me,
+    "/you": you,
 }
 
 
