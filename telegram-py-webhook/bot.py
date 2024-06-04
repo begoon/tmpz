@@ -3,10 +3,11 @@ import logging
 import os
 import pathlib
 import random
+import time
 from typing import Any, Callable, cast
 
-import ping3  # type: ignore
 import redis
+import requests
 from telegram import (
     Bot,
     BotCommand,
@@ -121,22 +122,31 @@ def health() -> dict[str, Any]:
     }
 
 
+def ping_(host: str) -> int:
+    if not host.startswith("http"):
+        host = "https://" + host
+    return requests.get(host, timeout=2).status_code
+
+
 def ping(update: Update, args: list[str]) -> None:
     """ping"""
     if update.message:
-        update.message.reply_html(text="ping")
         if not args:
             bot.send_message(WHEEL, "usage: /ping <host>")
             return
-        host = args[0]
-        response_time = ping3.ping(host)
-        if response_time:
-            bot.send_message(
-                WHEEL,
-                f"{host} is up! response time {response_time:.2f} ms",
+        sent = update.message.reply_html(text="pinging " + args[0] + "...")
+        try:
+            started = time.time()
+            status = ping_(args[0])
+            elapsed = time.time() - started
+            bot.edit_message_text(
+                chat_id=sent.chat_id,
+                message_id=sent.message_id,
+                text=f"{args[0]} responded with {status} in {elapsed:.2f}s",
             )
-        else:
-            bot.send_message(WHEEL, f"{host} is down!")
+        except Exception as e:
+            update.message.reply_text(str(e))
+
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
         bot.send_message(from_user_id, "query/ping")

@@ -10,6 +10,9 @@ TUNNEL=$(shell curl -s http://localhost:4040/api/tunnels | jq '.tunnels[0].publi
 tunnel:
 	@echo $(TUNNEL)
 
+tunnel-info:
+	ngrok api tunnels list --api-key $(NGROK_API_KEY)
+	
 run:
 	PYTHONPATH=./package \
 	flask -A main:listener run \
@@ -27,7 +30,7 @@ deps:
 	-rm -rf package
 	pip install --target ./package \
 	python-telegram-bot==13.15 \
-	ping3==4.0.8 \
+	requests==2.32.3 \
 	redis==5.0.4
 
 health:
