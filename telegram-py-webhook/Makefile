@@ -30,7 +30,6 @@ deps:
 	-rm -rf package
 	pip install --target ./package \
 	python-telegram-bot==13.15 \
-	requests==2.32.3 \
 	redis==5.0.4
 
 health:

@@ -7,7 +7,6 @@ import time
 from typing import Any, Callable, cast
 
 import redis
-import requests
 from telegram import (
     Bot,
     BotCommand,
@@ -17,6 +16,7 @@ from telegram import (
     Update,
 )
 from telegram.utils.types import JSONDict
+import urllib3
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -126,7 +126,8 @@ def health() -> dict[str, Any]:
 def ping_(host: str) -> int:
     if not host.startswith("http"):
         host = "https://" + host
-    return requests.get(host, timeout=2).status_code
+    response = urllib3.request("GET", host, timeout=2)
+    return response.status
 
 
 def ping(update: Update, args: list[str]) -> None:
