@@ -31,6 +31,18 @@ deps:
 	pip install --target ./package \
 	python-telegram-bot==13.15 \
 	redis==5.0.4
+	make optimize
+
+optimize:
+	find ./package | grep -E "(/__pycache__|\.pyc|\.pyo)" | xargs rm -rf
+	cd package && \
+	rm -rf \
+		*.dist-info *.pth \
+		_distutils_hack setuptools pkg_resources \
+		apscheduler cachetools pytz tornado \
+		async_timeout tzlocal telegram/ext \
+		six.py
+
 
 health:
 	curl $(HOSTING)/health

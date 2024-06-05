@@ -4,9 +4,11 @@ import os
 import pathlib
 import random
 import time
+import traceback
 from typing import Any, Callable, cast
 
 import redis
+import telegram.vendor.ptb_urllib3.urllib3 as urllib3
 from telegram import (
     Bot,
     BotCommand,
@@ -16,7 +18,6 @@ from telegram import (
     Update,
 )
 from telegram.utils.types import JSONDict
-import urllib3
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -126,7 +127,7 @@ def health() -> dict[str, Any]:
 def ping_(host: str) -> int:
     if not host.startswith("http"):
         host = "https://" + host
-    response = urllib3.request("GET", host, timeout=2)
+    response = urllib3.PoolManager().request("GET", host, timeout=1, retries=0)
     return response.status
 
 
@@ -148,6 +149,7 @@ def ping(update: Update, args: list[str]) -> None:
             )
         except Exception as e:
             update.message.reply_text(str(e))
+            print(traceback.format_exc())
 
     if update.callback_query:
         from_user_id = update.callback_query.from_user.id
