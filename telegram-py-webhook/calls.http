@@ -1,0 +1,25 @@
+###
+
+POST https://begoon-website.web.val.run?xxx=12345
+Content-Type: application/json
+
+{
+  "name": "Suspected Fraud",
+  "email": "test@test.com",
+  "REDIS_HOST": "{{$dotenv REDIS_HOST}}"
+}
+
+###
+
+GET {{$dotenv AWS_HOSTING}}/health
+Accept: application/json
+
+###
+
+GET {{$dotenv GCP_HOSTING}}/health
+Accept: application/json
+
+###
+
+GET {{$dotenv AZ_HOSTING}}/health
+Accept: application/json
