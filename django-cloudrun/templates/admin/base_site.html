@@ -1,0 +1,8 @@
+{% extends "admin/base_site.html" %}
+{% block extrahead %}
+{{ block.super }}
+{% endblock %}
+{% block branding %}
+{{ block.super }}
+{{ db_host }}
+{% endblock %}
