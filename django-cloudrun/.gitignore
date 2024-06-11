@@ -2,3 +2,6 @@ __pycache__
 .venv
 .env
 staticfiles
+.terraform*
+terraform.tfstate*
+*.tfvars
