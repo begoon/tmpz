@@ -17,6 +17,7 @@ const envs: Record<string, string> = {
     aws: "AWS_HOSTING",
     gcp: "GCP_HOSTING",
     az: "AZ_HOSTING",
+    django: "DJANGO_HOSTING",
 };
 
 const env = Deno.args[0];

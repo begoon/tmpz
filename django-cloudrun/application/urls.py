@@ -26,6 +26,6 @@ urlpatterns = [
     re_path('.*favicon.ico', RedirectView.as_view(url=static('favicon.ico'))),
     path('', RedirectView.as_view(url=reverse_lazy('admin:index'))),
     path('admin/', admin.site.urls),
-    path('callback', include("master.urls")),
+    path('update', include("master.urls")),
     path('health', health),
 ]

@@ -12,7 +12,8 @@ export async function installWebhook(base: string) {
     console.log({ bot: BOT_TOKEN });
     const telegram = new Telegram(BOT_TOKEN);
 
-    const wh = base + "/bot";
+    const prefix = base.includes("django") ? "update" : "bot";
+    const wh = base + "/" + prefix;
     console.info({ webhook: wh });
     if (!(await telegram.setWebhook(wh))) throw new Error("setWebhook failed");
 

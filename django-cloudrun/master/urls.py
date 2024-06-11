@@ -16,9 +16,9 @@ Including another URLconf
 
 from django.urls import path
 
-from .endpoint import callback, env
+from .endpoint import env, update
 
 urlpatterns = [
-    path('', callback, name='callback'),
-    path('/env', env, name='env'),
+    path('', update),
+    path('/env', env),
 ]

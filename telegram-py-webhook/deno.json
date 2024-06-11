@@ -6,6 +6,7 @@
         "webhook:aws": "deno run -A ./webhook.ts aws",
         "webhook:gcp": "deno run -A ./webhook.ts gcp",
         "webhook:az": "deno run -A ./webhook.ts az",
+        "webhook:django": "deno run -A ./webhook.ts django",
         "webhook": "deno run -A ./webhook.ts --info",
         "webhook:delete": "deno run -A ./webhook.ts --delete"
     },
