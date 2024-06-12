@@ -4,7 +4,15 @@ const port = process.env.PORT || 8000;
 
 Deno.serve(
     { port, onListen: () => console.log("listening on port " + port) },
-    (_req: Request): Response => {
+    (req: Request): Response => {
+        console.log(
+            JSON.stringify({
+                "logging.googleapis.com/trace": req.headers.get("traceparent"),
+                severity: "INFO",
+                message: req.url,
+                timestamp: new Date().toISOString(),
+            })
+        );
         const secret = process.env.K_SERVICE
             ? Deno.readTextFileSync("/secrets/ephemeral-secret")
             : "?";
