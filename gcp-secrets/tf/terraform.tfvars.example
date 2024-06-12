@@ -1,0 +1,6 @@
+project = <PROJECT>
+region  = <REGION>
+
+secret_value = <SECRET_VALUE>
+
+image = "<REPO>/<IMAGE>:<TAG>"
