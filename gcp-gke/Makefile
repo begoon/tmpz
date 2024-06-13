@@ -31,3 +31,6 @@ info:
 
 pods:
 	kubectl get pods
+
+probe-caddy:
+	curl -s http://$(shell make public-ip)/probe?h=http://caddy
