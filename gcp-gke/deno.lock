@@ -1,0 +1,14 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@std/encoding": "jsr:@std/encoding@0.224.3"
+    },
+    "jsr": {
+      "@std/encoding@0.224.3": {
+        "integrity": "5e861b6d81be5359fad4155e591acf17c0207b595112d1840998bb9f476dbdaf"
+      }
+    }
+  },
+  "remote": {}
+}
