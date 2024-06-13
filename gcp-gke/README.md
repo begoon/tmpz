@@ -2,6 +2,8 @@
 
 gcloud container clusters get-credentials autopilot-cluster --region europe-west2
 
+gcloud container clusters describe autopilot-cluster --region europe-west2
+
 kubectl expose deployment info --type=LoadBalancer --port=80 --target-port=8000
 
 kubectl describe services
