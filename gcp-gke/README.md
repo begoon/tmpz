@@ -30,3 +30,5 @@ watch -n 1 "curl -s http://$IP | jq '.HOSTNAME, .VERSION'"
 kubectl set image deployment/info info-service-container=europe-docker.pkg.dev/iproov-chiro/gke/info-service:v2
 
 kubectl scale deployment info --replicas=5
+
+kubectl exec -it <POD_NAME> -- /bin/bash

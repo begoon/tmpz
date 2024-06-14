@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: info
+  name: info
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: info
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: info
+    spec:
+      containers:
+        - env:
+            - name: GENERATION
+              value: "baseline"
+          image: europe-docker.pkg.dev/iproov-chiro/gke/info-service:v7
+          imagePullPolicy: Always
+          name: info-service-container
+          volumeMounts:
+            - name: data-volume
+              mountPath: /shared
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: storage-volume

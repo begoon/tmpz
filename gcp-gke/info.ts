@@ -7,6 +7,10 @@ Deno.serve(
     async (request: Request) => {
         const url = new URL(request.url);
         const path = url.pathname;
+        if (path === "/readiness") {
+            console.log("readiness");
+            return new Response("ready", { status: 200 });
+        }
         if (path === "/probe") {
             const h_ = url.searchParams.get("h");
             if (!h_) return new Response("ha?", { status: 418 });
@@ -27,7 +31,8 @@ Deno.serve(
         return new Response(
             JSON.stringify({
                 HOSTNAME: env.get("HOSTNAME"),
-                VERSION: "v4",
+                VERSION: "v7",
+                GENERATION: env.get("GENERATION"),
                 env: Deno.env.toObject(),
             }),
             { status: 200 }
