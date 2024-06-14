@@ -27,6 +27,13 @@ spec:
           image: caddy:2.4.5
           imagePullPolicy: IfNotPresent
           name: caddy
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.5"
           ports:
             - containerPort: 80
               name: http

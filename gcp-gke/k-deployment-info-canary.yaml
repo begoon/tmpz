@@ -24,6 +24,20 @@ spec:
         - env:
             - name: GENERATION
               value: "canary"
-          image: europe-docker.pkg.dev/iproov-chiro/gke/info-service:v6
+          image: europe-docker.pkg.dev/iproov-chiro/gke/info-service:v8
           imagePullPolicy: Always
           name: info-canary-container
+          volumeMounts:
+            - name: data-volume
+              mountPath: /shared
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.5"
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: storage-volume

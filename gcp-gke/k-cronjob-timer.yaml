@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: timer-cronjob
+spec:
+  schedule: "* * * * *" # run every minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: cron-job
+              image: busybox
+              args:
+                - /bin/sh
+                - -c
+                - echo -n "timer " >/shared/timer-job && date >>/shared/timer-job
+              volumeMounts:
+                - name: data-volume
+                  mountPath: /shared
+          restartPolicy: OnFailure
+          volumes:
+            - name: data-volume
+              persistentVolumeClaim:
+                claimName: storage-volume

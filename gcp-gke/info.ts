@@ -28,10 +28,21 @@ Deno.serve(
                 return new Response(e.message, { status: 500 });
             }
         }
+        if (path === "/shared") {
+            const h_ = url.searchParams.get("h");
+            if (!h_) return new Response("ha?", { status: 418 });
+            const h = "/shared/" + h_;
+            try {
+                const content = await Deno.readTextFile(h);
+                return new Response(content, { status: 200 });
+            } catch (e) {
+                return new Response(e.message, { status: 500 });
+            }
+        }
         return new Response(
             JSON.stringify({
                 HOSTNAME: env.get("HOSTNAME"),
-                VERSION: "v7",
+                VERSION: "v8",
                 GENERATION: env.get("GENERATION"),
                 env: Deno.env.toObject(),
             }),

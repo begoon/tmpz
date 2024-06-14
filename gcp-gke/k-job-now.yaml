@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-now
+spec:
+  template:
+    spec:
+      containers:
+        - name: job
+          image: busybox
+          args:
+            - /bin/sh
+            - -c
+            - echo -n "job " >/shared/timer-job && date >>/shared/timer-job
+          volumeMounts:
+            - name: data-volume
+              mountPath: /shared
+      restartPolicy: Never
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: storage-volume

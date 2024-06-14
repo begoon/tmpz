@@ -35,6 +35,7 @@ info:
 	@echo
 	@echo $(shell make info-lb-public-ip)
 	@curl -s http://$(shell make info-lb-public-ip) | jq '.HOSTNAME, .VERSION, .GENERATION'
+	@curl -s http://$(shell make info-lb-public-ip)/shared?h=timer-job
 	@echo
 	@echo http://$(shell make ingress-public-ip)/info
 	@curl -s http://$(shell make ingress-public-ip)/info | jq '.HOSTNAME, .VERSION, .GENERATION'
