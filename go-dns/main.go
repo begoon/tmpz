@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -16,22 +17,32 @@ func main() {
 	debug := os.Getenv("GODEBUG")
 	fmt.Printf("GODEBUG=[%s]\n", debug)
 	if debug == "" {
-		os.Setenv("GODEBUG", "netdns=1")
+		os.Setenv("GODEBUG", "netdns=2")
 		fmt.Printf("FORCED GODEBUG=[%s]\n", os.Getenv("GODEBUG"))
 	}
 
-	http.HandleFunc("/", server)
+	http.HandleFunc("GET /x/{path...}", server)
+	http.HandleFunc("GET /env", env)
 	fmt.Println("listening on :8000")
 	http.ListenAndServe(":8000", nil)
 }
 
 func server(w http.ResponseWriter, r *http.Request) {
+	v := r.PathValue("path")
 	debug := os.Getenv("GODEBUG")
 	path := r.URL.Path
 	fmt.Printf("GODEBUG=[%s] method=%s path=%s\n", debug, r.Method, path)
 	ip := myip()
-	fmt.Fprintf(w, "stored [%s] [%s] [%s]\n", path, debug, ip)
+	fmt.Fprintf(w, "stored [%s] [%s] [%s] $=[%s]\n", path, debug, ip, v)
 	store(path)
+}
+
+func env(w http.ResponseWriter, r *http.Request) {
+	for _, e := range os.Environ() {
+		fmt.Fprintf(w, "%s\n", e)
+	}
+	j, _ := json.MarshalIndent(os.Environ(), "", "  ")
+	fmt.Fprintf(w, "%s\n", j)
 }
 
 func store(v string) {
