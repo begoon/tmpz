@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -28,21 +29,22 @@ func server(w http.ResponseWriter, r *http.Request) {
 	debug := os.Getenv("GODEBUG")
 	path := r.URL.Path
 	fmt.Printf("GODEBUG=[%s] method=%s path=%s\n", debug, r.Method, path)
-	fmt.Fprintf(w, "storing [%s] [%s]", path, debug)
+	ip := myip()
+	fmt.Fprintf(w, "stored [%s] [%s] [%s]\n", path, debug, ip)
 	store(path)
 }
 
 func store(v string) {
 	now := time.Now().Format(time.RFC3339)
 
-	err := StorageSave("dropzone", "dns/z-"+now+".txt", v)
+	err := persist("dropzone", "dns/z-"+now+".txt", v)
 	if err != nil {
 		log.Fatalf("error saving: %v", err)
 	}
 	log.Println("saved", now, v)
 }
 
-func StorageSave(bucket string, name string, v string) error {
+func persist(bucket string, name string, v string) error {
 	ctx := context.TODO()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -55,4 +57,37 @@ func StorageSave(bucket string, name string, v string) error {
 	_, err = w.Write([]byte(v))
 	client.Close()
 	return err
+}
+
+func myip() string {
+	url := "https://api.ipify.org"
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("error creating request:", err)
+		return err.Error()
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("error sending request:", err)
+		return err.Error()
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("unexpected status code:", resp.StatusCode)
+		return fmt.Sprintf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("error reading response body:", err)
+		return err.Error()
+	}
+
+	fmt.Printf("response [%s]\n", string(body))
+	return string(body)
 }

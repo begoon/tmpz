@@ -17,7 +17,7 @@ NAME=go-dns
 
 docker-build: build-amd64
 	docker build -t $(NAME) \
-	-f Dockerfile-scratch \
+	-f Dockerfile \
 	.
 
 docker-tag-push:
@@ -42,7 +42,5 @@ deploy: latest
 	gcloud run deploy $(NAME) \
 	--image=$(IMAGE) \
 	--set-env-vars=GODEBUG=netdns=go+1 \
-	--region=europe-west2 \
-	--project=iproov-chiro
-
- 	# && gcloud run services update-traffic $(NAME) --to-latest
+	--region=$(REGION) \
+	--project=$(PROJECT)
