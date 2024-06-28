@@ -1,3 +1,9 @@
+GREEN=\033[0;32m
+RED=\033[0;31m
+BLUE=\033[0;34m
+WHITE=\033[0;37m
+END=\033[0m
+
 include .env
 export
 
@@ -8,7 +14,10 @@ build-amd64:
 
 build:
 	CGO_ENABLED=0 \
-	go build -o ./exe main.go
+	go build \
+	-o ./exe \
+	-ldflags "-X 'main.SHA=$(shell git rev-parse --short HEAD)'" \
+	main.go
 
 run: build
 	./exe
@@ -30,17 +39,27 @@ docker inspect --format='{{index .RepoDigests 0}}' $(REPO)/$(NAME):latest)
 latest:
 	@echo $(IMAGE)
 
-ping:
-	@HOST=$(shell \
-	gcloud run services describe $(NAME) \
-	--region $(REGION) --format="value(status.url)") && \
-	echo "dialig $$HOST" && \
-	curl $$HOST/$(cmd)
+host:
+	@gcloud run services describe $(NAME) \
+	--region $(REGION) --format="value(status.url)"
 
+ping:
+	@HOST=$(shell make host) && \
+	echo "dialig $(WHITE)$$HOST$(END)" && curl $$HOST/z/$(cmd)
+
+watch:
+	@HOST=$(shell make host) && watch "http $$HOST/z/ping"
 
 deploy: latest
 	gcloud run deploy $(NAME) \
 	--image=$(IMAGE) \
-	--set-env-vars=GODEBUG=netdns=go+1 \
+	--set-env-vars=GODEBUG=netdns=go+2 \
 	--region=$(REGION) \
 	--project=$(PROJECT)
+
+release: docker-build docker-tag-push deploy
+
+post:
+	@HOST=$(shell make host) && \
+	http POST $$HOST/action a=1 b=2
+
