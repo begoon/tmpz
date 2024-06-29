@@ -75,6 +75,7 @@ func action(w http.ResponseWriter, r *http.Request) {
 	}
 	v["status"] = "alive"
 	vv, err := json.MarshalIndent(v, "", "  ")
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, string(vv))
 	if err != nil {
 		fmt.Fprintf(w, "error marshalling: %v", err)
