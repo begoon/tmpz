@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -16,14 +18,15 @@ var DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
 type response struct {
 	events.APIGatewayV2HTTPRequest
 	Data struct {
-		Status   string `json:"status"`
-		CallerIP string `json:"callerIP"`
-		When     string `json:"when"`
+		Status   string   `json:"status"`
+		CallerIP string   `json:"callerIP"`
+		When     string   `json:"when"`
+		Env      []string `json:"env"`
 	} `json:"data"`
 }
 
 func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Printf("[REQUEST]: %#v\n", request)
+	slog.Info("[REQUEST]", "request", request)
 
 	resp, err := http.Get(DefaultHTTPGetAddress)
 	if err != nil {
@@ -49,14 +52,21 @@ func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 
 	request.Headers["INJECTED_HEADER"] = string(ip)
 
+	env := []string{}
+	if request.QueryStringParameters["env"] != "" {
+		env = os.Environ()
+	}
+
 	r := response{request, struct {
-		Status   string `json:"status"`
-		CallerIP string `json:"callerIP"`
-		When     string `json:"when"`
+		Status   string   `json:"status"`
+		CallerIP string   `json:"callerIP"`
+		When     string   `json:"when"`
+		Env      []string `json:"env"`
 	}{
 		Status:   "OK",
 		CallerIP: string(ip),
 		When:     time.Now().String(),
+		Env:      env,
 	}}
 
 	serialized, err := json.MarshalIndent(r, "", "  ")
@@ -67,6 +77,8 @@ func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 		}, err
 	}
 
+	slog.Info("EVENT", "request", request)
+
 	return events.APIGatewayProxyResponse{
 		Body:       string(serialized),
 		StatusCode: 200,
@@ -74,5 +86,22 @@ func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 }
 
 func main() {
+	if os.Getenv("LAMBDA_TASK_ROOT") != "" {
+		h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				if a.Key == slog.LevelKey {
+					a.Key = "severity"
+					return a
+				}
+				if a.Key == slog.MessageKey {
+					a.Key = "message"
+					return a
+				}
+				return a
+			},
+		})
+		slog.SetDefault(slog.New(h))
+	}
 	lambda.Start(handler)
 }
