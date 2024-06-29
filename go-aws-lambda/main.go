@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,7 +13,18 @@ import (
 
 var DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+type response struct {
+	events.APIGatewayV2HTTPRequest
+	Data struct {
+		Status   string `json:"status"`
+		CallerIP string `json:"callerIP"`
+		When     string `json:"when"`
+	} `json:"data"`
+}
+
+func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Printf("[REQUEST]: %#v\n", request)
+
 	resp, err := http.Get(DefaultHTTPGetAddress)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
@@ -31,9 +43,23 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return events.APIGatewayProxyResponse{}, err
 	}
 
+	if request.Headers == nil {
+		request.Headers = make(map[string]string)
+	}
+
 	request.Headers["INJECTED_HEADER"] = string(ip)
 
-	data, err := json.MarshalIndent(request, "", "  ")
+	r := response{request, struct {
+		Status   string `json:"status"`
+		CallerIP string `json:"callerIP"`
+		When     string `json:"when"`
+	}{
+		Status:   "OK",
+		CallerIP: string(ip),
+		When:     time.Now().String(),
+	}}
+
+	serialized, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			Body:       fmt.Sprintf("failed to marshal request: %v", err),
@@ -41,18 +67,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		}, err
 	}
 
-	// body := fmt.Sprintf(
-	// 	"%s\ncalled from -> %v\n",
-	// 	string(data), string(ip),
-	// )
-
-	body := fmt.Sprintf(
-		"%s",
-		string(data),
-	)
-
 	return events.APIGatewayProxyResponse{
-		Body:       body,
+		Body:       string(serialized),
 		StatusCode: 200,
 	}, nil
 }
