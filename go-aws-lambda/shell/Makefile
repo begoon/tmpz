@@ -1,16 +1,18 @@
-include .env
+include ../.env
 export
 
-FUNCTION_NAME=go-lambda
+FUNCTION_NAME=lambda-shell
 
-all: build zip upload pause call
+all: zip upload pause call
 
 build:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go build -tags lambda.norpc -o bootstrap main.go
 
 zip: build
-	zip function.zip bootstrap
+	chmod 755 function.sh bootstrap
+	rm -f function.zip
+	zip -r function.zip function.sh bootstrap 
+	unzip -l function.zip
+	ls -al function.zip
 
 upload: zip
 	aws lambda update-function-code \
@@ -18,7 +20,7 @@ upload: zip
 	--zip-file fileb://function.zip | cat
 
 pause:
-	@echo "pausing to allow AWS to update the function"
+	@echo "wait a moment for AWS to update the function..."
 	@sleep 3
 
 host:
