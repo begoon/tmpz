@@ -1,0 +1,15 @@
+FROM oven/bun:latest as bun
+
+FROM public.ecr.aws/lambda/provided:al2
+
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+
+# The AWS lambda filesystem is read-only, and only /tmp is writable.
+# We need to instruct bun to use /tmp for its cache.
+ENV BUN_RUNTIME_TRANSPILER_CACHE_PATH=/tmp
+ENV TMPDIR=/tmp
+
+COPY lambda.ts /var/task/
+
+ENTRYPOINT [ "/usr/local/bin/bun" ]
+CMD [ "/var/task/lambda.ts"]

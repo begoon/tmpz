@@ -32,11 +32,26 @@ type APIGatewayProxyEvent = {
 async function handler(event: APIGatewayProxyEvent) {
     const { method, path } = event.requestContext.http;
 
-    const echo = { method, path, status: 200 };
+    const echo = {
+        method,
+        path,
+        status: "200",
+        queryStringParameters: {},
+        runtime: runtime(),
+        env: {
+            ...env,
+            AWS_SESSION_TOKEN: "REDACTED",
+            AWS_SECRET_ACCESS_KEY: "REDACTED",
+        },
+        format: "",
+        body: "",
+    };
+
     if (event.queryStringParameters) {
         echo.queryStringParameters = event.queryStringParameters;
-        echo.status = event.queryStringParameters.status || 200;
+        echo.status = event.queryStringParameters.status || "200";
     }
+
     if (event.body) {
         try {
             echo.body = JSON.parse(event.body);
@@ -52,4 +67,12 @@ async function handler(event: APIGatewayProxyEvent) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(echo),
     };
+}
+
+function runtime() {
+    return typeof Deno !== "undefined"
+        ? "deno " + Deno.version.deno
+        : typeof Bun !== "undefined"
+        ? "bun " + Bun.version
+        : "maybe node";
 }

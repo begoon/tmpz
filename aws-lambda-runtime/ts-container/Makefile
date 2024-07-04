@@ -3,6 +3,8 @@ export
 
 FUNCTION_NAME=lambda-ts-container
 
+RUNTIME?=deno
+
 all:
 
 create-repo:
@@ -19,7 +21,8 @@ create-repo-retention-policy:
 build-tag-push: build tag-push
 
 build:
-	docker build -t $(FUNCTION_NAME) --platform linux/amd64 .
+	docker build -t $(FUNCTION_NAME) --platform linux/amd64 \
+	-f Dockerfile-$(RUNTIME) .
 
 REPO = $(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com
 
@@ -72,14 +75,6 @@ create-lambda-invoke-permission:
 	--statement-id FunctionURLAllowPublicAccess \
 	--principal "*" \
 	--function-url-auth-type NONE 
-
-	# aws lambda add-permission \
-	# --profile $(AWS_PROFILE) \
-	# --function-name $(FUNCTION_NAME) \
-	# --statement-id FunctionUrlInvoke \
-	# --action lambda:InvokeFunctionUrl \
-	# --principal '*' \ 
-	# --function-url-auth-type NONE
 
 # lambda development cycle
 

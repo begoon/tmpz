@@ -22,3 +22,9 @@
 or
 
 - test
+
+## Links
+
+- <https://docs.aws.amazon.com/lambda/latest/dg/runtimes-api.html>
+- <https://github.com/aws/aws-lambda-runtime-interface-emulator>
+- <https://docs.aws.amazon.com/lambda/latest/dg/images-create.html#runtimes-api-client>

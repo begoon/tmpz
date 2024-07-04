@@ -1,0 +1,14 @@
+FROM denoland/deno as deno
+
+FROM public.ecr.aws/lambda/provided:al2
+
+COPY --from=deno /usr/bin/deno /usr/bin/deno
+
+# We need to set the DENO_DIR to /tmp because the AWS lambda filesystem 
+# is read-only except for /tmp. Deno may need to write to its cache.
+ENV DENO_DIR=/tmp
+
+COPY lambda.ts /var/task/
+
+ENTRYPOINT [ "/usr/bin/deno" ]
+CMD [ "run", "-A", "--no-lock", "/var/task/lambda.ts"]
