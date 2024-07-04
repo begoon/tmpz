@@ -3,6 +3,8 @@ export
 
 FUNCTION_NAME=lambda-ts-container
 
+REPO = $(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com
+
 RUNTIME?=deno
 
 all:
@@ -20,15 +22,13 @@ create-repo-retention-policy:
 	
 build-tag-push: build tag-push
 
-build:
-	docker build -t $(FUNCTION_NAME) --platform linux/amd64 \
-	-f Dockerfile-$(RUNTIME) .
-
-REPO = $(AWS_ACCOUNT).dkr.ecr.$(AWS_REGION).amazonaws.com
-
 ecr-login:
 	aws ecr get-login-password --region $(AWS_REGION) --profile $(AWS_PROFILE) \
 	| docker login --username AWS --password-stdin $(REPO)
+
+build:
+	docker build -t $(FUNCTION_NAME) --platform linux/amd64 \
+	-f Dockerfile-$(RUNTIME) .
 
 tag-push:
 	 docker tag $(FUNCTION_NAME):latest $(REPO)/$(FUNCTION_NAME):latest
@@ -50,7 +50,7 @@ create-lambda-role:
 	aws iam attach-role-policy \
 	--profile $(AWS_PROFILE)
 	--role-name $(FUNCTION_NAME)-role \
-	--policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole \
+	--policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
 create-lambda:
 	aws lambda create-function \
@@ -69,7 +69,7 @@ create-lambda-url:
 
 create-lambda-invoke-permission:
 	aws lambda add-permission \
-	--profile femosofia2022 \
+	--profile $(AWS_PROFILE) \
 	--function-name $(FUNCTION_NAME) \
 	--action lambda:InvokeFunctionUrl \
 	--statement-id FunctionURLAllowPublicAccess \

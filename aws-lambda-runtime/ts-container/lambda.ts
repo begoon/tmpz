@@ -21,6 +21,8 @@ while (true) {
     });
 }
 
+// This is a simplified version of the AWS Lambda runtime API.
+// The full specification can be found at:
 // https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html
 
 type APIGatewayProxyEvent = {
@@ -72,7 +74,9 @@ async function handler(event: APIGatewayProxyEvent) {
 function runtime() {
     return typeof Deno !== "undefined"
         ? "deno " + Deno.version.deno
-        : typeof Bun !== "undefined"
-        ? "bun " + Bun.version
+        : // @ts-ignore deno-ts(2867)
+        typeof Bun !== "undefined"
+        ? // @ts-ignore deno-ts(2867)
+          "bun " + Bun.version
         : "maybe node";
 }
