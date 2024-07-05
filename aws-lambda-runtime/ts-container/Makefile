@@ -129,6 +129,10 @@ error:
 	@HOST=$(shell make lambda-url) && \
 	http GET "$$HOST/error?msg=please%20fail%20me"
 
+cmd:
+	test -n "$(CMD)" || (echo "CMD is required" && exit 1)
+	@HOST=$(shell make lambda-url) && http GET "$$HOST/$(CMD)"
+
 # test
 
 test: deploy get get-418 put-json put-text

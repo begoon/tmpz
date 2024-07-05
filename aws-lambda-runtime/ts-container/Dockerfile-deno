@@ -4,11 +4,24 @@ FROM public.ecr.aws/lambda/provided:al2
 
 COPY --from=deno /usr/bin/deno /usr/bin/deno
 
-# We need to set the DENO_DIR to /tmp because the AWS lambda filesystem 
-# is read-only except for /tmp. Deno may need to write to its cache.
-ENV DENO_DIR=/tmp
+ENV DENO_DIR=/var/task/.cache
 
-COPY lambda.ts /var/task/
+COPY lambda.ts pdf.ts /var/task/
+
+RUN DENO_DIR=/var/task/.cache \
+    deno cache \
+    --no-lock \
+    --node-modules-dir=true \
+    --vendor=true \
+    /var/task/lambda.ts
 
 ENTRYPOINT [ "/usr/bin/deno" ]
-CMD [ "run", "-A", "--no-lock", "/var/task/lambda.ts"]
+CMD [ "run", "-A", \
+    "--no-lock", \
+    "--no-check", \
+    "--no-remote", \
+    "--cached-only", \
+    "--node-modules-dir=true", \
+    "--vendor=true", \
+    "/var/task/lambda.ts" \
+    ]

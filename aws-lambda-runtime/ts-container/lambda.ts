@@ -1,4 +1,8 @@
+import { Buffer } from "node:buffer";
+import fs from "node:fs";
 import process from "node:process";
+
+import { pdf } from "./pdf.ts";
 
 const env = process.env;
 
@@ -51,6 +55,21 @@ async function handler(event: APIGatewayProxyEvent) {
     if (path === "/error") {
         const msg = event.queryStringParameters?.msg || "default error message";
         throw new Error(msg, { cause: "enforced" });
+    }
+
+    if (path === "/tmp") {
+        const files = fs.readdirSync("/tmp");
+        return { statusCode: "200", body: JSON.stringify(files) };
+    }
+
+    if (path === "/pdf") {
+        const content = await pdf();
+        return {
+            statusCode: "200",
+            body: Buffer.from(await content.arrayBuffer()).toString("base64"),
+            isBase64Encoded: true,
+            headers: { "Content-Type": "application/pdf" },
+        };
     }
 
     console.log(method, path);
