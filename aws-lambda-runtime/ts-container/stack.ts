@@ -1,4 +1,5 @@
 try {
+    // @ts-ignore deno-ts(7022)
     a = 1;
     throw new Error("Something went wrong!");
 } catch (error) {
