@@ -13,12 +13,26 @@ while (true) {
     const REQUEST_ID = event.headers.get("Lambda-Runtime-Aws-Request-Id");
     console.log("REQUEST_ID", REQUEST_ID);
 
-    const response = await handler(await event.json());
+    try {
+        const response = await handler(await event.json());
 
-    await fetch(API + `/${REQUEST_ID}/response`, {
-        method: "POST",
-        body: JSON.stringify(response),
-    });
+        await fetch(API + `/${REQUEST_ID}/response`, {
+            method: "POST",
+            body: JSON.stringify(response),
+        });
+    } catch (error) {
+        console.error("error:", JSON.stringify(error.message));
+        const stack = error.stack.split("\n");
+        console.error("stack trace:", JSON.stringify(stack));
+        await fetch(API + `/${REQUEST_ID}/error`, {
+            method: "POST",
+            body: JSON.stringify({
+                errorMessage: error.message,
+                errorType: error.name,
+                stackTrace: stack,
+            }),
+        });
+    }
 }
 
 // This is a simplified version of the AWS Lambda runtime API.
@@ -34,6 +48,12 @@ type APIGatewayProxyEvent = {
 async function handler(event: APIGatewayProxyEvent) {
     const { method, path } = event.requestContext.http;
 
+    if (path === "/error") {
+        const msg = event.queryStringParameters?.msg || "default error message";
+        throw new Error(msg, { cause: "enforced" });
+    }
+
+    console.log(method, path);
     const echo = {
         method,
         path,

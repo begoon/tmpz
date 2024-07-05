@@ -125,6 +125,34 @@ get-418:
 	@HOST=$(shell make lambda-url) && \
 	http GET "$$HOST/call?a=1&status=418"
 
+error:
+	@HOST=$(shell make lambda-url) && \
+	http GET "$$HOST/error?msg=please%20fail%20me"
+
 # test
 
 test: deploy get get-418 put-json put-text
+
+# logs
+
+log-groups:
+	aws logs describe-log-groups \
+	--profile $(AWS_PROFILE) \
+	--query "logGroups[*].logGroupName"
+
+log-streams:
+	@aws logs describe-log-streams \
+	--profile $(AWS_PROFILE) \
+	--log-group-name /aws/lambda/$(FUNCTION_NAME) \
+	--order-by LastEventTime --descending \
+	--query "logStreams[*].logStreamName"
+
+last-log-stream:
+	make log-streams | jq -r '.[0]'
+
+logs:
+	aws logs tail \
+	--profile $(AWS_PROFILE) \
+	--format short \
+	/aws/lambda/$(FUNCTION_NAME) \
+	| tr '\t' ' '
