@@ -11,14 +11,15 @@ const auth = new GoogleAuth({ credentials: credentials });
 
 const firestore = new Firestore({ authClient: await auth.getClient() });
 
-const document = firestore.doc("karta/wheel");
+const document = firestore.collection("karta").doc("wheel");
 
 await document.set({
-    title: "Welcome to Firestore",
-    body: "Hello World",
+    title: "title",
+    body: "message",
+    when: new Date().toISOString(),
 });
 
 const read = await document.get();
 console.log("read", read.data());
 
-await document.delete();
+// await document.delete();
