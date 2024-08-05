@@ -1,0 +1,9 @@
+{
+    "mypy-type-checker.ignorePatterns": [
+        "*pb2*"
+    ],
+    "flake8.args": [
+        "--ignore=*pb2*",
+        "--max-line-length=80"
+    ]
+}
