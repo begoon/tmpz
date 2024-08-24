@@ -100,21 +100,6 @@ def process_image(image):
 
 
 def rotate_rect(x1, y1, x2, y2, angle):
-    """
-    Rotates a rectangle defined by (x1, y1, x2, y2) by 'angle' degrees around
-    its center.
-
-    Args:
-        x1, y1: Coordinates of the top-left corner of the rectangle.
-        x2, y2: Coordinates of the bottom-right corner of the rectangle.
-
-        angle: Angle of rotation in degrees.
-
-    Returns:
-        Rotated rectangle coordinates (x1_rot, y1_rot, x2_rot, y2_rot).
-    """
-
-    # Calculate center of the rectangle
     center_x = (x1 + x2) / 2
     center_y = (y1 + y2) / 2
 
@@ -122,17 +107,14 @@ def rotate_rect(x1, y1, x2, y2, angle):
     # width = x2 - x1
     # height = y2 - y1
 
-    # Create rotation matrix
     rotation_matrix = cv2.getRotationMatrix2D((center_x, center_y), angle, 1.0)
 
-    # Apply rotation to the corners
     corners = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
 
     rotated_corners = (
         np.dot(corners, rotation_matrix[:, :2].T) + rotation_matrix[:, 2]
     )
 
-    # Find new bounding box
     x1_rot, y1_rot = np.min(rotated_corners, axis=0)
     x2_rot, y2_rot = np.max(rotated_corners, axis=0)
 
