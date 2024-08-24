@@ -1,93 +1,171 @@
+import json
+import pathlib
+import sys
+
 import cv2
-import mediapipe as mp
+import mediapipe
 import numpy as np
-from mediapipe import solutions
-from mediapipe.framework.formats import landmark_pb2
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
 
-MARGIN = 10  # pixels
-FONT_SIZE = 1
-FONT_THICKNESS = 1
-HANDEDNESS_TEXT_COLOR = (88, 205, 54)  # vibrant green
+hands = mediapipe.solutions.hands.Hands(
+    static_image_mode=False,
+    max_num_hands=2,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5,
+)
+
+drawing = mediapipe.solutions.drawing_utils
 
 
-def convert_bgra_to_bgr(image):
-    """Converts a BGRA image to BGR.
+def process_image(image):
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    results = hands.process(image_rgb)
+
+    if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+            drawing.draw_landmarks(
+                image,
+                hand_landmarks,
+                mediapipe.solutions.hands.HAND_CONNECTIONS,
+            )
+
+        bounding_box = [[image.shape[1], image.shape[0]], [0, 0]]
+        for world_hand_landmarks in results.multi_hand_landmarks:
+            for index, landmark in enumerate(world_hand_landmarks.landmark):
+                height, width, _ = image.shape
+                cx, cy = int(landmark.x * width), int(landmark.y * height)
+                cv2.putText(
+                    image,
+                    str(index),
+                    (cx, cy),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 255, 255),
+                    1,
+                    cv2.LINE_AA,
+                )
+                if cx < bounding_box[0][0]:
+                    bounding_box[0][0] = cx
+                if cy < bounding_box[0][1]:
+                    bounding_box[0][1] = cy
+                if cx > bounding_box[1][0]:
+                    bounding_box[1][0] = cx
+                if cy > bounding_box[1][1]:
+                    bounding_box[1][1] = cy
+            cv2.rectangle(
+                image,
+                (bounding_box[0][0] - 20, bounding_box[0][1] - 20),
+                (bounding_box[1][0] + 20, bounding_box[1][1] + 20),
+                (0, 255, 0),
+                2,
+            )
+
+        finger_tips = [4, 8, 12, 16, 20]
+        finger_roots = [0, 5, 9, 13, 17]
+        fingertips_bounding_boxes = []
+        for tip, root in zip(finger_tips, finger_roots):
+            angle = cv2.fastAtan2(
+                world_hand_landmarks.landmark[root].y
+                - world_hand_landmarks.landmark[tip].y,
+                world_hand_landmarks.landmark[root].x
+                - world_hand_landmarks.landmark[tip].x,
+            )
+            cx, cy = (
+                int(world_hand_landmarks.landmark[tip].x * width),
+                int(world_hand_landmarks.landmark[tip].y * height),
+            )
+            box = [
+                [cx - 20, cy - 20],
+                [cx + 20, cy + 20],
+            ]
+            cv2.rectangle(image, box[0], box[1], (0, 0, 255), 2)
+
+            rotated_box_contour = cv2.boxPoints(
+                ((cx, cy), (60, 50), angle)
+            ).astype(int)
+            cv2.drawContours(image, [rotated_box_contour], 0, (255, 0, 0), 2)
+
+            # rotated_box = rotate_rect(
+            #     box[0][0], box[0][1], box[1][0], box[1][1], angle,
+            # )
+            # cv2.rectangle(
+            #     image,
+            #     (rotated_box[0], rotated_box[1]),
+            #     (rotated_box[2], rotated_box[3]),
+            #     (255, 0, 0),
+            #     2,
+            # )
+
+            fingertips_bounding_boxes.append(box)
+
+
+def rotate_rect(x1, y1, x2, y2, angle):
+    """
+    Rotates a rectangle defined by (x1, y1, x2, y2) by 'angle' degrees around
+    its center.
 
     Args:
-      image: A numpy array representing the BGRA image.
+        x1, y1: Coordinates of the top-left corner of the rectangle.
+        x2, y2: Coordinates of the bottom-right corner of the rectangle.
+
+        angle: Angle of rotation in degrees.
 
     Returns:
-      A numpy array representing the BGR image.
+        Rotated rectangle coordinates (x1_rot, y1_rot, x2_rot, y2_rot).
     """
-    b, g, r, a = cv2.split(image)
-    return cv2.merge([b, g, r])
+
+    # Calculate center of the rectangle
+    center_x = (x1 + x2) / 2
+    center_y = (y1 + y2) / 2
+
+    # Calculate width and height
+    # width = x2 - x1
+    # height = y2 - y1
+
+    # Create rotation matrix
+    rotation_matrix = cv2.getRotationMatrix2D((center_x, center_y), angle, 1.0)
+
+    # Apply rotation to the corners
+    corners = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
+
+    rotated_corners = (
+        np.dot(corners, rotation_matrix[:, :2].T) + rotation_matrix[:, 2]
+    )
+
+    # Find new bounding box
+    x1_rot, y1_rot = np.min(rotated_corners, axis=0)
+    x2_rot, y2_rot = np.max(rotated_corners, axis=0)
+
+    return int(x1_rot), int(y1_rot), int(x2_rot), int(y2_rot)
 
 
-def draw_landmarks_on_image(rgb_image, detection_result):
-    hand_landmarks_list = detection_result.hand_landmarks
-    handedness_list = detection_result.handedness
-    annotated_image = np.copy(rgb_image)
+if "video" in sys.argv:
+    cap = cv2.VideoCapture(0)
 
-    # Loop through the detected hands to visualize.
-    for idx in range(len(hand_landmarks_list)):
-        hand_landmarks = hand_landmarks_list[idx]
-        handedness = handedness_list[idx]
+    while True:
+        ret, image = cap.read()
+        if not ret:
+            continue
+        process_image(image)
+        cv2.imshow('hand landmarks', image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-        # Draw the hand landmarks.
-        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        hand_landmarks_proto.landmark.extend(
-            [
-                landmark_pb2.NormalizedLandmark(
-                    x=landmark.x, y=landmark.y, z=landmark.z
-                )
-                for landmark in hand_landmarks
-            ]
-        )
-        solutions.drawing_utils.draw_landmarks(
-            annotated_image,
-            hand_landmarks_proto,
-            solutions.hands.HAND_CONNECTIONS,
-            solutions.drawing_styles.get_default_hand_landmarks_style(),
-            solutions.drawing_styles.get_default_hand_connections_style(),
-        )
+    cap.release()
+    cv2.destroyAllWindows()
 
-        # Get the top left corner of the detected hand's bounding box.
-        height, width, _ = annotated_image.shape
-        x_coordinates = [landmark.x for landmark in hand_landmarks]
-        y_coordinates = [landmark.y for landmark in hand_landmarks]
-        text_x = int(min(x_coordinates) * width)
-        text_y = int(min(y_coordinates) * height) - MARGIN
+if "image" in sys.argv:
+    filename = pathlib.Path(sys.argv[2])
+    image = cv2.imread(str(filename))
+    process_image(image)
+    landmarks: list[tuple[int, int]] = json.loads(
+        filename.with_suffix('.json').read_text()
+    )["keypoints"]
+    for index, (x, y) in enumerate(landmarks):
+        cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
 
-        # Draw handedness (left or right hand) on the image.
-        cv2.putText(
-            annotated_image,
-            f"{handedness[0].category_name}",
-            (text_x, text_y),
-            cv2.FONT_HERSHEY_DUPLEX,
-            FONT_SIZE,
-            HANDEDNESS_TEXT_COLOR,
-            FONT_THICKNESS,
-            cv2.LINE_AA,
-        )
+    cv2.imshow('hand landmarks', image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-    return annotated_image
-
-
-base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
-options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=2)
-detector = vision.HandLandmarker.create_from_options(options)
-
-# image = mp.Image.create_from_file("image.jpg")
-image = mp.Image.create_from_file("verify.png")
-
-detection_result = detector.detect(image)
-
-image_ = convert_bgra_to_bgr(image.numpy_view())
-
-annotated_image = draw_landmarks_on_image(image_, detection_result)
-cv2.imshow("image", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
-cv2.waitKey(0)
-
-cv2.imwrite("output.jpg", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(filename.with_suffix(".output" + filename.suffix), image)
