@@ -77,10 +77,11 @@ def process_image(image):
                 bounding_box[1][0] = cx + x_delta
             if cy > bounding_box[1][1]:
                 bounding_box[1][1] = cy + y_delta
+            height, width, _ = image.shape
             cv2.putText(
                 image,
                 f"x: {cx}, y: {cy}",
-                (0, index * 20 + 20),
+                (width - 200, index * 20 + 20),
                 cv2.FONT_HERSHEY_TRIPLEX,
                 0.5,
                 (0, 0, 0),
@@ -197,7 +198,7 @@ if "video" in sys.argv:
         if c == ord('e'):
             print(WHITE, "ENROLL", NC)
 
-            print(YELLOW, f"{len(keypoints)=}", NC)
+            # print(YELLOW, f"{len(keypoints)=}", NC)
 
             enroll_request = EnrollRequest(keypoints=keypoints)
 
@@ -228,7 +229,7 @@ if "video" in sys.argv:
 
             verify_request = VerifyRequest(
                 keypoints=keypoints,
-                embeddings=embeddings,
+                embeddings=embeddings[-10:],
             )
             print(
                 YELLOW,
@@ -253,7 +254,7 @@ if "video" in sys.argv:
                 files=files,
             )
             response.raise_for_status()
-            print(GREEN, response.json(), NC)
+            print(GREEN, f"{response.json()["score"]=}", NC)
 
     cap.release()
     cv2.destroyAllWindows()
