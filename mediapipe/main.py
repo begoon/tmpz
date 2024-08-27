@@ -1,5 +1,6 @@
 import io
 import json
+import math
 import os
 import pathlib
 import sys
@@ -81,7 +82,7 @@ def process_image(image):
             cv2.putText(
                 image,
                 f"x: {cx}, y: {cy}",
-                (width - 200, index * 20 + 20),
+                (0, index * 20 + 20),
                 cv2.FONT_HERSHEY_TRIPLEX,
                 0.5,
                 (0, 0, 0),
@@ -139,6 +140,10 @@ def process_image(image):
         bounding_box[0][0] : bounding_box[1][0],
     ]
 
+    x_offset = image.shape[1] - cropped_image.shape[1]
+    y_offset = image.shape[0] - cropped_image.shape[0]
+    image[y_offset:, x_offset:] = cropped_image
+
     return image, cropped_image, keypoints
 
 
@@ -176,6 +181,8 @@ class VerifyRequest(BaseModel):
     embeddings: list[list[float]]
 
 
+previous_keypoints = []
+
 if "video" in sys.argv:
     cap = cv2.VideoCapture(1)
 
@@ -185,10 +192,22 @@ if "video" in sys.argv:
             continue
         preview, cropped_image, keypoints = process_image(image)
 
+        if previous_keypoints and keypoints:
+            delta = math.sqrt(
+                sum(
+                    (x1 - x2) ** 2 + (y1 - y2) ** 2
+                    for (x1, y1), (x2, y2) in zip(previous_keypoints, keypoints)
+                )
+            )
+            if (delta > 50):
+                print("delta", delta)
+
+        previous_keypoints = keypoints
+
         if preview is not None:
             cv2.imshow('hand landmarks', preview)
 
-        if cropped_image is not None:
+        if False and cropped_image is not None:
             cv2.imshow('cropped hand', cropped_image)
 
         c = cv2.waitKey(1) & 0xFF
@@ -197,8 +216,6 @@ if "video" in sys.argv:
 
         if c == ord('e'):
             print(WHITE, "ENROLL", NC)
-
-            # print(YELLOW, f"{len(keypoints)=}", NC)
 
             enroll_request = EnrollRequest(keypoints=keypoints)
 
@@ -232,10 +249,13 @@ if "video" in sys.argv:
                 embeddings=embeddings[-10:],
             )
             print(
+                "embeddings",
                 YELLOW,
                 len(verify_request.embeddings),
+                NC,
+                "keypoints",
+                YELLOW,
                 len(verify_request.keypoints),
-                verify_request.keypoints,
                 NC,
             )
 
@@ -254,7 +274,7 @@ if "video" in sys.argv:
                 files=files,
             )
             response.raise_for_status()
-            print(GREEN, f"{response.json()["score"]=}", NC)
+            print("score", GREEN, f"{response.json()["score"]}", NC)
 
     cap.release()
     cv2.destroyAllWindows()
