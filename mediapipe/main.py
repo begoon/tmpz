@@ -117,21 +117,10 @@ def process_image(image):
         ]
         cv2.rectangle(image, box[0], box[1], (0, 0, 255), 2)
 
-        rotated_box_contour = cv2.boxPoints(((cx, cy), (60, 50), angle)).astype(
-            int
+        rotated_corners = rotate_rectangle(
+            box[0][0]-20, box[0][1], box[1][0]+20, box[1][1], -angle,
         )
-        cv2.drawContours(image, [rotated_box_contour], 0, (255, 0, 0), 2)
-
-        # rotated_box = rotate_rect(
-        #     box[0][0], box[0][1], box[1][0], box[1][1], angle,
-        # )
-        # cv2.rectangle(
-        #     image,
-        #     (rotated_box[0], rotated_box[1]),
-        #     (rotated_box[2], rotated_box[3]),
-        #     (255, 0, 0),
-        #     2,
-        # )
+        draw_rectangle_by_corners(image, rotated_corners)
 
         fingertips_bounding_boxes.append(box)
 
@@ -147,13 +136,9 @@ def process_image(image):
     return image, cropped_image, keypoints
 
 
-def rotate_rect(x1, y1, x2, y2, angle):
+def rotate_rectangle(x1, y1, x2, y2, angle):
     center_x = (x1 + x2) / 2
     center_y = (y1 + y2) / 2
-
-    # Calculate width and height
-    # width = x2 - x1
-    # height = y2 - y1
 
     rotation_matrix = cv2.getRotationMatrix2D((center_x, center_y), angle, 1.0)
 
@@ -161,12 +146,17 @@ def rotate_rect(x1, y1, x2, y2, angle):
 
     rotated_corners = (
         np.dot(corners, rotation_matrix[:, :2].T) + rotation_matrix[:, 2]
-    )
+    ).astype(int)
 
-    x1_rot, y1_rot = np.min(rotated_corners, axis=0)
-    x2_rot, y2_rot = np.max(rotated_corners, axis=0)
+    return rotated_corners
 
-    return int(x1_rot), int(y1_rot), int(x2_rot), int(y2_rot)
+
+def draw_rectangle_by_corners(image, corners, color=(0, 255, 0)):
+    thickness = 2
+    cv2.line(image, corners[0], corners[1], color, thickness)
+    cv2.line(image, corners[1], corners[2], color, thickness)
+    cv2.line(image, corners[2], corners[3], color, thickness)
+    cv2.line(image, corners[3], corners[0], color, thickness)
 
 
 embeddings = []
@@ -183,6 +173,11 @@ class VerifyRequest(BaseModel):
 
 previous_keypoints = []
 
+seconds = 0
+last_stable = 0
+
+auto = "auto" in sys.argv
+
 if "video" in sys.argv:
     cap = cv2.VideoCapture(1)
 
@@ -192,6 +187,8 @@ if "video" in sys.argv:
             continue
         preview, cropped_image, keypoints = process_image(image)
 
+        enrolling = False
+
         if previous_keypoints and keypoints:
             delta = math.sqrt(
                 sum(
@@ -199,8 +196,14 @@ if "video" in sys.argv:
                     for (x1, y1), (x2, y2) in zip(previous_keypoints, keypoints)
                 )
             )
-            if (delta > 50):
-                print("delta", delta)
+            if (delta < 50):
+                if seconds - last_stable > 10:
+                    print(YELLOW, "STABLE", NC, len(embeddings))
+                    last_stable = seconds
+                    enrolling = True
+            else:
+                print(RED, "UNSTABLE", NC)
+                last_stable = 0
 
         previous_keypoints = keypoints
 
@@ -210,11 +213,13 @@ if "video" in sys.argv:
         if False and cropped_image is not None:
             cv2.imshow('cropped hand', cropped_image)
 
+        seconds += 1
+            
         c = cv2.waitKey(1) & 0xFF
         if c == ord('q'):
             break
 
-        if c == ord('e'):
+        if c == ord('e') or (auto and enrolling):
             print(WHITE, "ENROLL", NC)
 
             enroll_request = EnrollRequest(keypoints=keypoints)
@@ -238,7 +243,7 @@ if "video" in sys.argv:
 
             print(GREEN, f"{len(embeddings)=}", len(embedding), NC)
 
-        if c == ord('v'):
+        if c == ord('v') or (auto and len(embeddings) >= 10):
             print(WHITE, "VERIFY", NC)
 
             if len(embeddings) < 1:
@@ -275,6 +280,8 @@ if "video" in sys.argv:
             )
             response.raise_for_status()
             print("score", GREEN, f"{response.json()["score"]}", NC)
+
+            embeddings = embeddings[:-10]
 
     cap.release()
     cv2.destroyAllWindows()
