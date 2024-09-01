@@ -1,0 +1,10 @@
+{
+    "name": "cr",
+    "type": "module",
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "dependencies": {
+        "consola": "^3.2.3"
+    }
+}

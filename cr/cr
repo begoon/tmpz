@@ -5,11 +5,13 @@ import { $ } from "bun";
 import consola from "consola";
 import fs from "node:fs";
 
+consola.options.formatOptions.columns = 0;
+
 function flag(name: string) {
-    const i = process.argv.findIndex((v) => v === `--${name}`);
+    const i = process.argv.findIndex((v) => v === name);
     if (i === -1) return undefined;
     process.argv.splice(i, 1);
-    return process.argv[i + 1];
+    return true;
 }
 
 function option(name: string, default_: string | undefined = undefined) {
@@ -101,6 +103,11 @@ const health = async () => await (await fetch(`${url}/health`)).json();
 consola.info("health", await health());
 
 const options = await tags();
+
+if (flag("--last")) {
+    consola.box(options[0]);
+    process.exit(0);
+}
 
 const update = await consola.prompt("deploy?", {
     type: "select",
