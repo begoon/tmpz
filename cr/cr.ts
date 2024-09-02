@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { $ } from "bun";
 
 import consola, { LogLevels } from "consola";
@@ -27,8 +25,8 @@ const verbose = flag("--verbose");
 if (verbose) consola.level = LogLevels.debug;
 
 const MakefileName = option("-f", "Makefile");
-if (!MakefileName) {
-    consola.error("Makefile not found");
+if (!MakefileName || !fs.existsSync(MakefileName)) {
+    consola.error("not found", MakefileName);
     process.exit(1);
 }
 consola.info(MakefileName);
