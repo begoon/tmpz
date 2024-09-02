@@ -1,26 +1,17 @@
 import { embeddedFiles, file } from "bun";
-/// @ts-ignore
+// @ts-ignore
 import icon from "./public/3948225.avif" with { type: "file" };
-import data from "./public/data.json" with { type: "file" };
-
-process.on("exit", () => {
-    console.log("bye!");
-})
-
-process.on("SIGTERM", () => {
-    console.log("interrupted");
-    process.exit(0);
-})
+import data from "./public/data.json" with { type: "json" };
 
 import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 
 const api = new Elysia()
-    .use(staticPlugin({prefix: "/fs"}))
+    .use(staticPlugin({prefix: "/fs", indexHTML: true}))
     .use(swagger())
     .get("/", () => "ha?")
-    .get("/api", () => "call me!")
+    .get("/api", () => "/api/*")
     .post("/post", () => "postage")
 
 Bun.serve({
