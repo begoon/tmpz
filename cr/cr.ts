@@ -25,11 +25,21 @@ const REPO = makefile.get("REPO");
 
 const REGION = makefile.get("REGION");
 const PROJECT = makefile.get("PROJECT");
+
 const SERVICE_NAME = makefile.get("SERVICE_NAME");
 
 const service = await info();
-consola.info("image", service.image);
+consola.info("image", imageHref(service.image));
 
+function imageHref(image: string) {
+    const [repo, _tag] = image.split(":");
+    const [host, project, prefix, name] = repo.split("/");
+    const [location, _] = host.split("-");
+    const gar = "https://console.cloud.google.com/artifacts/docker";
+    const link = `${gar}/${project}/${location}/${prefix}/${name}?project=${project}`;
+    consola.debug(link);
+    return href(link, image);
+}
 const commands = process.argv.slice(2);
 
 if (commands.length > 0) {
@@ -102,6 +112,10 @@ function option(name: string, default_: string | undefined = undefined) {
     return value;
 }
 
+function href(href: string, text: string) {
+    return `\u001b]8;;${href}\u001b\\${text}\u001b]8;;\u001b\\`;
+}
+
 function parseVariables(content: string) {
     const lines = content.split("\n");
     const values = {};
@@ -135,7 +149,9 @@ async function info() {
 }
 
 async function health() {
-    return await (await fetch(`${service.url}/health`)).json();
+    const url = service.url + "/health";
+    consola.info("health", url);
+    return await (await fetch(url)).json();
 }
 
 async function tags() {
