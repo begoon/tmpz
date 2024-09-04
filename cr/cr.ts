@@ -1,5 +1,6 @@
 import { $ } from "bun";
 
+import { spinner } from "@clack/prompts";
 import consola, { LogLevels } from "consola";
 import fs from "node:fs";
 
@@ -40,7 +41,7 @@ function imageHref(image: string) {
     consola.debug(link);
     return href(link, image);
 }
-const commands = process.argv.slice(2);
+const commands = process.argv.slice(2).filter((v) => !v.startsWith("-"));
 
 if (commands.length > 0) {
     consola.debug("commands", commands);
@@ -57,7 +58,19 @@ if (commands.length > 0) {
                 break;
             case "tag":
             case "l":
-                consola.info((await tags())[0]);
+                const wait = flag("--wait");
+                const first = (await tags())[0];
+                let tag = first;
+                if (wait) {
+                    const v = spinner();
+                    v.start(`${first}...`);
+                    do {
+                        await new Promise((r) => setTimeout(r, 1000));
+                        tag = (await tags())[0] as string;
+                    } while (tag === first);
+                    v.stop(tag);
+                }
+                consola.info(tag);
                 break;
             case "health":
             case "h":

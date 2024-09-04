@@ -5,6 +5,7 @@
         "@types/bun": "latest"
     },
     "dependencies": {
+        "@clack/prompts": "^0.7.0",
         "consola": "^3.2.3"
     }
 }
