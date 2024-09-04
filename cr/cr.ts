@@ -58,7 +58,7 @@ if (commands.length > 0) {
                 break;
             case "tag":
             case "l":
-                const wait = flag("--wait");
+                const wait = flag("--wait") || flag("-w");
                 const first = (await tags())[0];
                 let tag = first;
                 if (wait) {
@@ -69,6 +69,7 @@ if (commands.length > 0) {
                         tag = (await tags())[0] as string;
                     } while (tag === first);
                     v.stop(tag);
+                    await notify(`new tag is pushed`);
                 }
                 consola.info(tag);
                 break;
@@ -108,6 +109,8 @@ for await (let line of $`gcloud run deploy ${SERVICE_NAME} --region ${REGION} --
 consola.info("OK");
 
 consola.info(await health());
+
+await notify("deployed");
 
 function flag(name: string) {
     const i = process.argv.findIndex((v) => v === name);
@@ -175,4 +178,9 @@ async function tags() {
         .map((image: { tags: string[] }) => image.tags)
         .reduce((a: string[], v: string) => a.concat(v), [])
         .filter((tag: string) => tag !== "latest");
+}
+
+async function notify(msg: string) {
+    await $`osascript -e 'display notification "${msg}" with title "OK"'`;
+    await $`say "${msg}"`;
 }
