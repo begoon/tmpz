@@ -4,6 +4,12 @@ import { spinner } from "@clack/prompts";
 import consola, { LogLevels } from "consola";
 import fs from "node:fs";
 
+type VM = {
+    name: string;
+    status: string;
+    networkInterfaces: { accessConfigs: { natIP: string }[] }[];
+};
+
 consola.options.formatOptions.columns = 0;
 consola.options.formatOptions.compact = false;
 
@@ -77,6 +83,22 @@ if (commands.length > 0) {
             case "h":
                 consola.info(await health());
                 break;
+            case "vm":
+                const vms =
+                    await $`gcloud compute instances list --project ${PROJECT} --format=json`.json();
+
+                consola.info(
+                    vms.map((v: VM) => ({
+                        name: v.name,
+                        status: v.status,
+                        network: v.networkInterfaces
+                            .map((v) => v.accessConfigs.map((v) => v.natIP))
+                            .flat()
+                            .at(0),
+                    }))
+                );
+                break;
+
             default:
                 consola.error("ha?", command);
                 process.exit(1);
