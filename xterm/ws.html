@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.css"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js"></script>
+    </head>
+    <body>
+        <div id="terminal"></div>
+
+        <script>
+            const element = document.getElementById("terminal");
+
+            const term = new Terminal({});
+
+            let buffer = "";
+            term.open(element);
+            term.write("terminal \x1B[1;3;31mws\x1B[0m\n\r");
+            term.focus();
+
+            term.onKey((e) => {
+                const ev = e.domEvent;
+                const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+
+                if (ev.keyCode === 13) {
+                    console.log("enter", buffer);
+                    term.write("\n\r");
+                    ws.send(buffer);
+                    buffer = "";
+                } else if (ev.keyCode === 8) {
+                    term.write("\b \b");
+                    buffer = buffer.slice(0, -1);
+                } else if (printable) {
+                    term.write(e.key);
+                    buffer += e.key;
+                }
+            });
+        </script>
+
+        <script>
+            const ws = new WebSocket("https://ws-chatter.deno.dev");
+
+            ws.onopen = () => {
+                println("connected");
+            };
+
+            ws.onmessage = (event) => {
+                println(event.data);
+            };
+
+            ws.onerror = (error) => {
+                println("error " + JSON.stringify(error));
+            };
+
+            ws.onclose = (event) => {
+                println("closed " + JSON.stringify(event));
+            };
+
+            function println(text) {
+                console.log("print", term, text);
+                term.writeln(text);
+            }
+        </script>
+    </body>
+</html>
