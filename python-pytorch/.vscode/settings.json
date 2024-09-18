@@ -1,0 +1,14 @@
+{
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "mypy-type-checker.importStrategy": "useBundled",
+    "mypy-type-checker.args": [
+        "--strict",
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportShadowedImports": "none"
+    },
+    "python.analysis.inlayHints.variableTypes": true,
+}

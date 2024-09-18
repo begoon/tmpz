@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "python-pytorch"
+version = "0.1.0"
+description = ""
+authors = ["Alexander Demin <ademin@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+opencv-python = "^4.10.0.84"
+torch = "^2.4.1"
+pillow = "^10.4.0"
+matplotlib = "^3.9.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.5"
+black = "^24.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
