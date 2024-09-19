@@ -3,9 +3,9 @@ import { argv, env } from "process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const { GEMINI_API_KEY } = env;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const client = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const generationConfig = {
     temperature: 1,
@@ -15,10 +15,10 @@ const generationConfig = {
     responseMimeType: "text/plain",
 };
 
-async function run() {
+async function query(question: string) {
     const session = model.startChat({ generationConfig, history: [] });
-    const result = await session.sendMessage(argv.slice(2).join(" "));
-    console.log(result.response.text());
+    const result = await session.sendMessage(question);
+    return result.response.text();
 }
 
-await run();
+console.log(await query(argv.slice(2).join(" ")));
