@@ -1,14 +1,23 @@
+import process from "process";
+
 import OpenAI from "openai";
 
-const openai = new OpenAI();
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const query = process.argv.slice(2).join(" ");
 
 async function main() {
-    const image = await openai.images.generate({
+    const response = await openai.images.generate({
         model: "dall-e-3",
-        prompt: "A cute baby sea otter",
+        prompt: query,
+        n: 1,
+        size: "1024x1024",
     });
-
-    console.log(image.data);
+    console.log(response.data);
+    const image_url = response.data[0].url;
+    console.log(image_url);
 }
 
 main();

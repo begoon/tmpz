@@ -6,12 +6,11 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-const chatCompletion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo-instruct",
-    prompt: "can gemini generate images from text?",
-    temperature: 1,
-    max_tokens: 2048,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
+const query = process.argv.slice(2).join(" ");
+
+const completion = await openai.chat.completions.create({
+    messages: [{ role: "user", content: query }],
+    model: "gpt-4o-mini",
 });
+
+console.log(completion.choices[0].message.content);
