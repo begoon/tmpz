@@ -17,13 +17,13 @@ const verbose = flag("--verbose");
 consola.level = verbose ? LogLevels.debug : LogLevels.info;
 
 const MakefileName = option("-f", "Makefile");
-if (!MakefileName || !fs.existsSync(MakefileName)) {
-    consola.error("not found", MakefileName);
-    process.exit(1);
-}
 consola.info(MakefileName);
 
-const Makefile = fs.readFileSync(MakefileName, "utf-8");
+const Makefiles = [MakefileName, MakefileName + ".local"];
+
+const Makefile = Makefiles.map(
+    (v) => fs.existsSync(v!) && fs.readFileSync(v!, "utf-8")
+).join("\n");
 
 const makefile = parseVariables(Makefile);
 
