@@ -1,0 +1,1 @@
+{ "dependencies": { "@google-cloud/kms": "^4.5.0", "@google-cloud/storage": "^7.13.0", "google-auth-library": "^9.14.2", "googleapis": "^144.0.0" } }
