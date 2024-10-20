@@ -14,6 +14,14 @@ var image []byte
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	fmt.Printf("path: %s\n", path)
+	if path == "/" || path == "/style.css" {
+		name := "style.css"
+		if path == "/" {
+			name = "index.html"
+		}
+		http.ServeFile(w, r, "api/html/"+name)
+		return
+	}
 	if path == "/image" {
 		_, err := io.Copy(w, bytes.NewReader(image))
 		if err != nil {
@@ -26,5 +34,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "api/images/IMG_3751, square.jpeg")
 		return
 	}
-	fmt.Fprintf(w, "<h1>TEA: %s</h1>", path)
+	fmt.Fprintf(w, "<h1>ha? [%s]</h1>", path)
 }
