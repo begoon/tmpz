@@ -1,38 +1,32 @@
 package api
 
 import (
-	"bytes"
+	"embed"
 	_ "embed"
 	"fmt"
-	"io"
+	"io/fs"
+	"log"
 	"net/http"
 )
 
-//go:embed images/r-tape-loading-error.gif
-var image []byte
+//go:embed html
+var site embed.FS
+var content fs.FS
+
+func init() {
+	var err error
+	content, err = fs.Sub(site, "html")
+	if err != nil {
+		log.Fatalf("error getting site fs: %v", err)
+	}
+}
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+	if path == "/" {
+		path = "/index.html"
+	}
 	fmt.Printf("path: %s\n", path)
-	if path == "/" || path == "/style.css" {
-		name := "style.css"
-		if path == "/" {
-			name = "index.html"
-		}
-		http.ServeFile(w, r, "api/html/"+name)
-		return
-	}
-	if path == "/image" {
-		_, err := io.Copy(w, bytes.NewReader(image))
-		if err != nil {
-			msg := fmt.Sprintf("error serving image: %s", err)
-			http.Error(w, msg, http.StatusInternalServerError)
-			return
-		}
-	}
-	if path == "/tape" {
-		http.ServeFile(w, r, "api/images/IMG_3751, square.jpeg")
-		return
-	}
-	fmt.Fprintf(w, "<h1>ha? [%s]</h1>", path)
+	fs := http.FS(content)
+	http.FileServer(fs).ServeHTTP(w, r)
 }
