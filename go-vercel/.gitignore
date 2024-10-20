@@ -1,3 +1,4 @@
 .vercel
 exe
 tmp
+main.go
