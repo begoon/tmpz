@@ -4,20 +4,26 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
-	"io/fs"
+	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
-//go:embed html
-var site embed.FS
-var content fs.FS
+//go:embed static
+var staticFS embed.FS
+
+var tmpls *template.Template
+
+//go:embed templates
+var tmplFS embed.FS
 
 func init() {
 	var err error
-	content, err = fs.Sub(site, "html")
+	tmpls, err = template.ParseFS(tmplFS, "templates/*")
 	if err != nil {
-		log.Fatalf("error getting site fs: %v", err)
+		log.Fatalf("error parsing templates: %v", err)
 	}
 }
 
@@ -27,6 +33,23 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		path = "/index.html"
 	}
 	fmt.Printf("path: %s\n", path)
-	fs := http.FS(content)
-	http.FileServer(fs).ServeHTTP(w, r)
+	// ---
+	if strings.HasPrefix(path, "/static") {
+		fs := http.FS(staticFS)
+		http.FileServer(fs).ServeHTTP(w, r)
+		return
+	}
+	// ---
+	data := map[string]interface{}{}
+	for k, v := range r.URL.Query() {
+		data[k] = v
+	}
+	for _, v := range os.Environ() {
+		name, value, _ := strings.Cut(v, "=")
+		data[name] = value
+	}
+	err := tmpls.ExecuteTemplate(w, path[1:], data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

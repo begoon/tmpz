@@ -1,0 +1,17 @@
+{{ template "base" . }} {{ define "content" }}
+<h1 class="flex items-center justify-center h-1/3">HTML!</h1>
+<a class="fixed top-0 left-0" href="/static/IMG_3751-square.jpeg">IMG_3751-square.jpeg</a>
+<a class="fixed top-0 right-0" href="/static/r-tape-loading-error.gif">r-tape-loading-error.gif</a>
+
+<table>
+    {{ range $key, $value := . }}
+    <tr class="font-bold border-b-2 border-black">
+        <td>{{ $key }}</td>
+    </tr>
+    <tr>
+        <td class="break-all">{{ $value }}</td>
+    </tr>
+    {{ end }}
+</table>
+
+{{ end }}

@@ -6,7 +6,7 @@ import (
 	"go-vercel/api"
 )
 
-//go:generate tailwindcss -i api/style.css -o api/html/style.css
+//go:generate tailwindcss -m -i tailwind.css -o api/static/styles.css
 
 func main() {
 	http.HandleFunc("/", api.Handler)
