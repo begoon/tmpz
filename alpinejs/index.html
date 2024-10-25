@@ -8,15 +8,23 @@
         <script src="//unpkg.com/@marcreichel/alpine-autosize@latest/dist/alpine-autosize.js" defer></script>
         <script src="//unpkg.com/alpinejs" defer></script>
         <script src="//unpkg.com/htmx.org"></script>
-        <!--
         <script src="//cdn.tailwindcss.com"></script>
-        -->
+        <!--
         <link rel="stylesheet" href="styles.css" />
+        -->
         <script>
             function inputter(target) {
                 target.dispatchEvent(new Event("input"));
             }
         </script>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                /* outline: 2px solid red; */
+            }
+        </style>
     </head>
 
     <body class="p-4">
@@ -40,7 +48,7 @@
                     hx-target="#console"
                     hx-swap="innerHTML"
                     hx-indicator="#indicator"
-                    class="ml-1 bg-blue-500 text-white p-4 rounded-lg"
+                    class="p-4 ml-1 text-white bg-blue-500 rounded-lg"
                 >
                     load
                 </button>
@@ -48,6 +56,16 @@
                 <pre id="console"></pre>
             </div>
         </div>
-        <button class="p-4 bg-slate-300" onclick="resize">resize</button>
+        <div x-data="{ open: false }">
+            <button @click="open = true">▶︎</button>
+            <div
+                x-show.transition.duration.3000ms="open"
+                @click.away="open = false"
+                @keydown.escape="open = false"
+                class="p-4 text-white bg-blue-500 rounded-lg"
+            >
+                <input type="text" inputmode="numeric" pattern="[0-9]*" class="invalid:bg-red-500" value="12345678" />
+            </div>
+        </div>
     </body>
 </html>
