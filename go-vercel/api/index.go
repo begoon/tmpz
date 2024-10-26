@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,18 +13,10 @@ import (
 //go:embed static
 var staticFS embed.FS
 
-var tmpls *template.Template
+var tmpls *template.Template = template.Must(template.ParseFS(tmplFS, "templates/*"))
 
 //go:embed templates
 var tmplFS embed.FS
-
-func init() {
-	var err error
-	tmpls, err = template.ParseFS(tmplFS, "templates/*")
-	if err != nil {
-		log.Fatalf("error parsing templates: %v", err)
-	}
-}
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
