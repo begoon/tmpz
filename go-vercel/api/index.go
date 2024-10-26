@@ -27,6 +27,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// ---
 	if strings.HasPrefix(path, "/static") {
 		fs := http.FS(staticFS)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		http.FileServer(fs).ServeHTTP(w, r)
 		return
 	}
