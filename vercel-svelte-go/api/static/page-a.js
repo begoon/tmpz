@@ -1,0 +1,1 @@
+import{s as e,f as o,C as i,t as l,a as m,b as f,c,m as d}from"./assets/Counter.js";var p=f('<h1 class="text-5xl">[PAGE AAA]</h1> <!> ',1);function _(s){const n=window.__DATA__;var t=p(),a=e(o(t),2);i(a);var r=e(a);l(()=>c(r,` ${JSON.stringify(n,null,2)??""}`)),m(s,t)}d(_,{target:document.getElementById("app")});
