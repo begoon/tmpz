@@ -1,0 +1,24 @@
+#!/bin/zsh
+
+N=$1
+if [ -z "$N" ]; then
+    echo "provide a task number"
+    exit 1
+fi
+
+echo "compiling task $N..."
+
+rm -rf *.o
+fpc task_$N/task.pas && ./task_$N/task task_$N/task.in.txt task_$N/task.out.txt
+if [ $? -ne 0 ]; then
+    echo "failed to run task $N"
+    exit 1
+fi
+rm -rf task_$N/*.o task_$N/task
+
+echo "INPUT"
+cat task_$N/task.in.txt
+
+echo
+echo "OUTPUT"
+cat task_$N/task.out.txt
