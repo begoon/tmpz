@@ -1,0 +1,20 @@
+default: build
+
+COMMIT := shell('git rev-parse --short HEAD')
+
+build:
+    bun run build
+    go build -o ./exe main.go    
+
+[confirm('all good?')]
+commit:
+    @echo {{ COMMIT }}
+
+FLAGS := "default"
+
+print +args:
+    @echo {{ FLAGS }} ${HOME} {{ args }}
+
+python:
+    #!/usr/bin/env python
+    print('hello from python!')

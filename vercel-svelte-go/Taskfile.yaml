@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  build:
+    aliases:
+      - default
+    cmds:
+      - bun run build
+      - go build -o ./exe main.go
