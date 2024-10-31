@@ -1,6 +1,8 @@
+set unstable := true
+
 default: build
 
-COMMIT := shell('git rev-parse --short HEAD')
+export COMMIT := shell('git rev-parse --short HEAD')
 
 build:
     bun run build
@@ -15,6 +17,6 @@ FLAGS := "default"
 print +args:
     @echo {{ FLAGS }} ${HOME} {{ args }}
 
-python:
-    #!/usr/bin/env python
-    print('hello from python!')
+js:
+    #!/usr/bin/env bun
+    console.log("bun!")

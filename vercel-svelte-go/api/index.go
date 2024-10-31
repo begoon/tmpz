@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"strings"
-	"time"
 )
 
 func must[T any](v T, err error) T {
@@ -41,6 +41,37 @@ func indexDefault(r *http.Request) string {
 	return path
 }
 
+type pageData = struct {
+	Path string      `json:"path"`
+	Page string      `json:"page"`
+	Data interface{} `json:"data"`
+}
+
+func loadData(path string) interface{} {
+	if path == "/index.html" {
+		return struct {
+			Index interface{} `json:"index"`
+		}{
+			Index: "INDEX DATA",
+		}
+	}
+	if path == "/a/index.html" {
+		return struct {
+			A interface{} `json:"a"`
+		}{
+			A: "A DATA",
+		}
+	}
+	if path == "/b/index.html" {
+		return struct {
+			B interface{} `json:"b"`
+		}{
+			B: "B DATA",
+		}
+	}
+	return struct{}{}
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := indexDefault(r)
 
@@ -60,19 +91,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := struct {
-		Path string    `json:"path"`
-		Page string    `json:"page"`
-		When time.Time `json:"when"`
-		IP   string    `json:"ip"`
-	}{
-		Path: path,
-		Page: page,
-		When: time.Now(),
-	}
+	fmt.Println("->", os.Getenv("COMMIT"))
 
-	if path == "/index.html" {
-		data.IP = r.RemoteAddr
+	data := struct {
+		Path   string              `json:"path"`
+		Page   string              `json:"page"`
+		Query  map[string][]string `json:"query"`
+		Commit string              `json:"commit"`
+		Data   interface{}         `json:"data"`
+	}{
+		Path:   path,
+		Page:   page,
+		Query:  r.URL.Query(),
+		Commit: os.Getenv("COMMIT"),
+		Data:   loadData(path),
 	}
 
 	b, err := json.Marshal(data)
