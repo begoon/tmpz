@@ -1,5 +1,6 @@
 <script lang="ts">
     import Counter from "../lib/Counter.svelte";
+    import JSONer from "../lib/JSONer.svelte";
 
     // @ts-ignore
     const data = window.__DATA__;
@@ -8,4 +9,4 @@
 <h1 class="text-5xl">[PAGE AAA]</h1>
 <Counter />
 
-{JSON.stringify(data, null, 2)}
+<JSONer value={data} />

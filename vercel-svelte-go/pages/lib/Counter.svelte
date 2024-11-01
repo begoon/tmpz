@@ -3,9 +3,11 @@
 
     const increment = () => {
         count += 1;
+        const id = new Date().getTime();
+        fetch(`/endpoint/click/${id}`);
     };
 </script>
 
-<button onclick={increment} class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+<button onclick={increment} class="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700">
     count is {count}
 </button>
