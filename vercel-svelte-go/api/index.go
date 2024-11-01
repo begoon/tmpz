@@ -31,6 +31,9 @@ var staticEmbedFS embed.FS
 
 var staticFS = must(fs.Sub(staticEmbedFS, "static"))
 
+//go:embed COMMIT.txt
+var commit string
+
 const DATA = "window.__DATA__ = {}"
 
 type (
@@ -193,6 +196,7 @@ func render(page *Page, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	t := template.Must(template.New("page").Parse(string(content)))
 
+	page.Commit = strings.TrimSpace(commit)
 	log.Printf(" > PAGE DATA: %#v\n", page.Data)
 	err = t.Execute(w, page)
 	if err != nil {

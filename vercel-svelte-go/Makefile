@@ -1,10 +1,10 @@
 all:
 
 COMMIT := $(shell git rev-parse --short HEAD)
-export COMMIT
 
 build:
 	bun run build
+	echo $(COMMIT) > ./api/COMMIT.txt
 	go build -o ./exe main.go
 
 dev:
