@@ -230,13 +230,17 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 
 func basicAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != "wheel" || pass != "raxxla" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
+		if strings.HasPrefix(r.URL.Path, "/z") {
+			user, pass, ok := r.BasicAuth()
+			if !ok || user != "wheel" || pass != "raxxla" {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			r = r.WithContext(context.WithValue(r.Context(), "user", user))
+		} else {
+			r = r.WithContext(context.WithValue(r.Context(), "user", "anonymous"))
 		}
-		r = r.WithContext(context.WithValue(r.Context(), "user", user))
 		next.ServeHTTP(w, r)
 	})
 }
