@@ -1,5 +1,9 @@
 all: build install
 
+build: build-cr build-vm
+
+install: install-cr install-vm
+
 build-cr:
 	bun build ./cr.ts --compile --outfile=cr
 
