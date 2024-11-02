@@ -1,1 +1,1 @@
-import{n as e,q as s,C as d,J as i,t as l,v as m,B as p}from"./assets/JSONer.js";var v=m('<h1 class="text-5xl">[PAGE BBB]</h1> <!> <!>',1);function _(n){const o=window.__DATA__;var a=v(),t=e(s(a),2);d(t,{});var r=e(t,2);i(r,{value:o}),l(n,a)}p(_,{target:document.getElementById("app")});
+import{u as e,v as s,C as d,J as i,x as l,z as m,G as p}from"./assets/JSONer.js";var u=m('<h1 class="text-5xl">[PAGE BBB]</h1> <!> <!>',1);function v(n){const o=window.__DATA__;var a=u(),t=e(s(a),2);d(t,{});var r=e(t,2);i(r,{value:o}),l(n,a)}p(v,{target:document.getElementById("app")});

@@ -42,7 +42,6 @@ func loadEnv() {
 
 func init() {
 	loadEnv()
-	api.TelegramNotification("API started")
 }
 
 func main() {

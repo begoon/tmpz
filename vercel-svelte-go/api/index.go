@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	_ "embed"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -86,6 +88,34 @@ func init() {
 		}
 	})
 
+	mux.HandleFunc("GET /paused/{seconds...}", func(w http.ResponseWriter, r *http.Request) {
+		seconds := r.PathValue("seconds")
+		n, err := time.ParseDuration(seconds)
+		if err != nil {
+			http.Error(w, fmt.Errorf("error parsing duration: %w", err).Error(), http.StatusBadRequest)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), n)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://httpbin.org/delay/3", nil)
+		if err != nil {
+			http.Error(w, fmt.Errorf("error creating request: %w", err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, fmt.Errorf("error dialing httpbin: %w", err).Error(), http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		http.Error(w, "OK", http.StatusOK)
+	})
+
 	mux.HandleFunc("GET /endpoint/users/{id}", func(w http.ResponseWriter, r *http.Request) {
 		userID := r.PathValue("id")
 		log.Printf("\t> USER: %#v\n", userID)
@@ -152,6 +182,9 @@ func init() {
 
 	mux.HandleFunc("GET /b/{args...}", RenderPage(func(w http.ResponseWriter, r *http.Request) *Page {
 		args := r.PathValue("args")
+		if args == "error" {
+			panic("induced panic")
+		}
 		return &Page{
 			ID: "/b",
 			Data: map[string]string{
@@ -160,15 +193,55 @@ func init() {
 			},
 		}
 	}))
+
+	mux.HandleFunc("GET /z", RenderPage(func(w http.ResponseWriter, r *http.Request) *Page {
+		return &Page{
+			ID: "/",
+			Data: map[string]string{
+				"DATA": "A/Z",
+			},
+		}
+	}))
 }
 
 func RenderPage(loader PageLoader) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value("user").(string)
+
 		page := loader(w, r)
+		page.Data.(map[string]string)["USER"] = user
+
 		log.Printf("PAGE %s\n", page.ID)
 		render(page, w, r)
 	}
 }
+
+func recoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("PANIC: %s %s\n", err, debug.Stack())
+				http.Error(w, fmt.Sprintf("panic: %s", err), http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func basicAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != "wheel" || pass != "raxxla" {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		r = r.WithContext(context.WithValue(r.Context(), "user", user))
+		next.ServeHTTP(w, r)
+	})
+}
+
+type Middleware func(http.HandlerFunc) http.HandlerFunc
 
 type responseWriterWrapper struct {
 	http.ResponseWriter
@@ -205,7 +278,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mux.ServeHTTP(ww, r)
+	basicAuthMiddleware(recoveryMiddleware(mux)).ServeHTTP(ww, r)
 }
 
 func render(page *Page, w http.ResponseWriter, r *http.Request) {

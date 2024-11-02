@@ -16,8 +16,12 @@
 
     const X = import.meta.env.VITE_X;
     console.log(X);
-    console.log(import.meta);
-    console.log("aaa");
+
+    let timeout = $state("4000ms");
+    let message = $state("");
+
+    let timer: number | null = null;
+    let progress = $state(0);
 </script>
 
 <h1 class="text-5xl">[]root page[]</h1>
@@ -43,3 +47,38 @@
         <div class="inline-block text-xs">report</div>
     </button>
 </form>
+
+<div class="flex">
+    <input type="text" bind:value={timeout} class="w-[20em] p-2 border-2 border-blue-300 rounded-xl" />
+    <button
+        class="flex items-center justify-center p-2 bg-blue-300 border-2 border-blue-300 rounded-xl"
+        onclick={() => {
+            message = "...";
+            let started = new Date().getTime();
+
+            const elapsed = () => new Date().getTime() - started;
+
+            timer = setInterval(() => {
+                progress = elapsed() / 10;
+                message = elapsed() + "ms";
+            }, 10);
+            fetch(`/paused/${timeout}`)
+                .then((r) => r.text())
+                .then((text) => {
+                    timeout = elapsed() + "ms";
+                    progress = 0;
+                    message = text;
+                    if (timer) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                });
+        }}
+    >
+        <div class="inline-block text-xs">invoke</div>
+    </button>
+    {#if message}
+        <div class="p-2 bg-blue-300 border-2 border-blue-300 rounded-xl">{message}</div>
+    {/if}
+</div>
+<div style="width: {progress}px" class="h-4 bg-slate-500 rounded-xl"></div>
