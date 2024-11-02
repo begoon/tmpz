@@ -269,6 +269,9 @@ func TelegramCommand(cmd string, payload interface{}) error {
 }
 
 func TelegramNotification(message string) error {
+	if message == "" {
+		message = "*"
+	}
 	return TelegramCommand("sendMessage", map[string]interface{}{
 		"chat_id": os.Getenv("TELEGRAM_OPERATOR_ID"),
 		"text":    message,
