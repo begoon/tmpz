@@ -2,3 +2,4 @@ exe
 tmp
 node_modules
 .vercel
+.env

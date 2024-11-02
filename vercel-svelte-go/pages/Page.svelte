@@ -13,9 +13,14 @@
         ip = "";
         ip = (await (await fetch("/endpoint/public-ip")).json()).ip;
     }
+
+    const X = import.meta.env.VITE_X;
+    console.log(X);
+    console.log(import.meta);
+    console.log("aaa");
 </script>
 
-<h1 class="text-5xl">[root page]</h1>
+<h1 class="text-5xl">[]root page[]</h1>
 <Counter />
 <JSONer value={data} />
 
@@ -31,3 +36,10 @@
         <div class="inline-block text-xs origin-center animate-spin">⏳</div>
     {/if}
 </button>
+
+<form class="mt-4" action="/report" method="post">
+    <input type="text" name="message" class="w-full p-2 border-2 border-blue-300 rounded-xl" />
+    <button class="flex items-center justify-center p-4 bg-blue-300 border-2 border-blue-300 rounded-xl">
+        <div class="inline-block text-xs">report</div>
+    </button>
+</form>

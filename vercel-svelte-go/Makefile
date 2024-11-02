@@ -11,9 +11,10 @@ dev:
 	air \
 	--build.cmd "make build" \
 	--build.bin "./exe" \
-	--build.include_ext "go,tpl,tmpl,html,css,ts,js,svelte" \
+	--build.include_ext "go,tpl,tmpl,html,css,ts,js,svelte,env" \
 	--build.include_file "Makefile" \
 	--build.include_file "Justfile" \
+	--build.include_file ".env" \
 	--build.exclude_dir "node_modules,api/static" \
 
 dev-vite:
