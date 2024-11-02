@@ -6,6 +6,7 @@
     },
     "dependencies": {
         "@clack/prompts": "^0.7.0",
-        "consola": "^3.2.3"
+        "consola": "^3.2.3",
+        "unidiff": "^1.0.4"
     }
 }
