@@ -3,6 +3,7 @@
     import "./app.css";
     import Counter from "./lib/Counter.svelte";
     import JSONer from "./lib/JSONer.svelte";
+    import Menu from "./lib/Menu.svelte";
 
     // @ts-ignore
     const data = window.__DATA__;
@@ -23,6 +24,8 @@
     let timer: number | null = null;
     let progress = $state(0);
 </script>
+
+<Menu />
 
 <h1 class="text-5xl">[]root page[]</h1>
 <Counter />

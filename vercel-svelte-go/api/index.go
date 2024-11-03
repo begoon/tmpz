@@ -38,11 +38,10 @@ const DATA = "window.__DATA__ = {}"
 type PageLoader func(w http.ResponseWriter, r *http.Request) *Page
 
 type Page struct {
-	ID   string      `json:"id"`
-	Data interface{} `json:"data"`
+	ID     string      `json:"id"`
+	Static bool        `json:"static"`
+	Data   interface{} `json:"data"`
 }
-
-var httpFS = http.FS(staticFS)
 
 var assets = make(map[string]bool)
 
@@ -55,6 +54,7 @@ func indexAssets() {
 		}
 		if d.Type().IsRegular() {
 			assets["/"+path] = true
+			log.Printf("- asset: %s\n", path)
 		}
 		return nil
 	})
@@ -194,6 +194,16 @@ func init() {
 		}
 	}))
 
+	mux.HandleFunc("GET /cms", RenderPage(func(w http.ResponseWriter, r *http.Request) *Page {
+		return &Page{
+			ID:     "/cms",
+			Static: true,
+			Data: map[string]string{
+				"DATA": "CMS",
+			},
+		}
+	}))
+
 	mux.HandleFunc("GET /z", RenderPage(func(w http.ResponseWriter, r *http.Request) *Page {
 		return &Page{
 			ID: "/",
@@ -278,7 +288,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if assets[path] {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		log.Printf("STATIC: %s\n", path)
-		http.FileServer(httpFS).ServeHTTP(ww, r)
+		http.FileServerFS(staticFS).ServeHTTP(ww, r)
 		return
 	}
 
@@ -293,11 +303,15 @@ func render(page *Page, w http.ResponseWriter, r *http.Request) {
 	path += "index.html"
 	log.Printf("RENDER: %s [%s]\n", path, r.URL.Path)
 
-	path = "pages" + path
+	if page.Static {
+		path = path[1:]
+	} else {
+		path = "pages" + path
+	}
 
 	content, err := fs.ReadFile(staticFS, path)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error read file: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("error read page file: %s", err), http.StatusInternalServerError)
 		return
 	}
 
