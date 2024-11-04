@@ -17,9 +17,22 @@ PORT = 8000
 
 secrets = json.loads(Path(f"secrets-{Path(__file__).name}.json").read_text())
 
-for name, value in secrets.items():
+settings = {
+    "client_id": "?",
+    "client_secret": "?",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "tokeninfo_uri": "https://www.googleapis.com/oauth2/v3/tokeninfo",
+    "redirect_uris": ["http://localhost:8000/auth"],
+    "scopes": [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+    ],
+} | secrets
+
+for name, value in settings.items():
     if "{DOMAIN}" in value:
-        secrets[name] = value.replace("{DOMAIN}", secrets["domain"])
+        settings[name] = value.replace("{DOMAIN}", settings["domain"])
 
 
 def authorise(secrets: dict[str, str]) -> str:
@@ -122,23 +135,23 @@ class Server(http.server.HTTPServer):
 
 
 def main():
-    code = authorise(secrets)
+    code = authorise(settings)
 
-    tokens = get_token(secrets, code)
+    tokens = get_token(settings, code)
     print("tokens:", json.dumps(tokens, indent=2))
 
     claims = get_claims(tokens["id_token"])
     print("claims:", json.dumps(claims, indent=2))
 
-    token_info = check_access_token(secrets, tokens["access_token"])
+    token_info = check_access_token(settings, tokens["access_token"])
     print("id_token:", json.dumps(token_info, indent=2))
 
     if "refresh_token" in tokens:
-        refreshed_tokens = refresh_token(secrets, tokens["refresh_token"])
+        refreshed_tokens = refresh_token(settings, tokens["refresh_token"])
         print("refreshed_tokens:", json.dumps(refreshed_tokens, indent=2))
 
         refreshed_token_info = check_access_token(
-            secrets,
+            settings,
             refreshed_tokens["access_token"],
         )
         print(
