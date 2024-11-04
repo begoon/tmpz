@@ -23,11 +23,11 @@ settings = {
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
     "token_uri": "https://oauth2.googleapis.com/token",
     "tokeninfo_uri": "https://www.googleapis.com/oauth2/v3/tokeninfo",
-    "redirect_uris": ["http://localhost:8000/auth"],
     "scopes": [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
     ],
+    "redirect_uris": ["http://localhost:8000/auth"],
 } | secrets
 
 for name, value in settings.items():
@@ -137,29 +137,29 @@ class Server(http.server.HTTPServer):
 def main():
     code = authorise(settings)
 
-    tokens = get_token(settings, code)
-    print("tokens:", json.dumps(tokens, indent=2))
+    token = get_token(settings, code)
+    print("token:", json.dumps(token, indent=2))
 
-    claims = get_claims(tokens["id_token"])
+    claims = get_claims(token["id_token"])
     print("claims:", json.dumps(claims, indent=2))
 
-    token_info = check_access_token(settings, tokens["access_token"])
+    token_info = check_access_token(settings, token["access_token"])
     print("id_token:", json.dumps(token_info, indent=2))
 
-    if "refresh_token" in tokens:
-        refreshed_tokens = refresh_token(settings, tokens["refresh_token"])
-        print("refreshed_tokens:", json.dumps(refreshed_tokens, indent=2))
+    if "refresh_token" in token:
+        refreshed_token = refresh_token(settings, token["refresh_token"])
+        print("refreshed_token:", json.dumps(refreshed_token, indent=2))
 
         refreshed_token_info = check_access_token(
             settings,
-            refreshed_tokens["access_token"],
+            refreshed_token["access_token"],
         )
         print(
             "refreshed id_token:",
             json.dumps(refreshed_token_info, indent=2),
         )
 
-        claims = get_claims(refreshed_tokens["id_token"])
+        claims = get_claims(refreshed_token["id_token"])
         print("claims:", json.dumps(claims, indent=2))
 
 

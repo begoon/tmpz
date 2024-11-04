@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse
 
-import jwt
 import requests
 
 PORT = 8000
@@ -16,30 +15,21 @@ PORT = 8000
 secrets = json.loads(Path(f"secrets-{Path(__file__).name}.json").read_text())
 
 settings = {
-    "domain": "?",
     "client_id": "?",
     "client_secret": "?",
-    "auth_uri": "https://{DOMAIN}/authorize",
-    "token_uri": "https://{DOMAIN}/oauth/token",
-    "scopes": ["openid", "profile", "email"],
-    "audience": "https://{DOMAIN}/api/v2/",
-    "userinfo_uri": "https://{DOMAIN}/userinfo",
-    "redirect_uris": ["http://localhost:8000/callback"],
+    "auth_uri": "https://github.com/login/oauth/authorize",
+    "token_uri": "https://github.com/login/oauth/access_token",
+    "user_uri": "https://api.github.com/user",
+    "email_uri": "https://api.github.com/user/emails",
+    "redirect_uri": "http://localhost:8000/callback",
 } | secrets
-
-
-for name, value in settings.items():
-    if "{DOMAIN}" in value:
-        settings[name] = value.replace("{DOMAIN}", settings["domain"])
 
 
 def authorise(settings: dict[str, str]) -> str:
     params = {
-        "response_type": "code",
         "client_id": settings["client_id"],
-        "redirect_uri": settings["redirect_uris"][0],
-        "scope": " ".join(settings["scopes"]),
-        "audience": settings["audience"],
+        "redirect_uri": settings["redirect_uri"],
+        "scope": "user:email",
     }
 
     assert webbrowser.open(f"{settings["auth_uri"]}?{urlencode(params)}")
@@ -53,31 +43,39 @@ def authorise(settings: dict[str, str]) -> str:
     return code
 
 
-def get_token(settings: dict[str, str], code: str) -> dict[str, str]:
-    params = {
-        "grant_type": "authorization_code",
+def get_token(settings: dict[str, str], code: str) -> dict[str, Any]:
+    token_url = settings["token_uri"]
+    headers = {"Accept": "application/json"}
+    data = {
         "client_id": settings["client_id"],
         "client_secret": settings["client_secret"],
-        "redirect_uri": settings["redirect_uris"][0],
         "code": code,
+        "redirect_uri": settings["redirect_uri"],
     }
-    token_uri = settings["token_uri"]
-
-    response = requests.post(token_uri, json=params)
-    response.raise_for_status()
-
-    return response.json()
-
-
-def get_claims(token: str) -> dict[str, Any]:
-    return jwt.decode(token, options={"verify_signature": False})
-
-
-def get_userinfo(secrets: dict[str, str], access_token: str) -> dict[str, Any]:
-    headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get(secrets["userinfo_uri"], headers=headers)
+    response = requests.post(token_url, headers=headers, data=data)
     response.raise_for_status()
     return response.json()
+
+
+def get_user_details(
+    settings: dict[str, str],
+    access_token: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    user_url = settings["user_uri"]
+    headers = {
+        "Authorization": f"token {access_token}",
+        "Accept": "application/json",
+    }
+    user_response = requests.get(user_url, headers=headers)
+    user_response.raise_for_status()
+    user_data = user_response.json()
+
+    email_url = settings["email_uri"]
+    email_response = requests.get(email_url, headers=headers)
+    email_response.raise_for_status()
+    email_data = email_response.json()
+
+    return user_data, email_data
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -112,11 +110,9 @@ def main():
     token = get_token(settings, code)
     print("token:", json.dumps(token, indent=2))
 
-    claims = get_claims(token["id_token"])
-    print("claims:", json.dumps(claims, indent=2))
-
-    info = get_userinfo(settings, token["access_token"])
-    print("user:", json.dumps(info, indent=2))
+    user_data, email_data = get_user_details(settings, token["access_token"])
+    print(json.dumps(user_data, indent=2))
+    print(json.dumps(email_data, indent=2))
 
 
 if __name__ == "__main__":
