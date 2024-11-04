@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import hashlib
 import http
 import http.server
@@ -9,7 +8,7 @@ import logging
 import os
 import webbrowser
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import parse_qsl, urlencode
 
 import jwt
 import requests
@@ -99,12 +98,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        query = dict(
-            [
-                (k, ",".join(v))
-                for k, v in parse_qs(self.path.split("?")[1]).items()
-            ]
-        )
+        query = dict(parse_qsl(self.path.split("?")[1]))
         print("query", json.dumps(query, indent=2))
 
         self.server.query_params = query
