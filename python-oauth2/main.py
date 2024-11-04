@@ -32,7 +32,7 @@ def authorise(secrets: dict[str, str]) -> dict[str, str]:
         "scope": " ".join(SCOPES),
         "state": hashlib.sha256(os.urandom(1024)).hexdigest(),
         "access_type": "offline",
-        "prompt": "none",  # or "consent"
+        "prompt": "consent",
     }
     url = f"{secrets['auth_uri']}?{urlencode(params)}"
     assert webbrowser.open(url)
