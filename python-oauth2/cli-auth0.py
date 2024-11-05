@@ -87,7 +87,7 @@ def get_management_api_token(settings: dict[str, str]) -> str:
     params = {
         "client_id": settings["client_id"],
         "client_secret": settings["client_secret"],
-        "audience": f"https://{settings['domain']}/api/v2/",
+        "audience": settings["audience"],
         "grant_type": "client_credentials",
     }
     token_uri = settings["token_uri"]
@@ -102,6 +102,25 @@ def get_management_api_token(settings: dict[str, str]) -> str:
     print("management token claims:", json.dumps(get_claims(token), indent=2))
 
     return token
+
+
+def get_user_metadata(
+    user_id: str,
+    management_api_token: str,
+) -> dict[str, Any]:
+    headers = {'Authorization': f'Bearer {management_api_token}'}
+    url = f"{settings['audience']}users/{user_id}"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_user_roles(user_id: str, management_api_token: str) -> dict[str, Any]:
+    headers = {'Authorization': f'Bearer {management_api_token}'}
+    url = f"{settings['audience']}users/{user_id}/roles"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -144,6 +163,16 @@ def main():
 
     management_api_token = get_management_api_token(settings)
     print("management_api_token:", json.dumps(management_api_token, indent=2))
+
+    user_id = info["sub"]
+    print("user_id:", user_id)
+
+    user_metadata = get_user_metadata(user_id, management_api_token)
+    print("user_metadata:", json.dumps(user_metadata, indent=2))
+
+    roles = get_user_roles(user_id, management_api_token)
+    print("roles:", json.dumps(roles, indent=2))
+
 
 if __name__ == "__main__":
     main()
