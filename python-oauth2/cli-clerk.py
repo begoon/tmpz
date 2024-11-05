@@ -36,11 +36,15 @@ settings = {
     "client_id": "?",
     "client_secret": "?",
     "scopes": "email profile private_metadata public_metadata",
+    "authorize_url": "https://{DOMAIN}/oauth/authorize",
+    "token_fetch_url": "https://{DOMAIN}/oauth/token",
+    "user_info_url": "https://{DOMAIN}/oauth/userinfo",
     "callback_url": "http://localhost:8000/callback",
-    "authorize_url": "?",
-    "token_fetch_url": "?",
-    "user_info_url": "?",
 } | secrets
+
+for name, value in settings.items():
+    if "{DOMAIN}" in value:
+        settings[name] = value.replace("{DOMAIN}", settings["domain"])
 
 
 def authorise(settings: dict[str, str]) -> str:
