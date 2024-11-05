@@ -22,7 +22,6 @@ settings = {
     "auth_uri": "https://{DOMAIN}/oauth/authorize",
     "token_uri": "https://{DOMAIN}/oauth/token",
     "scopes": ["basic"],
-    "audience": "https://{DOMAIN}/api/v2/",
     "userinfo_uri": "https://{DOMAIN}/oauth/me",
     "redirect_uris": ["http://localhost:8000/callback"],
 } | secrets
@@ -39,7 +38,6 @@ def authorise(settings: dict[str, str]) -> str:
         "client_id": settings["client_id"],
         "redirect_uri": settings["redirect_uris"][0],
         "scope": " ".join(settings["scopes"]),
-        "audience": settings["audience"],
     }
 
     assert webbrowser.open(f"{settings["auth_uri"]}?{urlencode(params)}")

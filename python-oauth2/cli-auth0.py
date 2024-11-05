@@ -73,9 +73,12 @@ def get_claims(token: str) -> dict[str, Any]:
     return jwt.decode(token, options={"verify_signature": False})
 
 
-def get_userinfo(secrets: dict[str, str], access_token: str) -> dict[str, Any]:
+def get_userinfo(
+    settings: dict[str, str],
+    access_token: str,
+) -> dict[str, Any]:
     headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get(secrets["userinfo_uri"], headers=headers)
+    response = requests.get(settings["userinfo_uri"], headers=headers)
     response.raise_for_status()
     return response.json()
 

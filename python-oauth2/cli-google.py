@@ -41,7 +41,6 @@ def authorise(secrets: dict[str, str]) -> str:
         "client_id": secrets["client_id"],
         "redirect_uri": secrets["redirect_uris"][0],
         "scope": " ".join(secrets["scopes"]),
-        #
         "state": hashlib.sha256(os.urandom(1024)).hexdigest(),
         "access_type": "offline",
         "prompt": "consent",
@@ -62,15 +61,15 @@ def authorise(secrets: dict[str, str]) -> str:
     return code
 
 
-def get_token(secrets: dict[str, str], code: str) -> dict[str, str]:
+def get_token(settings: dict[str, str], code: str) -> dict[str, str]:
     params = {
         "grant_type": "authorization_code",
-        "client_id": secrets["client_id"],
-        "client_secret": secrets["client_secret"],
-        "redirect_uri": secrets["redirect_uris"][0],
+        "client_id": settings["client_id"],
+        "client_secret": settings["client_secret"],
+        "redirect_uri": settings["redirect_uris"][0],
         "code": code,
     }
-    token_uri = secrets["token_uri"]
+    token_uri = settings["token_uri"]
 
     response = requests.post(token_uri, json=params)
     response.raise_for_status()
@@ -83,24 +82,24 @@ def get_claims(token: str) -> dict[str, Any]:
 
 
 def check_access_token(
-    secrets: dict[str, str],
+    settings: dict[str, str],
     access_token: str,
 ) -> dict[str, str]:
-    url = f"{secrets["tokeninfo_uri"]}?access_token={access_token}"
+    url = f"{settings["tokeninfo_uri"]}?access_token={access_token}"
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
 
 
 def refresh_token(
-    secrets: dict[str, str],
+    settings: dict[str, str],
     refresh_token: str,
 ) -> dict[str, str]:
-    url = secrets["token_uri"]
+    url = settings["token_uri"]
     params = {
         "grant_type": "refresh_token",
-        "client_id": secrets["client_id"],
-        "client_secret": secrets["client_secret"],
+        "client_id": settings["client_id"],
+        "client_secret": settings["client_secret"],
         "refresh_token": refresh_token,
     }
     response = requests.post(url, json=params)
