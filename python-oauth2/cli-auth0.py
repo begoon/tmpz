@@ -83,6 +83,27 @@ def get_userinfo(
     return response.json()
 
 
+def get_management_api_token(settings: dict[str, str]) -> str:
+    params = {
+        "client_id": settings["client_id"],
+        "client_secret": settings["client_secret"],
+        "audience": f"https://{settings['domain']}/api/v2/",
+        "grant_type": "client_credentials",
+    }
+    token_uri = settings["token_uri"]
+
+    response = requests.post(token_uri, json=params)
+    response.raise_for_status()
+
+    data = response.json()
+    print("management token:", json.dumps(data, indent=2))
+
+    token = data["access_token"]
+    print("management token claims:", json.dumps(get_claims(token), indent=2))
+
+    return token
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     server: Server
 
@@ -121,6 +142,8 @@ def main():
     info = get_userinfo(settings, token["access_token"])
     print("user:", json.dumps(info, indent=2))
 
+    management_api_token = get_management_api_token(settings)
+    print("management_api_token:", json.dumps(management_api_token, indent=2))
 
 if __name__ == "__main__":
     main()
