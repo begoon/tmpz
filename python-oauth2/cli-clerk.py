@@ -21,7 +21,7 @@ if "create" in sys.argv:
         json={
             "callback_url": "http://localhost:8000/callback",
             "name": "CLI",
-            "scopes": "profile email",
+            "scopes": "profile email private_metadata public_metadata",
         },
     )
     response.raise_for_status()
@@ -35,7 +35,7 @@ settings = {
     "name": "CLI",
     "client_id": "?",
     "client_secret": "?",
-    "scopes": "email profile",
+    "scopes": "email profile private_metadata public_metadata",
     "callback_url": "http://localhost:8000/callback",
     "authorize_url": "?",
     "token_fetch_url": "?",
