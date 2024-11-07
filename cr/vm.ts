@@ -152,7 +152,7 @@ async function check() {
     }
     await exec("hostname");
     await exec("uptime");
-    await exec("curl https://api.ipify.org");
+    await exec("curl https://api.ipify.org", yellow);
 }
 
 async function list() {
