@@ -147,8 +147,12 @@ async function updateSSH() {
 // ---
 
 async function check() {
-    const uname = (await $`ssh ${name} uname -a`).text();
-    consola.success("uname:", white(uname));
+    async function exec(cmd: string, color = white) {
+        consola.success(color((await $`ssh ${name} ${cmd}`.quiet().text()).trim()));
+    }
+    await exec("hostname");
+    await exec("uptime");
+    await exec("curl https://api.ipify.org");
 }
 
 async function list() {
