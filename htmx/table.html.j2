@@ -1,0 +1,31 @@
+<table>
+    <thead class="border bg-gray-100 sticky top-0
+            z-10">
+        <tr>
+            <th>name</th>
+            <th>value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, value in rows %}
+        <tr class="align-top">
+            <td>{{ name }}</td>
+            <td class="w-full break-all hover:bg-gray-100">
+                <span class="relative">
+                    <span class="
+                        hover:before:content-['&raquo;']
+                        hover:after:content-['&laquo;']
+                        hover:before:absolute
+                        hover:before:-left-4
+                        hover:before:top-auto
+                        hover:after:absolute hover:after:-right-4
+                        hover:after:top-auto hover:outline
+                        hover:outline-green-500 inline-block">
+                        {{ value }}
+                    </span>
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

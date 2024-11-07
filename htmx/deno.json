@@ -2,7 +2,9 @@
     "compilerOptions": {
         "lib": ["dom", "esnext", "deno.unstable"]
     },
-    "tasks": {
-        "dev": "deno run -A --unstable --watch=index.ts,index.html main.ts"
+    "unstable": ["kv"],
+    "imports": {
+        "consola": "npm:consola",
+        "nunjucks": "npm:nunjucks"
     }
 }

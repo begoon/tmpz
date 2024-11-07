@@ -8,10 +8,7 @@
         <script src="https://unpkg.com/nunjucks@latest"></script>
         <script src="https://unpkg.com/htmx.org/dist/ext/remove-me.js"></script>
         <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
-        <script
-            type="module"
-            src="https://unpkg.com/ninja-keys?module"
-        ></script>
+        <script type="module" src="https://unpkg.com/ninja-keys?module"></script>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>HTML</title>
@@ -77,9 +74,7 @@
                 },
             ];
         </script>
-        <h1 hx-get="/health" hx-swap="innerHTML" hx-trigger="load delay:2s">
-            health
-        </h1>
+        <h1 hx-get="/health" hx-swap="innerHTML" hx-trigger="load delay:2s">health</h1>
         <h1>WS</h1>
         <div hx-ext="ws" ws-connect="/ws">
             <div id="notifications"></div>
@@ -97,18 +92,8 @@
             <button hx-post="/enqueue" hx-target="#status">send</button>
             <mark id="status"></mark>
         </form>
-        <output
-            hx-get="/queue"
-            hx-trigger="every 1s"
-            hx-target="#output"
-            hx-swap-oob="#when"
-        ></output>
-        <div
-            hx-ext="sse"
-            sse-connect="/sse"
-            sse-swap="message"
-            hx-swap="beforebegin"
-        ></div>
+        <output hx-get="/queue" hx-trigger="load" hx-target="#output" hx-swap-oob="#when"></output>
+        <div hx-ext="sse" sse-connect="/sse" sse-swap="message" hx-swap="beforebegin"></div>
         history <span id="when" style="display: inline"></span>
         <output id="output"></output>
         <h1>self-removing element</h1>
@@ -116,9 +101,7 @@
             <mark remove-me="3s">remove in 3 seconds...</mark>
         </div>
         <h1>templates</h1>
-        <div id="loading" class="htmx-indicator">
-            loading environment variables...
-        </div>
+        <div id="loading" class="htmx-indicator">loading environment variables...</div>
         <div hx-ext="client-side-templates" style="font-size: 10px">
             <div style="height: 30em; overflow: scroll">
                 <div

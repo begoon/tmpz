@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "consola": "^3.2.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.13"
+  }
+}
