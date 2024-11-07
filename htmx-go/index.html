@@ -1,0 +1,22 @@
+<html>
+
+<head>
+    <script src="https://unpkg.com/htmx.org@1.8.6" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <i id="indicator" class="htmx-indicator">loading...</i>
+    <br />
+    <div id="time" hx-get="/time" hx-trigger="every 1s" hx-target="#time" hx-swap="innerHTML">
+    </div>
+    <button hx-get="/info" hx-trigger="click" hx-target="#console" hx-swap="innerHTML" hx-indicator="#indicator">
+        click
+    </button>
+    <button hx-get="/time" hx-confirm="ha?">delete</button>
+    <div id="console"></div>
+    <input type="text" name="q" hx-get="/hash" hx-trigger="keyup changed delay:500ms" hx-target="#search-results"
+        placeholder="hash...">
+    <div id="search-results"></div>
+</body>
+
+</html>
