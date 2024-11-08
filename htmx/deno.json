@@ -1,10 +1,22 @@
 {
-    "compilerOptions": {
-        "lib": ["dom", "esnext", "deno.unstable"]
-    },
-    "unstable": ["kv"],
-    "imports": {
-        "consola": "npm:consola",
-        "nunjucks": "npm:nunjucks"
-    }
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "esnext",
+      "deno.unstable"
+    ]
+  },
+  "unstable": [
+    "kv"
+  ],
+  "imports": {
+    "consola": "npm:consola",
+    "nunjucks": "npm:nunjucks"
+  },
+  "deploy": {
+    "project": "5393bc2d-2b43-43b4-8a76-7f56b743c389",
+    "exclude": [],
+    "include": [],
+    "entrypoint": "htmx.ts"
+  }
 }

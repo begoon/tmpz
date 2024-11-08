@@ -69,7 +69,7 @@ const tableTemplate = nunjucks.compile(`
 </table>
 `);
 
-function handler(request: EnrichedRequest): Response {
+async function handler(request: EnrichedRequest): Promise<Response> {
     const pathname = new URL(request.url).pathname;
     const context = {
         message: "OK",
@@ -94,6 +94,19 @@ function handler(request: EnrichedRequest): Response {
             headers: { "Content-Type": "text/html" },
         });
     }
+    if (pathname === "/pause") {
+        const t = Number(new URL(request.url).searchParams.get("t")) || 500;
+        console.info("pause", t);
+        await new Promise((resolve) => setTimeout(resolve, t));
+        return Response.json({ message: "paused", duration: t });
+    }
+    if (pathname === "/delay") {
+        const t = Number(new URL(request.url).searchParams.get("t")) || "0.5";
+        console.info("delay", t);
+        const response = await fetch(`https://httpbin.org/delay/${t}`);
+        console.log("delayed", response.status);
+        return Response.json({ message: "delayed", duration: t });
+    }
     if (pathname === "/error") {
         throw new Error("oops");
     }
@@ -105,8 +118,8 @@ function handler(request: EnrichedRequest): Response {
     return Response.json({ status: "ha?" });
 }
 
-function cors(request: EnrichedRequest, next: Handler): Response {
-    const response = next(request);
+async function cors(request: EnrichedRequest, next: Handler) {
+    const response = await next(request);
     response.headers.set("Access-Control-Allow-Origin", "*");
     response.headers.set(
         "Access-Control-Allow-Methods",
@@ -117,12 +130,13 @@ function cors(request: EnrichedRequest, next: Handler): Response {
     return response;
 }
 
-function htmx(request: EnrichedRequest, next: Handler): Response {
+async function htmx(request: EnrichedRequest, next: Handler) {
     request.htmx = Boolean(request.headers.get("HX-Request"));
-    return next(request);
+    const res = await next(request);
+    return res;
 }
 
-function basic(request: EnrichedRequest, next: Handler): Response {
+async function basic(request: EnrichedRequest, next: Handler) {
     const pathname = new URL(request.url).pathname;
     if (pathname === "/z") {
         const auth = request.headers.get("Authorization");
@@ -132,7 +146,7 @@ function basic(request: EnrichedRequest, next: Handler): Response {
                 const [username, password] = atob(credentials).split(":");
                 if (username === "wheel" && password === "ha?") {
                     request.username = username;
-                    return next(request);
+                    return await next(request);
                 }
             }
         }
@@ -141,10 +155,10 @@ function basic(request: EnrichedRequest, next: Handler): Response {
             headers: { "WWW-Authenticate": 'Basic realm="protected"' },
         });
     }
-    return next(request);
+    return await next(request);
 }
 
-function bearer(request: EnrichedRequest, next: Handler): Response {
+async function bearer(request: EnrichedRequest, next: Handler) {
     const pathname = new URL(request.url).pathname;
     if (pathname === "/env") {
         const auth = request.headers.get("Authorization");
@@ -156,26 +170,26 @@ function bearer(request: EnrichedRequest, next: Handler): Response {
         }
         return new Response(null, { status: 401 });
     }
-    return next(request);
+    return await next(request);
 }
 
-function tracer(request: EnrichedRequest, next: Handler): Response {
+async function tracer(request: EnrichedRequest, next: Handler) {
     const started = performance.now();
     const pathname = new URL(request.url).pathname;
     consola.info("REQUEST", request.method, pathname);
-    const response = next(request);
+    const response = await next(request);
     consola.info(
         "RESPONSE",
-        request.url,
+        pathname,
         response.status,
         (performance.now() - started).toFixed(2)
     );
     return response;
 }
 
-function exception(request: EnrichedRequest, next: Handler): Response {
+async function exception(request: EnrichedRequest, next: Handler) {
     try {
-        return next(request);
+        return await next(request);
     } catch (error) {
         let message = "unknown error";
         if (error instanceof Error) {
@@ -186,22 +200,60 @@ function exception(request: EnrichedRequest, next: Handler): Response {
     }
 }
 
-type Handler = (request: EnrichedRequest) => Response;
+async function timed(request: EnrichedRequest, handler: Handler) {
+    const f = async () => await handler(request);
+    let timer;
+    const timeout = 1000;
+    const limiter = new Promise<Response>((_, reject) => {
+        timer = setTimeout(
+            () =>
+                reject(
+                    Response.json(
+                        {
+                            error: "timeout",
+                            pathname: request.url,
+                        },
+                        { status: 408 }
+                    )
+                ),
+            timeout
+        );
+    });
 
-const MIDDLEWARES = [exception, tracer, htmx, basic, bearer, cors];
+    try {
+        return await Promise.race<Response>([f(), limiter]);
+    } catch (error) {
+        return error as Response;
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
-function middlewares(handler: (request: EnrichedRequest) => Response): Handler {
-    for (const middleware of MIDDLEWARES.reverse()) {
+type Handler = (req: EnrichedRequest) => Promise<Response>;
+type Middleware = (req: EnrichedRequest, next: Handler) => Promise<Response>;
+
+const MIDDLEWARES: Middleware[] = [
+    exception,
+    tracer,
+    timed,
+    htmx,
+    basic,
+    bearer,
+    cors,
+];
+
+function middlewares(handler: Handler): Handler {
+    for (const middleware of MIDDLEWARES.toReversed()) {
         const next = handler;
-        handler = (request) => middleware(request, next);
+        handler = async (request) => await middleware(request, next);
     }
     return handler;
 }
 
 const PORT = Number(env.PORT) || 8000;
 
-function serve(request: Request): Response {
-    return middlewares(handler)(request as EnrichedRequest);
+async function serve(request: Request) {
+    return await middlewares(handler)(request as EnrichedRequest);
 }
 
 if (typeof Deno !== "undefined") {
@@ -211,4 +263,4 @@ if (typeof Deno !== "undefined") {
     );
 }
 
-// if (typeof Bun !== "undefined") Bun.serve({ fetch: serve });
+// if (typeof Bun !== "undefined") Bun.serve({ port: PORT, fetch: serve });
