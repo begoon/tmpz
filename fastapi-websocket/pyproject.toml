@@ -1,0 +1,8 @@
+[project]
+name = "fastapi-websocket"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi-cli>=0.0.5",
+    "fastapi>=0.115.4",
+]
