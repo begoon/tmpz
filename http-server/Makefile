@@ -1,3 +1,6 @@
+all:
+	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|clean]"
+
 swift:
 	swift build && swift run http-server
 
@@ -16,6 +19,12 @@ bun:
 zig:
 	zig run main.zig
 
+ruby:
+	ruby main.rb
+
+dart:
+	dart main.dart
+
 clean:
-	rm -rf .build
+	-rm -rf .build
 	cargo clean
