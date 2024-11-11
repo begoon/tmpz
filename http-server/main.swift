@@ -7,46 +7,45 @@ struct Version: Codable {
     let version: String
 }
 
-func jsonResponse<T: Codable>(_ value: T) -> Data {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = .prettyPrinted
-    return (try? encoder.encode(value)) ?? Data()
+func JSON<T: Codable>(_ value: T) -> Data {
+    return (try? JSONEncoder().encode(value)) ?? Data()
 }
 
 final class HTTPHandler: ChannelInboundHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias OutboundOut = HTTPServerResponsePart
-    
+
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let req = self.unwrapInboundIn(data)
-        
+
         switch req {
         case .head(let requestHead):
             if requestHead.uri == "/version" && requestHead.method == .GET {
                 let version = Version(version: "1.0")
-                let response = jsonResponse(version)
-                
+                let response = JSON(version)
+
                 var headers = HTTPHeaders()
                 headers.add(name: "Content-Type", value: "application/json")
                 headers.add(name: "Content-Length", value: "\(response.count)")
-                
-                let responseHead = HTTPResponseHead(version: requestHead.version,
-                                                    status: .ok,
-                                                    headers: headers)
-                context.write(self.wrapOutboundOut(.head(responseHead)), promise: nil)
+
+                let responseHead = HTTPResponseHead(
+                    version: requestHead.version,
+                    status: .ok,
+                    headers: headers)
+                _ = context.write(self.wrapOutboundOut(.head(responseHead)))
                 var buffer = context.channel.allocator.buffer(capacity: response.count)
                 buffer.writeBytes(response)
-                context.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
-                context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+                _ = context.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                _ = context.writeAndFlush(self.wrapOutboundOut(.end(nil)))
             } else {
                 let responseHead = HTTPResponseHead(version: requestHead.version, status: .notFound)
-                context.write(self.wrapOutboundOut(.head(responseHead)), promise: nil)
-                context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+                _ = context.write(self.wrapOutboundOut(.head(responseHead)))
+                _ = context.writeAndFlush(self.wrapOutboundOut(.end(nil)))
             }
-            
+
         case .body:
             break
-            
+
         case .end:
             break
         }
