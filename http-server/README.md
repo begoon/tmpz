@@ -49,6 +49,8 @@ Tested on macOS 15.1 Sequoia.
 
 `make python`
 
+`make fpc`
+
 ## Run client
 
 `make q` or `curl -q http://localhost:8000/version`.
