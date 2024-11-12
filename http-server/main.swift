@@ -21,7 +21,7 @@ final class HTTPHandler: ChannelInboundHandler {
         switch req {
         case .head(let requestHead):
             if requestHead.uri == "/version" && requestHead.method == .GET {
-                let version = Version(version: "1.0")
+                let version = Version(version: "1.0.0")
                 let response = JSON(version)
 
                 var headers = HTTPHeaders()

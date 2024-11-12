@@ -6,7 +6,6 @@ use std::convert::Infallible;
 #[derive(Serialize)]
 struct VersionInfo {
     version: String,
-    description: String,
 }
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
@@ -14,7 +13,6 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible
         "/version" => {
             let version_info = VersionInfo {
                 version: "1.0.0".to_string(),
-                description: "rust".to_string(),
             };
             let json = serde_json::to_string(&version_info).unwrap();
             Ok(Response::new(Body::from(json)))

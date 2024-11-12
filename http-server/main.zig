@@ -38,8 +38,7 @@ fn handle_request(request: *http.Server.Request) !void {
     std.debug.print("REQUEST {any} {s}\n", .{request.head.method, request.head.target});
     var content_length: usize = 0;
     if (std.mem.startsWith(u8, request.head.target, "/version")) {
-        const version = struct { status: []const u8, version: []const u8 }{
-            .status = "zig",
+        const version = struct { version: []const u8 }{
             .version = "1.0.0",
         };
         var buffer: [1024]u8 = undefined;

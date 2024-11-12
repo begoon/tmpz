@@ -1,2 +1,5 @@
 target
 .build
+.venv
+__pycache__
+.bundle

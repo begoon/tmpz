@@ -1,5 +1,5 @@
 all:
-	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|clean]"
+	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|q|clean]"
 
 swift:
 	swift build && swift run http-server
@@ -24,6 +24,15 @@ ruby:
 
 dart:
 	dart main.dart
+
+php:
+	php -S localhost:8000 main.php
+
+python:
+	fastapi dev main.py
+
+q:
+	curl -q http://localhost:8000/version
 
 clean:
 	-rm -rf .build
