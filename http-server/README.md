@@ -25,6 +25,7 @@ Tested on macOS 15.1 Sequoia.
 - bun 1.1.34 - [main-bun.ts](./main-bun.ts)
 - php 8.3.13 - [main.php](./main.php)
 - python 3.13 - [main.py](./main.py)
+- freepascal/fpc 3.2.2 - [main.pas](./main.pas)
 
 ## Run servers for each language
 

@@ -1,5 +1,5 @@
 all:
-	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|q|clean]"
+	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|fpc|q|clean]"
 
 swift:
 	swift build && swift run http-server
@@ -31,9 +31,12 @@ php:
 python:
 	fastapi dev main.py
 
+fpc:
+	fpc -oexe main.pas && ./exe
+
 q:
 	curl -q http://localhost:8000/version
 
 clean:
-	-rm -rf .build
+	-rm -rf .build exe
 	cargo clean
