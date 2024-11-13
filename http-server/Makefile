@@ -1,5 +1,5 @@
 all:
-	@echo "Usage: make [swift|rust|go|deno|bun|node|zig|ruby|dart|php|python|fpc|lua|q|clean]"
+	@echo "Usage: make [swift|rust|go|deno|bun|node|zig|cs|ruby|dart|php|python|fpc|lua|q|clean]"
 
 swift:
 	swift build && swift run http-server
@@ -45,9 +45,15 @@ lua:
 	for package in luasocket dkjson copas; do luarocks install $$package; done
 	lua main.lua
 
+cs:
+	nuget install -OutputDirectory .nuget Newtonsoft.Json
+	mcs -r:System.Net.Http.dll \
+	-r:.nuget/Newtonsoft.Json.13.0.3/lib/net45/Newtonsoft.Json.dll main.cs
+	MONO_PATH=.nuget/Newtonsoft.Json.13.0.3/lib/net45 mono main.exe
+
 q:
 	curl -q http://localhost:8000/version
 
 clean:
-	-rm -rf .build .venv .bundle exe 
+	-rm -rf .build .venv .bundle exe main.exe
 	cargo clean

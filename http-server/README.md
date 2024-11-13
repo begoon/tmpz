@@ -27,6 +27,7 @@ Tested on macOS 15.1 Sequoia.
 - python 3.13 - [main.py](./main.py)
 - freepascal/fpc 3.2.2 - [main.pas](./main.pas)
 - lua 5.4.7 - [main.lua](./main.lua)
+- csharp/mono 6.12.0 - [main.cs](./main.cs)
 
 ## Run servers for each language
 
@@ -55,6 +56,8 @@ Tested on macOS 15.1 Sequoia.
 `make fpc`
 
 `make lua`
+
+`make cs`
 
 ## Run client
 
