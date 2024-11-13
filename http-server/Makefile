@@ -1,5 +1,5 @@
 all:
-	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|fpc|q|clean]"
+	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|fpc|lua|q|clean]"
 
 swift:
 	swift build && swift run http-server
@@ -20,6 +20,7 @@ zig:
 	zig run main.zig
 
 ruby:
+	bundle install
 	ruby main.rb
 
 dart:
@@ -29,14 +30,21 @@ php:
 	php -S localhost:8000 main.php
 
 python:
-	fastapi dev main.py
+	uv venv
+	source ./.venv/bin/activate \
+	&& uv pip install -r requirements.txt \
+	&& fastapi dev main.py
 
 fpc:
 	fpc -oexe main.pas && ./exe
+
+lua:
+	for package in luasocket dkjson copas; do luarocks install $$package; done
+	lua main.lua
 
 q:
 	curl -q http://localhost:8000/version
 
 clean:
-	-rm -rf .build exe
+	-rm -rf .build exe .venv
 	cargo clean

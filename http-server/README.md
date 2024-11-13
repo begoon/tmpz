@@ -26,6 +26,7 @@ Tested on macOS 15.1 Sequoia.
 - php 8.3.13 - [main.php](./main.php)
 - python 3.13 - [main.py](./main.py)
 - freepascal/fpc 3.2.2 - [main.pas](./main.pas)
+- lua 5.4.7 - [main.lua](./main.lua)
 
 ## Run servers for each language
 
@@ -50,6 +51,8 @@ Tested on macOS 15.1 Sequoia.
 `make python`
 
 `make fpc`
+
+`make lua`
 
 ## Run client
 

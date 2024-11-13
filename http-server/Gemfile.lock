@@ -30,7 +30,7 @@ PLATFORMS
 
 DEPENDENCIES
   puma
-  rackup (~> 2.2)
+  rackup
   sinatra
 
 BUNDLED WITH
