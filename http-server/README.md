@@ -23,6 +23,7 @@ Tested on macOS 15.1 Sequoia.
 - dart 3.5.4 - [main.dart](./main.dart)
 - deno 2.0.6 - [main-deno.ts](./main-deno.ts)
 - bun 1.1.34 - [main-bun.ts](./main-bun.ts)
+- node 23.1.0 - [main.js](./main.js)
 - php 8.3.13 - [main.php](./main.php)
 - python 3.13 - [main.py](./main.py)
 - freepascal/fpc 3.2.2 - [main.pas](./main.pas)
