@@ -4,7 +4,7 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-class SimpleHttpServer
+class HttpServer
 {
     static void Main()
     {
