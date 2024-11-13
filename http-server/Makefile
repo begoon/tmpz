@@ -1,5 +1,5 @@
 all:
-	@echo "Usage: make [swift|rust|go|deno|bun|zig|ruby|dart|php|python|fpc|lua|q|clean]"
+	@echo "Usage: make [swift|rust|go|deno|bun|node|zig|ruby|dart|php|python|fpc|lua|q|clean]"
 
 swift:
 	swift build && swift run http-server
@@ -15,6 +15,9 @@ deno:
 
 bun:
 	bun run main-bun.ts
+
+node:
+	node main.js
 
 zig:
 	zig run main.zig

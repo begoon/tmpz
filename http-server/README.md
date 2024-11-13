@@ -46,6 +46,8 @@ Tested on macOS 15.1 Sequoia.
 
 `make bun`
 
+`make node`
+
 `make php`
 
 `make python`
