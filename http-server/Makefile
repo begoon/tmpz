@@ -49,5 +49,5 @@ q:
 	curl -q http://localhost:8000/version
 
 clean:
-	-rm -rf .build exe .venv
+	-rm -rf .build .venv .bundle exe 
 	cargo clean
