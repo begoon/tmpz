@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="//unpkg.com/htmx.org"></script>
+    </head>
+    <body>
+        <input
+            id="search"
+            type="search"
+            autofocus
+            name="q"
+            placeholder="search..."
+            required
+            value="{{.Query}}"
+            hx-trigger="keyup changed delay:500ms, load"
+            hx-target="#results"
+            hx-get="/"
+        />
+        <output id="results"></output>
+        <script defer>
+            const input = document.getElementById("search");
+            input.addEventListener("input", () => {
+                const query = input.value;
+                const url = new URL(window.location);
+                if (query) url.searchParams.set("q", query);
+                else url.searchParams.delete("q");
+                history.replaceState({}, "", url);
+            });
+        </script>
+    </body>
+</html>
