@@ -37,7 +37,6 @@ func loadDocuments() {
 			log.Printf("error accessing path %q: %v\n", path, err)
 			return err
 		}
-
 		if !info.IsDir() && !skip(path) {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -139,10 +138,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 func fileHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	root := "data/"
-	content, err := os.ReadFile(root + r.URL.Path[1:])
+	path := root + r.URL.Path[1:]
+	content, err := os.ReadFile(path)
 	if q != "" {
 		content = bytes.ReplaceAll(content, []byte(q), []byte("<mark>"+q+"</mark>"))
-		isHTML := strings.HasSuffix(r.URL.Path, ".html")
+		isHTML := strings.HasSuffix(path, ".html")
 		if !isHTML {
 			content = []byte("<pre>" + string(content) + "</pre>")
 			w.Header().Set("Content-Type", "text/html")

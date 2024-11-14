@@ -1,3 +1,5 @@
 {{range .Results}}
 <div><a href="{{.Path}}?q={{$.Query}}" target="_blank">{{.Path}}</a></div>
+{{end}} {{if not .Results}}
+<div style="padding-top: 1em"><a href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
 {{end}}
