@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -25,9 +24,9 @@ var (
 	tfidfIndex map[string]map[string]float64
 )
 
-func loadDocuments() {
-	rootDir := "data/"
+var rootDir = strings.TrimSuffix(os.Getenv("DATA_DIR"), "/") + "/"
 
+func loadDocuments() {
 	skip := func(v string) bool {
 		return !strings.HasPrefix(v, rootDir)
 	}
@@ -136,27 +135,14 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query().Get("q")
-	root := "data/"
-	path := root + r.URL.Path[1:]
-	fmt.Printf("serving file %s\n", path)
-	content, err := os.ReadFile(path)
-	if q != "" {
-		content = bytes.ReplaceAll(content, []byte(q), []byte("<mark>"+q+"</mark>"))
-		isHTML := strings.HasSuffix(path, ".html")
-		if !isHTML {
-			content = []byte("<pre>" + string(content) + "</pre>")
-			w.Header().Set("Content-Type", "text/html")
-		}
-	}
-	if err != nil {
-		http.Error(w, "file not found", http.StatusNotFound)
-		return
-	}
-	w.Write(content)
+	path := rootDir + r.URL.Path[1:]
+	fmt.Printf("GET %s -> %s\n", r.URL.Path, path)
+	http.ServeFile(w, r, path)
 }
 
 func main() {
+	fmt.Printf("ROOT_DIR: %s\n", rootDir)
+
 	loadDocuments()
 	buildIndex()
 
