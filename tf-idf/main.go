@@ -139,6 +139,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	root := "data/"
 	path := root + r.URL.Path[1:]
+	fmt.Printf("serving file %s\n", path)
 	content, err := os.ReadFile(path)
 	if q != "" {
 		content = bytes.ReplaceAll(content, []byte(q), []byte("<mark>"+q+"</mark>"))
