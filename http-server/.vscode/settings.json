@@ -1,9 +1,0 @@
-{
-    "[zig]": {
-        "editor.rulers": [
-            80
-        ],
-        "editor.formatOnSave": true,
-    },
-    "zig.maxColumn": 80
-}
