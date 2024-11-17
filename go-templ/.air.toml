@@ -1,0 +1,5 @@
+[build]
+include_ext = ["templ"]
+exclude_regex = ["_templ\\.go"]
+cmd = "make build"
+bin = "main"

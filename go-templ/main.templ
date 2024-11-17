@@ -1,0 +1,30 @@
+package main
+
+import (
+	"context"
+	"net/http"
+)
+
+templ index(name string) {
+	<html>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<script src="//unpkg.com/htmx.org"></script>
+		<link rel="stylesheet" href="/static/styles.css"/>
+		<body>
+			<div class="text-3xl">Hello, { name }</div>
+		</body>
+	</html>
+}
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			name = "World"
+		}
+		index(name).Render(context.Background(), w)
+	})
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.ListenAndServe(":8000", nil)
+}
