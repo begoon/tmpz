@@ -3,19 +3,28 @@
 # requires-python = ">=3.12"
 # dependencies = ["fastapi", "httpx", "uvicorn" ]
 # ///
-import asyncio, fastapi, httpx, uvicorn, signal, os
+import asyncio
+import os
+import signal
 from typing import Any
+
+import fastapi
+import httpx
+import uvicorn
 
 application = fastapi.FastAPI()
 
+
 @application.get("/")
 async def _() -> dict[str, Any]:
-    return { "status": "ha?" }
+    return {"status": "ha?"}
+
 
 async def listener():
     config = uvicorn.Config("main:application", port=8000)
     server = uvicorn.Server(config)
     await server.serve()
+
 
 async def make_request():
     await asyncio.sleep(0.5)
@@ -23,14 +32,21 @@ async def make_request():
         response = await client.get("http://127.0.0.1:8000/")
         print(response.json())
 
+
 async def main():
     async with asyncio.TaskGroup() as tasks:
         server = tasks.create_task(listener())
         client = tasks.create_task(make_request())
-        
-        await asyncio.wait([server, client], return_when=asyncio.FIRST_COMPLETED)
-        os.kill(os.getpid(), signal.SIGTERM)
+
+        await asyncio.wait(
+            [server, client],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        os.kill(os.getpid(), signal.SIGINT)
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("exiting...")
