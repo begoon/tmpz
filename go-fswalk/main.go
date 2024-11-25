@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
-	"sync"
 )
 
 func humanReadableSize(bytes int64) string {
@@ -29,11 +29,15 @@ func humanReadableSize(bytes int64) string {
 
 func directorySize(path string) (int64, error) {
 	var size int64
-	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(path, func(filePath string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
+		if !dir.IsDir() {
+			info, err := dir.Info()
+			if err != nil {
+				return err
+			}
 			size += info.Size()
 		}
 		return nil
@@ -46,26 +50,21 @@ type folderInfo struct {
 	size int64
 }
 
-func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, mutex *sync.Mutex, skipDirs map[string]bool) {
-	err := filepath.Walk(startFolder, func(path string, info os.FileInfo, err error) error {
+func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, skipDirs map[string]bool) {
+	err := filepath.WalkDir(startFolder, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if info.IsDir() {
-			if re.MatchString(info.Name()) {
+		if dir.IsDir() {
+			if re.MatchString(dir.Name()) {
 				skipDirs[path] = true
 				fmt.Printf("processing directory: %s\n", path)
-				go func(path string) {
-					size, err := directorySize(path)
-					if err != nil {
-						fmt.Printf("error calculating size of %s: %s\n", path, err)
-						return
-					}
-					mutex.Lock()
-					defer mutex.Unlock()
-					*results = append(*results, folderInfo{path, size})
-				}(path)
+				size, err := directorySize(path)
+				if err != nil {
+					log.Fatalf("error calculating size of %s: %s\n", path, err)
+				}
+				*results = append(*results, folderInfo{path, size})
 			}
 		}
 		if skipDirs[path] {
@@ -74,7 +73,7 @@ func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, mutex *s
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("error walking directory: %s\n", err)
+		log.Fatalf("error walking directory: %s\n", err)
 	}
 }
 
@@ -90,14 +89,13 @@ func main() {
 		log.Fatalf("error opening folder: %s", err)
 	}
 
-	folderSizes := make([]folderInfo, 0, 1024*100)
-	mutex := sync.Mutex{}
+	folderSizes := make([]folderInfo, 0)
 
 	skipDirs := make(map[string]bool)
 
 	re := regexp.MustCompile(regexPattern)
 
-	walk(startFolder, re, &folderSizes, &mutex, skipDirs)
+	walk(startFolder, re, &folderSizes, skipDirs)
 
 	sort.Slice(folderSizes, func(i, j int) bool {
 		return folderSizes[i].size > folderSizes[j].size
