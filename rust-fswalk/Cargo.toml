@@ -1,0 +1,15 @@
+[package]
+name = "rust-fswalk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+regex = "1.11.1"
+tokio = { version = "1", features = ["full"] }
+walkdir = "2.5.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+panic = "abort"
