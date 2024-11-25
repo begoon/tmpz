@@ -39,15 +39,13 @@ async fn fetch_json(client: &Client) -> Result<HashMap<String, Value>, reqwest::
 
 #[tokio::main]
 async fn main() {
-    let client = Client::builder().user_agent("teapot/1.0").build().unwrap();
-
     let mut rng = rand::thread_rng();
     let delays: Vec<u8> = (0..2).map(|_| rng.gen_range(1..=5)).collect();
 
     let delay_handles: Vec<_> = delays
         .iter()
         .map(|&delay| {
-            let client = client.clone();
+            let client = Client::new();
             task::spawn(async move {
                 match fetch_delay(&client, delay).await {
                     Ok(response) => {
@@ -60,7 +58,10 @@ async fn main() {
         .collect();
 
     let user_agent_handle = task::spawn({
-        let client = client.clone();
+        let client = Client::builder()
+            .user_agent("teapot/1.0")
+            .build()
+            .expect("error creating client");
         async move {
             match fetch_structure(&client).await {
                 Ok(response) => {
@@ -73,7 +74,7 @@ async fn main() {
     });
 
     let json_handle = task::spawn({
-        let client = client.clone();
+        let client = Client::new();
         async move {
             match fetch_json(&client).await {
                 Ok(response) => println!("response from json/: {:#?}", response),
