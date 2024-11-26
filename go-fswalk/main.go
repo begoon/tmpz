@@ -1,14 +1,24 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"sort"
+	"time"
+
+	"github.com/AlecAivazis/survey/v2"
+	c "github.com/logrusorgru/aurora/v4"
 )
+
+func hightlight(text string) string {
+	return c.BrightWhite(text).Bold().String()
+}
 
 func humanReadableSize(bytes int64) string {
 	const KB = 1024
@@ -17,9 +27,9 @@ func humanReadableSize(bytes int64) string {
 
 	switch {
 	case bytes >= GB:
-		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(GB))
+		return fmt.Sprintf(c.BrightWhite("%.2f GB").String(), float64(bytes)/float64(GB))
 	case bytes >= MB:
-		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(MB))
+		return fmt.Sprintf(c.BrightCyan("%.2f MB").String(), float64(bytes)/float64(MB))
 	case bytes >= KB:
 		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(KB))
 	default:
@@ -50,16 +60,17 @@ type folderInfo struct {
 	size int64
 }
 
-func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, skipDirs map[string]bool) {
+func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, scanned *int, skipDirs map[string]bool) {
 	err := filepath.WalkDir(startFolder, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if dir.IsDir() {
+			*scanned += 1
 			if re.MatchString(dir.Name()) {
 				skipDirs[path] = true
-				fmt.Printf("processing directory: %s\n", path)
+				fmt.Printf("processing %s\n", path)
 				size, err := directorySize(path)
 				if err != nil {
 					log.Fatalf("error calculating size of %s: %s\n", path, err)
@@ -77,25 +88,60 @@ func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, skipDirs
 	}
 }
 
+func yesno(message string) bool {
+	yesno := false
+	prompt := &survey.Confirm{Message: message}
+	err := survey.AskOne(prompt, &yesno)
+	if err != nil {
+		log.Fatalf("error asking question: %s", err)
+	}
+	return yesno
+}
+
+func deleteFolder(path string) {
+	if !yesno(fmt.Sprintf(`delete %q`, path)) {
+		return
+	}
+
+	err := os.RemoveAll(path)
+	if err != nil {
+		log.Fatalf("error deleting folder: %s", err)
+	}
+	fmt.Println(c.Yellow(path).Bold(), c.BgRed("DELETED").Bold())
+}
+
+var deleteFlag *bool = flag.Bool("delete", false, "delete")
+
 func main() {
-	if len(os.Args) != 3 {
+	debug.SetGCPercent(-1)
+
+	flag.Parse()
+
+	if *deleteFlag {
+		fmt.Println(c.BrightYellow("delete"), c.BrightWhite("ENABLED").BgRed().Bold())
+	}
+
+	if len(flag.Args()) != 2 {
 		fmt.Printf("usage: %s <start_folder> <regex_pattern>\n", os.Args[0])
 		os.Exit(1)
 	}
-	startFolder := os.Args[1]
-	regexPattern := os.Args[2]
+	startFolder := flag.Arg(0)
+	regexPattern := flag.Arg(1)
 
 	if _, err := os.Stat(startFolder); os.IsNotExist(err) {
 		log.Fatalf("error opening folder: %s", err)
 	}
 
 	folderSizes := make([]folderInfo, 0)
+	scanned := 0
 
 	skipDirs := make(map[string]bool)
 
 	re := regexp.MustCompile(regexPattern)
 
-	walk(startFolder, re, &folderSizes, skipDirs)
+	start := time.Now()
+
+	walk(startFolder, re, &folderSizes, &scanned, skipDirs)
 
 	sort.Slice(folderSizes, func(i, j int) bool {
 		return folderSizes[i].size > folderSizes[j].size
@@ -106,5 +152,18 @@ func main() {
 		fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
 		total += result.size
 	}
-	fmt.Printf("total size: %s / %d\n", humanReadableSize(total), len(folderSizes))
+	fmt.Printf("total size: %s / %d files\n", humanReadableSize(total), len(folderSizes))
+
+	fmt.Printf("scanned: %d files\n", scanned)
+
+	seconds := time.Since(start).Seconds()
+	fmt.Printf("elapsed time: %.2f seconds\n", seconds)
+
+	if !*deleteFlag {
+		return
+	}
+	for _, result := range folderSizes {
+		fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
+		deleteFolder(result.path)
+	}
 }
