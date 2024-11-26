@@ -10,14 +10,18 @@ import (
 	"regexp"
 	"runtime/debug"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/logrusorgru/aurora/v4"
 	c "github.com/logrusorgru/aurora/v4"
 )
 
-func hightlight(text string) string {
-	return c.BrightWhite(text).Bold().String()
+type colorFunc func(arg interface{}) c.Value
+
+func hightlight(text string, colorizer colorFunc) string {
+	return colorizer(text).Bold().String()
 }
 
 func humanReadableSize(bytes int64) string {
@@ -27,9 +31,9 @@ func humanReadableSize(bytes int64) string {
 
 	switch {
 	case bytes >= GB:
-		return fmt.Sprintf(c.BrightWhite("%.2f GB").String(), float64(bytes)/float64(GB))
+		return hightlight(fmt.Sprintf("%.2f GB", float64(bytes)/float64(GB)), c.BrightRed)
 	case bytes >= MB:
-		return fmt.Sprintf(c.BrightCyan("%.2f MB").String(), float64(bytes)/float64(MB))
+		return hightlight(fmt.Sprintf("%.2f MB", float64(bytes)/float64(MB)), c.BrightCyan)
 	case bytes >= KB:
 		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(KB))
 	default:
@@ -110,7 +114,12 @@ func deleteFolder(path string) {
 	fmt.Println(c.Yellow(path).Bold(), c.BgRed("DELETED").Bold())
 }
 
-var deleteFlag *bool = flag.Bool("delete", false, "delete")
+var (
+	deleteFlag *bool   = flag.Bool("delete", false, "delete")
+	cmdFlag    *string = flag.String("command", "du -hs {}", "command")
+	script     *string = flag.String("script", "fswalk.sh", "script name")
+	verbose    *bool   = flag.Bool("verbose", false, "verbose")
+)
 
 func main() {
 	debug.SetGCPercent(-1)
@@ -159,11 +168,38 @@ func main() {
 	seconds := time.Since(start).Seconds()
 	fmt.Printf("elapsed time: %.2f seconds\n", seconds)
 
-	if !*deleteFlag {
+	if *deleteFlag {
+		for _, result := range folderSizes {
+			fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
+			deleteFolder(result.path)
+		}
 		return
 	}
-	for _, result := range folderSizes {
-		fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
-		deleteFolder(result.path)
+
+	if *cmdFlag != "" {
+		scriptFile := os.Stdout
+		if *script != "" {
+			var err error
+			scriptFile, err = os.Create(*script)
+			if err != nil {
+				log.Fatalf("error creating script file: %s", err)
+			}
+			defer scriptFile.Close()
+		}
+		if len(folderSizes) > 0 {
+			aurora.DefaultColorizer = aurora.New(aurora.WithColors(false))
+			for _, result := range folderSizes {
+				cmd := strings.ReplaceAll(*cmdFlag, "{}", result.path)
+				line := fmt.Sprintf("%s # %s", cmd, humanReadableSize(result.size))
+				fmt.Fprintln(scriptFile, line)
+				if *verbose {
+					fmt.Println(line)
+				}
+			}
+			aurora.DefaultColorizer = aurora.New(aurora.WithColors(true))
+			fmt.Printf("script written to %v\n", *script)
+			fmt.Printf("run it with: %s\n", c.BrightBlue("source "+*script).String())
+		}
+		return
 	}
 }
