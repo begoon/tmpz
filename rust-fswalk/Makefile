@@ -5,8 +5,14 @@ run:
 
 release:
 	cargo build --release
-	mv target/release/rust-fswalk ./main
+	mv target/release/fswalk .
+
+folder?=github
+re?=__pycache__
+
+test:
+	make release && ./fswalk $(HOME)/$(folder) $(re)
 
 clean:
 	cargo clean
-	rm -f ./main
+	rm -f ./fswalk

@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::path::Path;
+use std::time::Instant;
 use std::{env, vec};
 use walkdir::{DirEntry, WalkDir};
 
@@ -57,18 +58,23 @@ fn main() {
     }
 
     let mut results = vec![];
+    let mut scanned = 0;
+
+    let started = Instant::now();
 
     let mut walker = WalkDir::new(start_folder).into_iter();
     while let Some(entry) = walker.next() {
         match entry {
             Ok(entry) if is_directory(&entry) => {
-                let folder_name = entry.file_name().to_string_lossy();
+                let path = entry.path();
 
+                scanned += 1;
+
+                let folder_name = entry.file_name().to_string_lossy();
                 if re.is_match(&folder_name) {
                     walker.skip_current_dir();
 
-                    let path = entry.path();
-                    println!("calculating size of '{}'", path.display());
+                    println!("processing {}", path.display());
                     let size = directory_size(&path);
                     results.push((path.display().to_string(), size));
                 }
@@ -85,8 +91,12 @@ fn main() {
         println!("{} - {}", folder_name, human_readable_size(*size));
     }
     println!(
-        "total size: {} / {}",
+        "total size: {} / {} folders",
         human_readable_size(total_size),
-        results.len()
+        results.len(),
     );
+    println!("scanned: {} files", scanned);
+
+    let seconds = started.elapsed().as_secs_f64();
+    println!("elapsed time: {:.3} seconds", seconds);
 }

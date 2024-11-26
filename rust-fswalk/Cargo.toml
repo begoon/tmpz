@@ -12,3 +12,7 @@ lto = true
 codegen-units = 1
 opt-level = "z"
 panic = "abort"
+
+[[bin]]
+name = "fswalk"
+path = "main.rs"
