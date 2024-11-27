@@ -1,9 +1,6 @@
-all: run
+all: build
 
-run:
-	cargo run
-
-release:
+build:
 	cargo build --release
 	mv target/release/fswalk .
 
@@ -11,7 +8,7 @@ folder?=github
 re?=__pycache__
 
 test:
-	make release && ./fswalk $(HOME)/$(folder) $(re)
+	make && ./fswalk $(HOME)/$(folder) $(re)
 
 clean:
 	cargo clean

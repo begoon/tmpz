@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 regex = "1.11.1"
 walkdir = "2.5.0"
+clap = { version = "4.1", features = ["derive"] }
 
 [profile.release]
 lto = true

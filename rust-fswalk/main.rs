@@ -1,5 +1,8 @@
+use clap::Parser;
 use regex::Regex;
+use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::time::Instant;
 use std::{env, vec};
 use walkdir::{DirEntry, WalkDir};
@@ -33,18 +36,42 @@ fn is_directory(entry: &DirEntry) -> bool {
     entry.file_type().is_dir()
 }
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    start_folder: String,
+    regex_pattern: String,
+
+    #[arg(long, default_value = "du -hs {}")]
+    command: String,
+
+    #[arg(long, default_value = "./fswalk.sh")]
+    script: PathBuf,
+
+    #[arg(long)]
+    verbose: bool,
+}
+
 fn main() {
+    let cli = Cli::parse();
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 3 {
+    let start_folder = cli.start_folder;
+    let regex_pattern = cli.regex_pattern;
+
+    if start_folder.is_empty() || regex_pattern.is_empty() {
         eprintln!("usage: {} <start_folder> <regex_pattern>", args[0]);
         std::process::exit(1);
-    }
+    };
 
-    let start_folder = &args[1];
-    let regex_pattern = &args[2];
+    let script = cli.script;
+    println!("script = {}", script.display());
+    let command = cli.command;
+    println!("command = {}", command);
+    let verbose = cli.verbose;
+    println!("verbose = {}", verbose);
 
-    let re = match Regex::new(regex_pattern) {
+    let re = match Regex::new(regex_pattern.as_str()) {
         Ok(r) => r,
         Err(e) => {
             eprintln!("invalid regex pattern: {}", e);
@@ -52,8 +79,8 @@ fn main() {
         }
     };
 
-    if !Path::new(start_folder).exists() {
-        eprintln!("folder font found: {}", start_folder);
+    if !Path::new(start_folder.as_str()).exists() {
+        eprintln!("folder not found: {}", start_folder);
         std::process::exit(1);
     }
 
@@ -99,4 +126,23 @@ fn main() {
 
     let seconds = started.elapsed().as_secs_f64();
     println!("elapsed time: {:.3} seconds", seconds);
+
+    if !command.is_empty() {
+        let mut script_file = std::fs::File::create(&script).expect("error creating script file");
+        for (folder_name, size) in results.iter() {
+            let line = format!(
+                "{} # {}\n",
+                command.replace("{}", folder_name),
+                human_readable_size(*size)
+            );
+            script_file
+                .write(line.as_bytes())
+                .expect("error writing to script file");
+            if verbose {
+                print!("{}", line);
+            }
+        }
+        println!("script written to {}", script.display());
+        println!("run it with: source {}", script.display());
+    }
 }
