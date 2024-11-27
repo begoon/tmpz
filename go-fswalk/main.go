@@ -115,10 +115,10 @@ func deleteFolder(path string) {
 }
 
 var (
-	deleteFlag *bool   = flag.Bool("delete", false, "delete")
-	cmdFlag    *string = flag.String("command", "du -hs {}", "command")
-	script     *string = flag.String("script", "fswalk.sh", "script name")
-	verbose    *bool   = flag.Bool("verbose", false, "verbose")
+	delete  *bool   = flag.Bool("delete", false, "delete")
+	command *string = flag.String("command", "du -hs {}", "command")
+	script  *string = flag.String("script", "./fswalk.sh", "script name")
+	verbose *bool   = flag.Bool("verbose", false, "verbose")
 )
 
 func main() {
@@ -126,7 +126,7 @@ func main() {
 
 	flag.Parse()
 
-	if *deleteFlag {
+	if *delete {
 		fmt.Println(c.BrightYellow("delete"), c.BrightWhite("ENABLED").BgRed().Bold())
 	}
 
@@ -148,7 +148,7 @@ func main() {
 
 	re := regexp.MustCompile(regexPattern)
 
-	start := time.Now()
+	started := time.Now()
 
 	walk(startFolder, re, &folderSizes, &scanned, skipDirs)
 
@@ -165,10 +165,10 @@ func main() {
 
 	fmt.Printf("scanned: %d files\n", scanned)
 
-	seconds := time.Since(start).Seconds()
+	seconds := time.Since(started).Seconds()
 	fmt.Printf("elapsed time: %.2f seconds\n", seconds)
 
-	if *deleteFlag {
+	if *delete {
 		for _, result := range folderSizes {
 			fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
 			deleteFolder(result.path)
@@ -176,7 +176,7 @@ func main() {
 		return
 	}
 
-	if *cmdFlag != "" {
+	if *command != "" {
 		scriptFile := os.Stdout
 		if *script != "" {
 			var err error
@@ -189,7 +189,7 @@ func main() {
 		if len(folderSizes) > 0 {
 			aurora.DefaultColorizer = aurora.New(aurora.WithColors(false))
 			for _, result := range folderSizes {
-				cmd := strings.ReplaceAll(*cmdFlag, "{}", result.path)
+				cmd := strings.ReplaceAll(*command, "{}", result.path)
 				line := fmt.Sprintf("%s # %s", cmd, humanReadableSize(result.size))
 				fmt.Fprintln(scriptFile, line)
 				if *verbose {
