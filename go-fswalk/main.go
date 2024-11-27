@@ -161,9 +161,9 @@ func main() {
 		fmt.Printf("%s - %s\n", result.path, humanReadableSize(result.size))
 		total += result.size
 	}
-	fmt.Printf("total size: %s / %d files\n", humanReadableSize(total), len(folderSizes))
+	fmt.Printf("total size: %s / %d folder(s)\n", humanReadableSize(total), len(folderSizes))
 
-	fmt.Printf("scanned: %d files\n", scanned)
+	fmt.Printf("scanned: %d folder(s)\n", scanned)
 
 	seconds := time.Since(started).Seconds()
 	fmt.Printf("elapsed time: %.2f seconds\n", seconds)
@@ -198,7 +198,7 @@ func main() {
 			}
 			aurora.DefaultColorizer = aurora.New(aurora.WithColors(true))
 			fmt.Printf("script written to %v\n", *script)
-			fmt.Printf("run it with: %s\n", c.BrightBlue("source "+*script).String())
+			fmt.Printf("run it with: %s\n", c.Blue("source "+*script).Underline().String())
 		}
 		return
 	}
