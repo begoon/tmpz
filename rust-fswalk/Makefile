@@ -10,6 +10,9 @@ re?=__pycache__
 test:
 	make && ./fswalk $(HOME)/$(folder) $(re)
 
+install:
+	cp ./fswalk $(HOME)/bin
+
 clean:
 	cargo clean
 	rm -f ./fswalk

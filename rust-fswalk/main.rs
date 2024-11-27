@@ -1,3 +1,4 @@
+use ansi_term::Colour::{Blue, Cyan, Red};
 use clap::Parser;
 use regex::Regex;
 use std::io::Write;
@@ -7,15 +8,28 @@ use std::time::Instant;
 use std::{env, vec};
 use walkdir::{DirEntry, WalkDir};
 
-fn human_readable_size(bytes: u64) -> String {
+enum Colored {
+    Yes,
+    No,
+}
+
+fn human_readable_size(bytes: u64, colored: Colored) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
     const GB: u64 = MB * 1024;
 
     if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
+        let v = format!("{:.2} GB", bytes as f64 / GB as f64);
+        match colored {
+            Colored::Yes => Red.bold().paint(v).to_string(),
+            Colored::No => v,
+        }
     } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
+        let v = format!("{:.2} MB", bytes as f64 / MB as f64);
+        match colored {
+            Colored::Yes => Cyan.bold().paint(v).to_string(),
+            Colored::No => v,
+        }
     } else if bytes >= KB {
         format!("{:.2} KB", bytes as f64 / KB as f64)
     } else {
@@ -64,13 +78,6 @@ fn main() {
         std::process::exit(1);
     };
 
-    let script = cli.script;
-    println!("script = {}", script.display());
-    let command = cli.command;
-    println!("command = {}", command);
-    let verbose = cli.verbose;
-    println!("verbose = {}", verbose);
-
     let re = match Regex::new(regex_pattern.as_str()) {
         Ok(r) => r,
         Err(e) => {
@@ -115,34 +122,45 @@ fn main() {
 
     let total_size = results.iter().map(|(_, size)| size).sum::<u64>();
     for (folder_name, size) in results.iter() {
-        println!("{} - {}", folder_name, human_readable_size(*size));
+        println!(
+            "{} - {}",
+            folder_name,
+            human_readable_size(*size, Colored::Yes)
+        );
     }
     println!(
-        "total size: {} / {} folders",
-        human_readable_size(total_size),
+        "total size: {} / {} folder(s)",
+        human_readable_size(total_size, Colored::Yes),
         results.len(),
     );
-    println!("scanned: {} files", scanned);
+    println!("scanned: {} folder(s)", scanned);
 
     let seconds = started.elapsed().as_secs_f64();
     println!("elapsed time: {:.3} seconds", seconds);
 
-    if !command.is_empty() {
-        let mut script_file = std::fs::File::create(&script).expect("error creating script file");
+    if !cli.command.is_empty() {
+        let mut script_file =
+            std::fs::File::create(&cli.script).expect("error creating script file");
         for (folder_name, size) in results.iter() {
+            let command = cli.command.replace("{}", folder_name);
             let line = format!(
                 "{} # {}\n",
-                command.replace("{}", folder_name),
-                human_readable_size(*size)
+                command,
+                human_readable_size(*size, Colored::No)
             );
             script_file
                 .write(line.as_bytes())
                 .expect("error writing to script file");
-            if verbose {
-                print!("{}", line);
+            if cli.verbose {
+                print!(
+                    "{} # {}\n",
+                    command.replace("{}", folder_name),
+                    human_readable_size(*size, Colored::Yes)
+                );
             }
         }
-        println!("script written to {}", script.display());
-        println!("run it with: source {}", script.display());
+        println!("script written to {}", cli.script.display());
+        let cmd = "source ".to_string() + cli.script.display().to_string().as_str();
+        println!("run it with: {}", Blue.underline().paint(cmd));
     }
 }
