@@ -11,7 +11,11 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/charlievieth/fastwalk"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -44,7 +48,7 @@ func humanReadableSize(bytes int64) string {
 
 func directorySize(path string) (int64, error) {
 	var size int64
-	err := filepath.WalkDir(path, func(filePath string, dir fs.DirEntry, err error) error {
+	err := fastwalk.Walk(nil, path, func(filePath string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -65,35 +69,46 @@ type folderInfo struct {
 	size int64
 }
 
-func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, scanned *int, skipDirs map[string]bool) {
-	err := filepath.WalkDir(startFolder, func(path string, dir fs.DirEntry, err error) error {
+func walk(startFolder string, re *regexp.Regexp) (results []folderInfo, scanned int64) {
+	lock := sync.Mutex{}
+	results = make([]folderInfo, 0, 1024*256)
+
+	scanned = 0
+	err := fastwalk.Walk(nil, startFolder, func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if dir.IsDir() {
-			*scanned += 1
-			if re.MatchString(dir.Name()) {
-				skipDirs[path] = true
-				fmt.Printf("processing %s\n", path)
-				size, err := directorySize(path)
-				if err != nil {
-					log.Fatalf("error calculating size of %s: %s\n", path, err)
-				}
-				*results = append(*results, folderInfo{path, size})
-			}
+		if !dir.IsDir() {
+			return nil
 		}
-		if skipDirs[path] {
-			return filepath.SkipDir
+		atomic.AddInt64(&scanned, 1)
+
+		if !re.MatchString(dir.Name()) {
+			return nil
 		}
-		return nil
+
+		if *verbose {
+			fmt.Printf("processing %s\n", path)
+		}
+
+		size, err := directorySize(path)
+		if err != nil {
+			log.Fatalf("error calculating size of %s: %s\n", path, err)
+		}
+
+		lock.Lock()
+		results = append(results, folderInfo{path, size})
+		lock.Unlock()
+		return filepath.SkipDir
 	})
 	if err != nil {
 		log.Fatalf("error walking directory: %s\n", err)
 	}
-	sort.Slice(*results, func(i, j int) bool {
-		return (*results)[i].size > (*results)[j].size
+	sort.Slice(results, func(i, j int) bool {
+		return (results)[i].size > (results)[j].size
 	})
+	return
 }
 
 func confirm(message string) bool {
@@ -210,16 +225,11 @@ func main() {
 		log.Fatalf("error opening folder: %s", err)
 	}
 
-	folderSizes := make([]folderInfo, 0)
-	scanned := 0
-
-	skipDirs := make(map[string]bool)
-
 	re := regexp.MustCompile(regexPattern)
 
 	started := time.Now()
 
-	walk(startFolder, re, &folderSizes, &scanned, skipDirs)
+	folderSizes, scanned := walk(startFolder, re)
 
 	if *N > 0 && len(folderSizes) > *N {
 		fmt.Printf(c.BrightWhite("%d largest folders\n").Underline().String(), *N)
