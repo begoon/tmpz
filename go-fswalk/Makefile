@@ -13,7 +13,7 @@ test:
 	make && ./fswalk $(HOME)/$(folder) $(re)
 
 install:
-	cp ./fswalk $(HOME)/bin
+	cp ./fswalk $(HOME)/bin/fsclean
 
 clean:
 	rm -f ./fswalk

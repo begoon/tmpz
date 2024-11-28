@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/logrusorgru/aurora/v4"
 	c "github.com/logrusorgru/aurora/v4"
 )
@@ -94,21 +96,20 @@ func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, scanned 
 	})
 }
 
-func yesno(message string) bool {
-	yesno := false
+func confirm(message string) bool {
+	yes := false
 	prompt := &survey.Confirm{Message: message}
-	err := survey.AskOne(prompt, &yesno)
+	err := survey.AskOne(prompt, &yes)
 	if err != nil {
 		log.Fatalf("error asking question: %s", err)
 	}
-	return yesno
+	return yes
 }
 
 func deleteFolder(path string) {
-	if !yesno(fmt.Sprintf(`delete %q`, path)) {
+	if !confirm(fmt.Sprintf(`delete %q`, path)) {
 		return
 	}
-
 	err := os.RemoveAll(path)
 	if err != nil {
 		log.Fatalf("error deleting folder: %s", err)
@@ -117,25 +118,93 @@ func deleteFolder(path string) {
 }
 
 var (
+	N       *int    = flag.Int("n", 10, "number of largest folders (0 for all)")
 	delete  *bool   = flag.Bool("delete", false, "delete")
 	command *string = flag.String("command", "du -hs {}", "command")
-	script  *string = flag.String("script", "./fswalk.sh", "script name")
+	script  *string = flag.String("script", "./fsclean.sh", "script name")
 	verbose *bool   = flag.Bool("verbose", false, "verbose")
 )
 
+var CommonFolders = []string{".venv", "__pycache__", "node_modules", ".mypy_cache", ".pytest_cache"}
+
+type Settings struct {
+	Folders []string `json:"folders"`
+}
+
+func (s *Settings) load() {
+	data, err := os.ReadFile(settingsFile)
+	if err == nil {
+		json.Unmarshal(data, s)
+	}
+}
+
+func (s Settings) store() error {
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(settingsFile, data, 0o644)
+}
+
+var (
+	homeDir      string
+	settingsFile string
+)
+
+func init() {
+	var err error
+	homeDir, err = os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error getting home directory: %s\n", err)
+		os.Exit(1)
+	}
+	settingsFile = filepath.Join(homeDir, ".fsclean.json")
+}
+
 func main() {
 	flag.Parse()
+
+	settings := Settings{}
+	settings.load()
 
 	if *delete {
 		fmt.Println(c.BrightYellow("delete"), c.BrightWhite("ENABLED").BgRed().Bold())
 	}
 
-	if len(flag.Args()) != 2 {
-		fmt.Printf("usage: %s <start_folder> <regex_pattern>\n", os.Args[0])
+	if len(flag.Args()) < 1 {
+		fmt.Printf("usage: %s <start_folder> [<regex_pattern>]\n", os.Args[0])
 		os.Exit(1)
 	}
 	startFolder := flag.Arg(0)
+
 	regexPattern := flag.Arg(1)
+	if regexPattern == "" {
+
+		prompt := &survey.MultiSelect{
+			Message: "where to search:",
+			Options: CommonFolders,
+			Default: settings.Folders,
+		}
+		folders := []string{}
+		err := survey.AskOne(prompt, &folders, survey.WithValidator(survey.Required))
+		if err != nil {
+			if err == terminal.InterruptErr {
+				os.Exit(0)
+			}
+			log.Fatalf("error asking question: %s", err)
+		}
+		fmt.Printf("selected: %v\n", folders)
+
+		settings.Folders = folders
+
+		regexPattern = strings.Join(folders, "|")
+		fmt.Printf("pattern: %s\n", regexPattern)
+	}
+
+	err := settings.store()
+	if err != nil {
+		log.Fatalf("error saving settings: %s", err)
+	}
 
 	if _, err := os.Stat(startFolder); os.IsNotExist(err) {
 		log.Fatalf("error opening folder: %s", err)
@@ -151,6 +220,11 @@ func main() {
 	started := time.Now()
 
 	walk(startFolder, re, &folderSizes, &scanned, skipDirs)
+
+	if *N > 0 && len(folderSizes) > *N {
+		fmt.Printf(c.BrightWhite("%d largest folders\n").Underline().String(), *N)
+		folderSizes = folderSizes[:*N]
+	}
 
 	total := int64(0)
 	for _, result := range folderSizes {
