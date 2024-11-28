@@ -16,4 +16,4 @@ install:
 	cp ./fswalk $(HOME)/bin/fsclean
 
 clean:
-	rm -f ./fswalk
+	rm -f ./fswalk *.pprof *.sh *.test
