@@ -208,8 +208,6 @@ func main() {
 			}
 			log.Fatalf("error asking question: %s", err)
 		}
-		fmt.Printf("selected: %v\n", folders)
-
 		settings.Folders = folders
 
 		regexPattern = strings.Join(folders, "|")
