@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -90,6 +89,9 @@ func walk(startFolder string, re *regexp.Regexp, results *[]folderInfo, scanned 
 	if err != nil {
 		log.Fatalf("error walking directory: %s\n", err)
 	}
+	sort.Slice(*results, func(i, j int) bool {
+		return (*results)[i].size > (*results)[j].size
+	})
 }
 
 func yesno(message string) bool {
@@ -122,8 +124,6 @@ var (
 )
 
 func main() {
-	debug.SetGCPercent(-1)
-
 	flag.Parse()
 
 	if *delete {
@@ -151,10 +151,6 @@ func main() {
 	started := time.Now()
 
 	walk(startFolder, re, &folderSizes, &scanned, skipDirs)
-
-	sort.Slice(folderSizes, func(i, j int) bool {
-		return folderSizes[i].size > folderSizes[j].size
-	})
 
 	total := int64(0)
 	for _, result := range folderSizes {

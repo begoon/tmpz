@@ -1,2 +1,4 @@
 fswalk
 fswalk.sh
+*.test
+*.pprof
