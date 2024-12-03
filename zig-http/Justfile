@@ -1,4 +1,4 @@
-dev url: build
+dev url="http://localhost:8000/version": build
 	just run "{{url}}"
 
 build:

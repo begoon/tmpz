@@ -51,9 +51,13 @@ pub fn main() !void {
 
     const Version = struct {
         version: []const u8,
-        // tag: []const u8,
+        // tag: []const u8, // = "?"
     };
-    const parsed = try json.parseFromSlice(Version, allocator, body, .{ .ignore_unknown_fields = true });
+    const parsed_or_error = json.parseFromSlice(Version, allocator, body, .{ .ignore_unknown_fields = true });
+    const parsed = parsed_or_error catch |err| {
+        std.log.err("version: {}", .{err});
+        return;
+    };
     defer parsed.deinit();
     std.debug.print("version: {}\n", .{parsed});
 }

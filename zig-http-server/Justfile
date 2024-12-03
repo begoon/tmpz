@@ -1,8 +1,13 @@
+default: build test run
+
 run:
     zig build run
 
 build:
     zig build --summary all
+
+test:
+    zig build test --summary all
 
 clean:
     -rm -rf .zig-cache
