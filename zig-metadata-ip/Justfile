@@ -1,0 +1,41 @@
+dev: build run
+
+export NAME := "external-ip"
+
+build:
+	zig build-exe --name {{NAME}} main.zig
+
+run:
+	./{{NAME}}
+
+release: build-linux-amd64 info pack info
+
+info:
+	file {{NAME}}
+	du -hs {{NAME}}
+
+build-linux-amd64:
+	zig build-exe \
+	-target x86_64-linux-gnu \
+	-O ReleaseSmall \
+	-fstrip \
+	-fsingle-threaded \
+	--name {{NAME}} \
+	main.zig
+
+pack:
+	upx --lzma --best {{NAME}}
+
+set dotenv-load := true
+
+VM := env('REMOTE_VM')
+
+install:
+	@echo "installing tp [{{VM}}/.local/bin/]"
+	scp {{NAME}} {{VM}}:.local/bin/
+
+run-remote:
+	ssh {{VM}} .local/bin/{{NAME}}
+
+clean:
+	-rm -f {{NAME}} {{NAME}}.o

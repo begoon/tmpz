@@ -15,3 +15,6 @@ check:
 	@ls -al $(NAME)
 	@file $(NAME)
 	-@(ldd $(NAME) 2>&1 | sed 's/\t//g')
+
+clean:
+	-rm -f $(NAME)
