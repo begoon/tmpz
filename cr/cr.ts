@@ -19,11 +19,9 @@ consola.level = verbose ? LogLevels.debug : LogLevels.info;
 const MakefileName = option("-f", "Makefile");
 consola.info(MakefileName);
 
-const Makefiles = [MakefileName, MakefileName + ".local"];
+const Makefiles = [MakefileName, MakefileName + ".local", ".env"];
 
-const Makefile = Makefiles.map(
-    (v) => fs.existsSync(v!) && fs.readFileSync(v!, "utf-8")
-).join("\n");
+const Makefile = Makefiles.map((v) => fs.existsSync(v!) && fs.readFileSync(v!, "utf-8")).join("\n");
 
 const makefile = parseVariables(Makefile);
 
@@ -35,8 +33,12 @@ const PROJECT = makefile.get("PROJECT");
 
 const SERVICE_NAME = makefile.get("SERVICE_NAME");
 
-const service = await info();
-consola.info("image", imageHref(service.image));
+let service: Awaited<ReturnType<typeof info>> | undefined;
+
+if (SERVICE_NAME != "-") {
+    service = await info();
+    consola.info("image", imageHref(service.image));
+}
 
 function imageHref(image: string) {
     const [repo, _tag] = image.split(":");
@@ -84,8 +86,7 @@ if (commands.length > 0) {
                 consola.info(await health());
                 break;
             case "vm":
-                const vms =
-                    await $`gcloud compute instances list --project ${PROJECT} --format=json`.json();
+                const vms = await $`gcloud compute instances list --project ${PROJECT} --format=json`.json();
 
                 consola.info(
                     vms.map((v: VM) => ({
@@ -106,6 +107,8 @@ if (commands.length > 0) {
     }
     process.exit(0);
 }
+
+if (!service) consola.error("undefined service"), process.exit(1);
 
 consola.info("dial", service.url + "/health");
 consola.info("health", await health());
@@ -187,6 +190,7 @@ async function info() {
 }
 
 async function health() {
+    if (!service) consola.error("undefined service"), process.exit(1);
     const url = service.url + "/health";
     consola.info("health", url);
     return await (await fetch(url)).json();
