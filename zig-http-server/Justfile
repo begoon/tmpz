@@ -12,4 +12,4 @@ test:
 clean:
     -rm -rf .zig-cache
     -rm -rf zig-out
-
+    -rm zig-http-server
