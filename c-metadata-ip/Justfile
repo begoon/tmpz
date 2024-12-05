@@ -1,0 +1,10 @@
+default: build run
+
+build:
+    zig cc -lcurl -o main main.c
+
+run:
+    ./main
+
+clean:
+    -rm main

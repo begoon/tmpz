@@ -1,8 +1,6 @@
 const std = @import("std");
 const json = std.json;
 
-const simargs = @import("simargs");
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
