@@ -8,3 +8,9 @@ build:
 
 dev:
 	air -c .air.toml
+
+clean:
+	-rm -rf static/styles.css
+	-rm -rf main
+	-rm main_templ.go
+	-rm -rf tmp
