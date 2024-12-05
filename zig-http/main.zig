@@ -14,8 +14,6 @@ pub fn main() !void {
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
 
-    var buf: [4096]u8 = undefined;
-
     std.debug.print("argv: {s}\n", .{std.os.argv});
 
     const args = try std.process.argsAlloc(allocator);
@@ -25,6 +23,7 @@ pub fn main() !void {
     const uri = try std.Uri.parse(args[1]);
     std.debug.print("parsed URL: {}\n", .{uri});
 
+    var buf: [4096]u8 = undefined;
     var request = try client.open(.GET, uri, .{ .server_header_buffer = &buf });
     defer request.deinit();
 
