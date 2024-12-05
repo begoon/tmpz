@@ -12,7 +12,7 @@ templ index(name string) {
 		<script src="//unpkg.com/htmx.org"></script>
 		<link rel="stylesheet" href="/static/styles.css"/>
 		<body>
-			<div class="text-3xl">Hello, { name }</div>
+			<div class="text-3xl">Aloha, { name }</div>
 		</body>
 	</html>
 }
@@ -21,7 +21,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 		if name == "" {
-			name = "World"
+			name = "NAME"
 		}
 		index(name).Render(context.Background(), w)
 	})
