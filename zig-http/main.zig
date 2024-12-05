@@ -46,15 +46,20 @@ pub fn main() !void {
 
     std.debug.print("body:\n{s}\n", .{body});
 
-    const Version = struct {
-        version: []const u8,
+    const IP = struct {
+        origin: []const u8,
         // tag: []const u8, // = "?"
     };
-    const parsed_or_error = json.parseFromSlice(Version, allocator, body, .{ .ignore_unknown_fields = true });
-    const parsed = parsed_or_error catch |err| {
-        std.log.err("version: {}", .{err});
+    const ip = json.parseFromSlice(
+        IP,
+        allocator,
+        body,
+        .{ .ignore_unknown_fields = true },
+    ) catch |err| {
+        std.log.err("ip: {}", .{err});
         return;
     };
-    defer parsed.deinit();
-    std.debug.print("version: {}\n", .{parsed});
+    defer ip.deinit();
+    std.debug.print("ip: {}\n", .{ip});
+    std.debug.print("origin: {s}\n", .{ip.value.origin});
 }

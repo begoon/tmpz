@@ -1,5 +1,5 @@
-dev url="http://localhost:8000/version": build
-	just run "{{url}}"
+dev: build
+	just run
 
 build:
 	zig build-exe main.zig
@@ -18,7 +18,7 @@ build-linux-amd64:
 pack:
 	upx --lzma --best main
 
-run url:
+run url="https://httpbin.org/ip":
 	./main {{url}}
 
 clean:
