@@ -1,0 +1,28 @@
+default: build pack run
+
+NAME := "external-ip"
+
+build:
+    zig cc -static -Oz -o {{NAME}} main.c
+
+build-linux:
+    zig cc -static -target x86_64-linux -Oz -o {{NAME}} main.c
+
+release: build-linux pack install
+
+set dotenv-load := true
+
+REMOTE_HOST := env("REMOTE_HOST")
+
+install:
+    echo "installing to {{REMOTE_HOST}}:.local/bin/"
+    scp {{NAME}} {{REMOTE_HOST}}:.local/bin/
+
+pack:
+    upx --ultra-brute {{NAME}}
+
+run:
+    ./{{NAME}}
+
+clean:
+    rm -f {{NAME}}
