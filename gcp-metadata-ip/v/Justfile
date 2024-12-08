@@ -1,0 +1,10 @@
+default: fmt run
+
+fmt:
+    v fmt -w main.v
+
+run:
+    v run main.v
+
+clean:
+    rm -f main
