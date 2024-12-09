@@ -1,10 +1,38 @@
-default: fmt run
+default: build fmt run
+
+export NAME := "external-ip"
+
+build:
+    v -o {{NAME}} . 
 
 fmt:
     v fmt -w main.v
 
 run:
     v run main.v
+
+release: build-linux-amd64 info pack info 
+
+info:
+    file {{NAME}}
+    du -hs {{NAME}}
+
+build-linux-amd64: clean
+    v -os linux -o {{NAME}} -cflags -static -d use_openssl .
+
+pack:
+    upx --ultra-brute {{NAME}}
+
+set dotenv-load := true
+
+VM := env('REMOTE_VM')
+
+install:
+        @echo "installing tp [{{VM}}/.local/bin/]"
+        scp {{NAME}} {{VM}}:.local/bin/
+
+run-remote:
+        ssh {{VM}} .local/bin/{{NAME}}    
 
 clean:
     rm -f main
