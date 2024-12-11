@@ -23,7 +23,7 @@ const Makefiles = [MakefileName, MakefileName + ".local", ".env"];
 
 const Makefile = Makefiles.map((v) => fs.existsSync(v!) && fs.readFileSync(v!, "utf-8")).join("\n");
 
-const makefile = parseVariables(Makefile);
+const makefile = await parseVariables(Makefile);
 
 const NAME = makefile.get("NAME");
 const REPO = makefile.get("REPO");
@@ -157,13 +157,29 @@ function href(href: string, text: string) {
     return `\u001b]8;;${href}\u001b\\${text}\u001b]8;;\u001b\\`;
 }
 
-function parseVariables(content: string) {
+async function parseVariables(content: string) {
     const lines = content.split("\n");
     const values = {};
     for (const line of lines) {
-        if (line.startsWith("#")) continue;
-        const [name, value] = line.split("=");
-        if (value && name.toUpperCase().trim() === name) values[name] = value;
+        const first = line.charAt(0);
+        if ("# \t".includes(first)) continue;
+        const [name, value] = line.split("=").map((v) => v.trim());
+        if (!name || !value) continue;
+        consola.debug("variable", { name, value });
+        if (name.endsWith("S")) {
+            const singular = name.slice(0, -1);
+            const names = value.split(",").map((v) => v.trim());
+            const selected = await consola.prompt(`which ${singular}?`, { type: "select", options: names });
+            if (typeof selected === "symbol") {
+                consola.error("cancelled");
+                process.exit(1);
+            }
+            consola.debug("selected", singular, "=", selected);
+            values[singular] = selected;
+            process.exit(1);
+        } else {
+            if (value) values[name] = value;
+        }
     }
     consola.debug("variables", { values });
     return {
