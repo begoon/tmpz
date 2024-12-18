@@ -166,7 +166,7 @@ async function parseVariables(content: string) {
         const [name, value] = line.split("=").map((v) => v.trim());
         if (!name || !value) continue;
         consola.debug("variable", { name, value });
-        if (name.endsWith("S")) {
+        if (name.endsWith("_NAMES")) {
             const singular = name.slice(0, -1);
             const names = value.split(",").map((v) => v.trim());
             const selected = await consola.prompt(`which ${singular}?`, { type: "select", options: names });
