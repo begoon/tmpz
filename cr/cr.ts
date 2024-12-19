@@ -1,5 +1,7 @@
 import { $ } from "bun";
 
+import * as toml from "@std/toml";
+
 import { spinner } from "@clack/prompts";
 import consola, { LogLevels } from "consola";
 import fs from "node:fs";
@@ -85,21 +87,6 @@ if (commands.length > 0) {
             case "h":
                 consola.info(await health());
                 break;
-            case "vm":
-                const vms = await $`gcloud compute instances list --project ${PROJECT} --format=json`.json();
-
-                consola.info(
-                    vms.map((v: VM) => ({
-                        name: v.name,
-                        status: v.status,
-                        network: v.networkInterfaces
-                            .map((v) => v.accessConfigs.map((v) => v.natIP))
-                            .flat()
-                            .at(0),
-                    }))
-                );
-                break;
-
             default:
                 consola.error("ha?", command);
                 process.exit(1);
@@ -115,20 +102,26 @@ consola.info("health", await health());
 
 const options = await tags();
 
-const update = await consola.prompt("deploy?", {
-    type: "select",
-    initial: options[0],
-    options,
-});
+const now = new Date()
+    .toISOString()
+    .replace(/[^0-9]/g, "")
+    .slice(0, 14);
 
-if (typeof update === "symbol") {
-    consola.info("cancelled");
-    process.exit(0);
-}
+const BRANCH = await $`git rev-parse --abbrev-ref HEAD`.text();
+const COMMIT = await $`git rev-parse --short HEAD`.text();
+const VERSION = version();
+
+const TAG_ = [VERSION, "X", BRANCH, COMMIT, now].map((v) => v.trim()).join("-");
+
+const TAG = await consola.prompt("version/tag", { type: "text", initial: TAG_ });
+cancelled(TAG);
+
+const update = await consola.prompt("deploy?", { type: "select", initial: options[0], options });
+cancelled(update);
 
 console.log("deploying", update);
 
-for await (let line of $`gcloud run deploy ${SERVICE_NAME} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} 2>&1`.lines()) {
+for await (let line of $`gcloud run deploy ${SERVICE_NAME} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} --update-env-vars TAG=${TAG} 2>&1`.lines()) {
     console.log(line);
 }
 consola.info("OK");
@@ -136,6 +129,8 @@ consola.info("OK");
 consola.info(await health());
 
 await notify("deployed");
+
+// ---
 
 function flag(name: string) {
     const i = process.argv.findIndex((v) => v === name);
@@ -171,10 +166,7 @@ async function parseVariables(content: string) {
             const singular = name.slice(0, -1);
             const names = value.split(",").map((v) => v.trim());
             const selected = await consola.prompt(`which ${singular}?`, { type: "select", options: names });
-            if (typeof selected === "symbol") {
-                consola.error("cancelled");
-                process.exit(1);
-            }
+            cancelled(selected);
             consola.debug("selected", singular, "=", selected);
             values[singular] = selected;
         } else {
@@ -225,4 +217,38 @@ async function tags() {
 async function notify(msg: string) {
     await $`osascript -e 'display notification "${msg}" with title "OK"'`;
     await $`say "${msg}"`;
+}
+
+function cancelled(answer: any) {
+    if (typeof answer === "symbol") {
+        consola.info("cancelled");
+        process.exit(0);
+    }
+}
+
+function version() {
+    try {
+        const pyprojectTOML = toml.parse(fs.readFileSync("pyproject.toml", "utf-8")) as {
+            tool: { poetry: { version: string } };
+            project: { version: string };
+        };
+        const { version: poetryVersion } = pyprojectTOML.tool?.poetry || {};
+        const { version: projectVersion } = pyprojectTOML.project || {};
+
+        if (poetryVersion) return poetryVersion;
+        if (projectVersion) return projectVersion;
+    } catch {}
+
+    try {
+        const packageJSON = JSON.parse(fs.readFileSync("package.json", "utf-8")) as { version: string };
+        const { version: packageVersion } = packageJSON;
+        if (packageVersion) return packageVersion;
+    } catch {}
+
+    try {
+        const versionTXT = fs.readFileSync("VERSION.txt", "utf-8").trim();
+        if (versionTXT) return versionTXT;
+    } catch {}
+
+    return "0.0.0";
 }
