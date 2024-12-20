@@ -103,7 +103,8 @@ async function updateSSH() {
 
     if (configuredIP === vmIP) {
         consola.warn("same IP");
-        !force && process.exit(0);
+        await check();
+        process.exit(0);
     }
 
     // ---
@@ -141,10 +142,26 @@ async function updateSSH() {
     consola.success("configuration updated", sshConfigFile);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    await check();
+    await wait();
 }
 
 // ---
+
+async function wait() {
+    let started = new Date();
+    while (true) {
+        try {
+            const elapsed = ((new Date().getTime() - started.getTime()) / 1000).toFixed(2);
+            consola.info(started, elapsed);
+            await check();
+            break;
+        } catch (error) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+    }
+    consola.success("OK");
+    process.exit(0);
+}
 
 async function check() {
     async function exec(cmd: string, color = white) {
