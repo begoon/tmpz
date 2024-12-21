@@ -334,5 +334,5 @@ export function humanizeDuration(when: Date | string): string {
     if (daysRemainder > 0) result.push(`${daysRemainder}h`);
     if (hoursRemainder > 0) result.push(`${hoursRemainder}m`);
     if (minutesRemainder > 0) result.push(`${minutesRemainder}s`);
-    return result.slice(0, 2).join(" ");
+    return result.slice(0, 3).join(" ");
 }
