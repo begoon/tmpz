@@ -6,7 +6,7 @@ import * as toml from "@std/toml";
 
 import { spinner } from "@clack/prompts";
 import consola, { LogLevels } from "consola";
-import { colors } from "consola/utils";
+import { colors, stripAnsi } from "consola/utils";
 
 consola.options.formatOptions.columns = 0;
 consola.options.formatOptions.compact = false;
@@ -49,13 +49,17 @@ for (const command of commands) {
             consola.info(await serviceInfo());
             break;
         case "tags":
-        case "t":
-            consola.info(await tags());
+        case "t": {
+            const values = (await tags()).map((v) => annotateTag(v));
+            consola.info(values);
             break;
+        }
         case "tag":
-        case "l":
-            consola.info((await tags())[0]);
+        case "l": {
+            const value = annotateTag((await tags())[0]);
+            consola.info(value);
             break;
+        }
         case "wait":
         case "w": {
             const first = (await tags())[0];
@@ -76,10 +80,17 @@ for (const command of commands) {
             consola.info(await health(await serviceInfo()));
             break;
         case "deploy":
-        case "d":
+        case "d": {
             const service = await serviceInfo();
             await deploy(service);
             break;
+        }
+        case "bounce":
+        case "b": {
+            const service = await serviceInfo();
+            await bounce(service);
+            break;
+        }
         default:
             consola.error("ha?", command);
             process.exit(1);
@@ -94,7 +105,7 @@ async function deploy(service: Service) {
     consola.info("dial", service.url + "/health");
     consola.info("health", await health(service));
 
-    const options = await tags();
+    const options = (await tags()).map((v) => (v === service.image.split(":")?.at(-1) ? colors.white(v) : v));
 
     const now = new Date()
         .toISOString()
@@ -105,17 +116,19 @@ async function deploy(service: Service) {
     const COMMIT = await $`git rev-parse --short HEAD`.text();
     const VERSION = version();
 
-    const TAG_ = [VERSION, "X", BRANCH, COMMIT, now].map((v) => v.trim()).join("-");
+    const selected = await consola.prompt("deploy?", { type: "select", initial: options[0], options });
+    cancelled(selected);
 
-    const TAG = await consola.prompt("version/tag", { type: "text", initial: TAG_ });
-    cancelled(TAG);
+    const update = stripAnsi(selected);
 
-    const update = await consola.prompt("deploy?", { type: "select", initial: options[0], options });
-    cancelled(update);
+    const TAG = [VERSION, "X", BRANCH, COMMIT, now].map((v) => v.trim()).join("-");
 
-    console.log("deploying", update);
+    const confirmedTAG = await consola.prompt("version/tag", { type: "text", initial: TAG });
+    cancelled(confirmedTAG);
 
-    for await (let line of $`gcloud run deploy ${service.name} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} --update-env-vars TAG=${TAG} 2>&1`.lines()) {
+    console.log("deploying", update, confirmedTAG);
+
+    for await (let line of $`gcloud run deploy ${service.name} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} --update-env-vars TAG=${confirmedTAG} 2>&1`.lines()) {
         console.log(line);
     }
     consola.info("OK");
@@ -123,6 +136,35 @@ async function deploy(service: Service) {
     consola.info(await health(service));
 
     await notify("deployed");
+}
+
+async function bounce(service: Service) {
+    consola.info("dial", service.url + "/health");
+    consola.info("health", await health(service));
+
+    const tag = service.image.split(":").at(-1);
+    const recentTags = (await tags()).map((v) => (v === tag ? colors.white(v) : v) + " - " + annotateTag(v, true));
+    consola.info("tags/recent", "\n " + recentTags.join("\n "));
+    consola.info("current", tag);
+
+    const yes = await consola.prompt("bounce?", { type: "confirm" });
+    cancelled(yes);
+
+    const now = new Date()
+        .toISOString()
+        .replace(/[^0-9]/g, "")
+        .slice(0, 14);
+
+    console.log("bouncing", service.name, "--", tag, "--", now);
+
+    for await (let line of $`gcloud run deploy ${service.name} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${tag} --update-env-vars BOUNCED=${now} 2>&1`.lines()) {
+        console.log(line);
+    }
+    consola.info("OK");
+
+    consola.info(await health(service));
+
+    await notify("bounced");
 }
 
 function flag(name: string) {
@@ -182,7 +224,7 @@ async function parseVariables(content: string) {
 }
 
 async function describeService(name: string): Promise<Service> {
-    consola.info("query", { NAME, REPO, REGION, PROJECT, SERVICE_NAME: name });
+    consola.info("describe", { SERVICE_NAME: name });
     const data =
         await $`gcloud run services describe ${name} --region ${REGION} --project ${PROJECT} --format json`.json();
     consola.debug("info", JSON.stringify(data, null, 2));
@@ -260,4 +302,37 @@ function imageHref(image: string) {
     const link = `${gar}/${project}/${location}/${prefix}/${name}?project=${project}`;
     consola.debug(link);
     return href(link, image);
+}
+
+function annotateTag(tag: string, short = false) {
+    const timestamp = tag.split("-").at(-1);
+    if (!timestamp || timestamp.length !== 14) return tag;
+    const formatted = formattedTimestamp(timestamp);
+    if (short) return humanizeDuration(formatted);
+    return `${tag} | ${formatted} - ${humanizeDuration(formatted)}`;
+}
+
+function formattedTimestamp(timestamp: string) {
+    return timestamp.replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, "$1-$2-$3 $4:$5:$6");
+}
+
+export function humanizeDuration(when: Date | string): string {
+    const from = typeof when === "string" ? new Date(when) : when;
+    const milliseconds = Date.now() - from.getTime();
+
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    const daysRemainder = hours % 24;
+    const hoursRemainder = minutes % 60;
+    const minutesRemainder = seconds % 60;
+
+    const result: string[] = [];
+    if (days > 0) result.push(`${days}d`);
+    if (daysRemainder > 0) result.push(`${daysRemainder}h`);
+    if (hoursRemainder > 0) result.push(`${hoursRemainder}m`);
+    if (minutesRemainder > 0) result.push(`${minutesRemainder}s`);
+    return result.slice(0, 2).join(" ");
 }
