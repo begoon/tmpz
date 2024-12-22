@@ -91,6 +91,10 @@ for (const command of commands) {
             await bounce(service);
             break;
         }
+        case "tf": {
+            await checkTF();
+            process.exit(0);
+        }
         default:
             consola.error("ha?", command);
             process.exit(1);
@@ -167,6 +171,18 @@ async function bounce(service: Service) {
     await notify("bounced");
 }
 
+async function checkTF() {
+    const TF_DIR = makefile.value("TF_DIR");
+    const TF_NEEDLE = makefile.value("TF_NEEDLE");
+    consola.info({ TF_DIR, TF_NEEDLE });
+    console.log(
+        (await $`rg --pretty ${TF_NEEDLE} ${TF_DIR}`.text())
+            .split("\n")
+            .filter((v) => !v.includes("local."))
+            .join("\n")
+    );
+}
+
 function flag(name: string) {
     const i = process.argv.findIndex((v) => v === name);
     if (i === -1) return undefined;
@@ -208,6 +224,7 @@ async function parseVariables(content: string) {
             if (value) return value;
             consola.error("variable not found", name), process.exit(1);
         },
+        optional: (name: string) => values[name] || undefined,
         get: async (name: string) => {
             const value = values[name];
             if (value) return value;
