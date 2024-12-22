@@ -193,7 +193,10 @@ async function parseVariables(content: string) {
     for (const line of lines) {
         const first = line.charAt(0);
         if ("# \t".includes(first)) continue;
-        const [name, value] = line.split("=").map((v) => v.trim());
+        const [name, value] = line
+            .replace(":=", "=") // justfile
+            .split("=")
+            .map((v) => v.trim());
         if (!name || !value) continue;
         consola.debug("variable", { name, value });
         if (value) values[name] = value;
@@ -212,7 +215,10 @@ async function parseVariables(content: string) {
             const plural = values[name + "S"];
             if (!plural) consola.error("variable not found", name), process.exit(1);
 
-            const options = plural.split(",").map((v, i) => v.trim());
+            const options = plural
+                .replaceAll(" ", "")
+                .split(",")
+                .map((v, i) => v.trim());
             const prompt = `which ${colors.white(name)}? [${name + "S"}=${plural}]`;
             const selected = await consola.prompt(prompt, { type: "select", options });
             cancelled(selected);
