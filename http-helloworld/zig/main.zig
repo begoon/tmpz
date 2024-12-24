@@ -7,9 +7,22 @@ pub const std_options: std.Options = .{
 };
 
 const BRIGHT_WHITE = "\x1b[1;37m";
-const BRIGHT_BLUE = "\x1b[1;34m";
-const BRIGHT_GREEN = "\x1b[1;32m";
 const BRIGHT_RED = "\x1b[1;31m";
+const BRIGHT_GREEN = "\x1b[1;32m";
+const BRIGHT_BLUE = "\x1b[1;34m";
+const BRIGHT_YELLOW = "\x1b[1;33m";
+const BRIGHT_MAGENTA = "\x1b[1;35m";
+const BRIGHT_CYAN = "\x1b[1;36m";
+
+const COLORS = [_][]const u8{
+    BRIGHT_RED,
+    BRIGHT_GREEN,
+    BRIGHT_BLUE,
+    BRIGHT_YELLOW,
+    BRIGHT_MAGENTA,
+    BRIGHT_CYAN,
+};
+
 const RESET = "\x1b[0m";
 
 pub fn main() !void {
@@ -50,7 +63,11 @@ pub fn main() !void {
         std.log.err("unexpected status {d} {s}", .{ @intFromEnum(result.status), phrase });
         return;
     }
-    std.debug.print("{s}{s}{s}\n", .{ BRIGHT_WHITE, response.items, RESET });
+
+    for (response.items, 0..) |x, i| {
+        std.debug.print("{s}{c}", .{ COLORS[i % COLORS.len], x });
+    }
+    std.debug.print("{s}\n", .{RESET});
 }
 
 fn serverWorker(server: *httpz.Server(void)) !void {

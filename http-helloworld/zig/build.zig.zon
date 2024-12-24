@@ -1,10 +1,16 @@
 .{
     .name = "http-hello-world",
     .version = "0.0.1",
-    .dependencies = .{ .httpz = .{
-        .url = "git+https://github.com/karlseguin/http.zig?ref=master#5342bc536790904d25a120f7eeb34901b2c693ab",
-        .hash = "12208f486271e5ab3d4b38734308a4b0672e78b793dcce9008a0c5d5803c035ba91d",
-    } },
+    .dependencies = .{
+        .httpz = .{
+            .url = "git+https://github.com/karlseguin/http.zig?ref=master#5342bc536790904d25a120f7eeb34901b2c693ab",
+            .hash = "12208f486271e5ab3d4b38734308a4b0672e78b793dcce9008a0c5d5803c035ba91d",
+        },
+        .chroma = .{
+            .url = "https://github.com/adia-dev/chroma-zig/archive/refs/heads/0.14.x.tar.gz",
+            .hash = "122038e074b99abfc27844394394351d911c45671ec02b9d9eb009c6565041f82212",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",
