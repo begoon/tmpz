@@ -125,14 +125,9 @@ async function deploy(service: Service) {
 
     const update = stripAnsi(selected);
 
-    const TAG = [VERSION, "X", BRANCH, COMMIT, now].map((v) => v.trim()).join("-");
+    console.log("deploying", update);
 
-    const confirmedTAG = await consola.prompt("version/tag", { type: "text", initial: TAG });
-    cancelled(confirmedTAG);
-
-    console.log("deploying", update, confirmedTAG);
-
-    for await (let line of $`gcloud run deploy ${service.name} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} --update-env-vars TAG=${confirmedTAG} 2>&1`.lines()) {
+    for await (let line of $`gcloud run deploy ${service.name} --region ${REGION} --project ${PROJECT} --image=${REPO}/${NAME}:${update} 2>&1`.lines()) {
         console.log(line);
     }
     consola.info("OK");
