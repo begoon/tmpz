@@ -41,12 +41,17 @@ type Service = {
 };
 
 consola.debug("commands", commands);
+
 for (const command of commands) {
     consola.debug("command", command);
     switch (command) {
         case "info":
         case "i":
             consola.info(await serviceInfo());
+            break;
+        case "metadata":
+        case "m":
+            await metadata(await serviceInfo());
             break;
         case "tags":
         case "t": {
@@ -166,6 +171,21 @@ async function bounce(service: Service) {
     await notify("bounced");
 }
 
+async function metadata(service: Service) {
+    const options = (await tags(15)).map((v) => (v === service.image.split(":")?.at(-1) ? colors.white(v) : v));
+
+    const selected = await consola.prompt("image?", { type: "select", initial: options[0], options });
+    cancelled(selected);
+
+    const update = stripAnsi(selected);
+
+    console.log("metadata for", update);
+
+    const IMAGE = `${REPO}/${NAME}:${update}`;
+    const data = await $`skopeo inspect docker://${IMAGE}`.json();
+    console.log(JSON.stringify(data.Env, null, 2));
+}
+
 async function checkTF() {
     const TF_DIR = makefile.value("TF_DIR");
     const TF_NEEDLE = makefile.value("TF_NEEDLE");
@@ -259,9 +279,9 @@ async function health(service: Service) {
     return await (await fetch(url)).json();
 }
 
-async function tags() {
+async function tags(limit = 10) {
     const data =
-        await $`gcloud artifacts docker images list ${REPO}/${NAME} --include-tags --sort-by "~UPDATE_TIME" --limit 10 --format json`.json();
+        await $`gcloud artifacts docker images list ${REPO}/${NAME} --include-tags --sort-by "~UPDATE_TIME" --limit ${limit} --format json`.json();
     consola.debug("tags", JSON.stringify(data, null, 2));
     return data
         .map((image: { tags: string[] }) => image.tags)
