@@ -22,10 +22,37 @@ const template = nunjucks.compile(`
     <title>htmx</title>
     <script src="https://unpkg.com/htmx.org"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 <output class="text-4xl">{{ message }}</output>
 <output>{{ username }}</output>
+<br/>
+<style>
+    .htmx-indicator {
+        opacity: 0;
+        transition: opacity 500ms ease-in;
+    }
+    .htmx-request .htmx-indicator {
+        opacity: 1;
+    }
+    .htmx-request.htmx-indicator {
+        opacity: 1;
+    }
+</style>
+<button 
+    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-20"
+    hx-get="/pause?t=2000&r=1" hx-trigger="click" hx-indicator="#spinner"
+    hx-disabled-elt="this"
+>indicator</button>
+<img 
+    src="https://htmx.org/img/bars.svg" id="spinner" 
+    class="htmx-indicator w-[10em] h-[10em] fixed left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+/>
+<button 
+    onclick='Swal.fire("Hola!");'
+    class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"
+>message</button>
 <div hx-get="/time" hx-trigger="load" hx-target="#time"></div>
 <output id="time" class="fixed right-0 top-0 z-20 font-mono">*</output>
 <div hx-get="/table" hx-trigger="load"></div>
@@ -75,6 +102,11 @@ async function handler(request: EnrichedRequest): Promise<Response> {
         message: "OK",
         username: request.username,
     };
+    if (pathname === "/indicator") {
+        return new Response("OK", {
+            headers: { "Cache-Control": "no-store" },
+        });
+    }
     if (pathname === "/table") {
         const rows = Object.entries(env).sort(
             ([a], [b]) => -a.localeCompare(b)
@@ -95,10 +127,14 @@ async function handler(request: EnrichedRequest): Promise<Response> {
         });
     }
     if (pathname === "/pause") {
-        const t = Number(new URL(request.url).searchParams.get("t")) || 500;
+        const url = new URL(request.url);
+        const t = Number(url.searchParams.get("t")) || 500;
+        const r = Boolean(url.searchParams.get("r"));
         console.info("pause", t);
         await new Promise((resolve) => setTimeout(resolve, t));
-        return Response.json({ message: "paused", duration: t });
+        return r
+            ? new Response(`paused for ${t}s`)
+            : Response.json({ message: "paused", duration: t });
     }
     if (pathname === "/delay") {
         const t = Number(new URL(request.url).searchParams.get("t")) || "0.5";
@@ -235,7 +271,7 @@ type Middleware = (req: EnrichedRequest, next: Handler) => Promise<Response>;
 const MIDDLEWARES: Middleware[] = [
     exception,
     tracer,
-    timed,
+    // timed,
     htmx,
     basic,
     bearer,
