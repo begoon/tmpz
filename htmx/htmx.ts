@@ -1,7 +1,10 @@
 import consola from "consola";
+import Handlebars from "handlebars";
+import * as render from "npm:preact-render-to-string";
 import nunjucks from "nunjucks";
 
 import { env } from "node:process";
+import { App, User, UserDetails } from "./tmpl.tsx";
 
 interface HtmxRequest extends Request {
     htmx: boolean;
@@ -96,12 +99,41 @@ const tableTemplate = nunjucks.compile(`
 </table>
 `);
 
+Handlebars.registerPartial("NamePartial", ({ arg }) => {
+    console.log({ arg });
+    return arg;
+});
+
+const handlebarsTemplate = Handlebars.compile(
+    [
+        "name: {{>NamePartial arg=name}}",
+        "name: {{>NamePartial arg='htmx'}}",
+    ].join(", ")
+);
+
 async function handler(request: EnrichedRequest): Promise<Response> {
-    const pathname = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
     const context = {
         message: "OK",
         username: request.username,
     };
+    if (pathname === "/tsx") {
+        const q = url.searchParams.get("q");
+        if (q)
+            return new Response(
+                render.renderToString(User({ name: `tsx/${q}` }))
+            );
+        const child = UserDetails({ initial: "child/namet" });
+        const app = App(child);
+        return new Response(render.renderToString(app), {
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+    }
+    if (pathname === "/hbs") {
+        const name = url.searchParams.get("name") || "htmx";
+        return new Response(handlebarsTemplate({ name }));
+    }
     if (pathname === "/indicator") {
         return new Response("OK", {
             headers: { "Cache-Control": "no-store" },
@@ -212,14 +244,15 @@ async function bearer(request: EnrichedRequest, next: Handler) {
 async function tracer(request: EnrichedRequest, next: Handler) {
     const started = performance.now();
     const pathname = new URL(request.url).pathname;
-    consola.info("REQUEST", request.method, pathname);
+    if (pathname !== "/ws") consola.info("REQUEST", request.method, pathname);
     const response = await next(request);
-    consola.info(
-        "RESPONSE",
-        pathname,
-        response.status,
-        (performance.now() - started).toFixed(2)
-    );
+    if (pathname !== "/ws")
+        consola.info(
+            "RESPONSE",
+            pathname,
+            response.status,
+            (performance.now() - started).toFixed(2)
+        );
     return response;
 }
 

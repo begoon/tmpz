@@ -1,7 +1,10 @@
 {
   "dependencies": {
     "consola": "^3.3.3",
-    "nunjucks": "^3.2.4"
+    "handlebars": "^4.7.8",
+    "nunjucks": "^3.2.4",
+    "preact": "^10.25.4",
+    "preact-render-to-string": "^6.5.12"
   },
   "devDependencies": {
     "@types/bun": "^1.1.13"
