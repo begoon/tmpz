@@ -4,7 +4,8 @@ import * as render from "npm:preact-render-to-string";
 import nunjucks from "nunjucks";
 
 import { env } from "node:process";
-import { App, User, UserDetails } from "./tmpl.tsx";
+import { JSX } from "preact";
+import { Application, User, UserDetails } from "./tmpl.tsx";
 
 interface HtmxRequest extends Request {
     htmx: boolean;
@@ -120,14 +121,14 @@ async function handler(request: EnrichedRequest): Promise<Response> {
     };
     if (pathname === "/tsx") {
         const q = url.searchParams.get("q");
-        if (q)
-            return new Response(
-                render.renderToString(User({ name: `tsx/${q}` }))
-            );
-        const child = UserDetails({ initial: "child/namet" });
-        const app = App(child);
-        return new Response(render.renderToString(app), {
-            headers: { "Content-Type": "text/html; charset=utf-8" },
+        let page: JSX.Element;
+        if (q) page = User({ name: `tsx/${Number(q) + 1}`, q: Number(q) + 1 });
+        else {
+            const child = UserDetails({ initial: "initial/name" });
+            page = Application(child);
+        }
+        return new Response(render.renderToString(page), {
+            headers: { "Content-Type": "text/html" },
         });
     }
     if (pathname === "/hbs") {
