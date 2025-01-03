@@ -1,0 +1,13 @@
+{
+    "unstable": ["kv"],
+    "tasks": {
+        "dev": "deno run -A --watch main.tsx"
+    },
+    "imports": {
+        "hono": "npm:hono@^4.6.15"
+    },
+    "compilerOptions": {
+        "jsx": "precompile",
+        "jsxImportSource": "hono/jsx"
+    }
+}
