@@ -10,7 +10,7 @@ pub fn main() !void {
 
     std.debug.print("std.os.argv: {s}\n", .{std.os.argv});
     for (std.os.argv) |arg| {
-        std.debug.print("- arg: {s}\n", .{arg});
+        std.debug.print("! arg: {s}\n", .{arg});
     }
 
     var args = std.process.args();
