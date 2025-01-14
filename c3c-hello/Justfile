@@ -1,0 +1,10 @@
+all: build run
+
+build:
+	c3c build 
+
+run:
+	./main 1 2 3 4
+
+clean:
+	-rm -rf *.dSYM main
