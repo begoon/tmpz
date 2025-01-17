@@ -1,0 +1,14 @@
+{{define "versions"}}
+<div class="flex">
+    <menu>
+        <button 
+            hx-get="/!?v=2.5.0&{{if .Exact}}exact=on{{end}}" hx-swap="none" 
+            class="border border-gray-300 rounded-lg px-2 {{if eq .Version "2.5.0"}}bg-blue-200{{end}}"
+        >2.5.0</button>
+        <button 
+            hx-get="/!?v=3.5.0&{{if .Exact}}exact=on{{end}}" hx-swap="none" 
+            class="border border-gray-300 rounded-lg px-2 {{if eq .Version "3.5.0"}}bg-blue-200{{end}}"
+        >3.5.0</button>
+    </menu>
+</div>
+{{end}}

@@ -1,15 +1,20 @@
 package main
 
 import (
+	"embed"
+	_ "embed"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"math"
 	"net/http"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/charlievieth/fastwalk"
 )
 
 type Document struct {
@@ -17,6 +22,8 @@ type Document struct {
 	Path  string
 	Text  string
 	Score float64
+
+	PathLower string
 }
 
 var (
@@ -24,14 +31,14 @@ var (
 	tfidfIndex map[string]map[string]float64
 )
 
-var rootDir = strings.TrimSuffix(os.Getenv("DATA_DIR"), "/") + "/"
+var rootDir = "data"
 
 func loadDocuments() {
 	skip := func(v string) bool {
 		return !strings.HasPrefix(v, rootDir)
 	}
 
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	err := fastwalk.Walk(nil, rootDir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			log.Printf("error accessing path %q: %v\n", path, err)
 			return err
@@ -44,7 +51,14 @@ func loadDocuments() {
 			}
 			text := strings.ToLower(string(content))
 			relativePath := strings.TrimPrefix(path, rootDir)
-			documents = append(documents, Document{Name: info.Name(), Path: relativePath, Text: text, Score: 0})
+			pathLower := strings.ToLower(relativePath)
+			documents = append(documents, Document{
+				Name:      info.Name(),
+				Path:      relativePath,
+				Text:      text,
+				Score:     0,
+				PathLower: pathLower,
+			})
 		}
 		return nil
 	})
@@ -84,46 +98,142 @@ func buildIndex() {
 	}
 }
 
-func search(query string) []Document {
-	words := strings.Fields(strings.ToLower(query))
+func search(query string, exact bool, version string) ([]Document, []Document) {
+	query = strings.ToLower(query)
+
+	words := strings.Fields(query)
+
 	scores := make(map[string]float64)
 
-	for _, word := range words {
-		for document, tfidf := range tfidfIndex[word] {
-			scores[document] += tfidf
+	var foundDocuments []Document
+	var foundFiles []Document
+
+	if exact {
+		for _, document := range documents {
+			if !strings.HasPrefix(document.Path, version) {
+				continue
+			}
+			pathMatch := strings.Contains(document.PathLower, query)
+			match := strings.Contains(document.Text, query)
+
+			if match || pathMatch {
+				document := Document{
+					Name:  document.Name,
+					Path:  document.Path,
+					Text:  document.Text,
+					Score: 1,
+				}
+				if match {
+					foundDocuments = append(foundDocuments, document)
+				}
+				if pathMatch {
+					foundFiles = append(foundFiles, document)
+				}
+			}
 		}
+	} else {
+		for _, word := range words {
+			for document, tfidf := range tfidfIndex[word] {
+				scores[document] += tfidf
+			}
+		}
+
+		for _, document := range documents {
+			if !strings.HasPrefix(document.Path, version) {
+				continue
+			}
+			pathMatch := false
+			for _, word := range words {
+				if strings.Contains(document.PathLower, word) {
+					pathMatch = true
+					break
+				}
+			}
+			score, found := scores[document.Name]
+			if (found && score > 0) || pathMatch {
+				document := Document{
+					Name:  document.Name,
+					Path:  document.Path,
+					Text:  document.Text,
+					Score: score,
+				}
+				if found && score > 0 {
+					foundDocuments = append(foundDocuments, document)
+				}
+				if pathMatch {
+					foundFiles = append(foundFiles, document)
+				}
+			}
+		}
+
+		sort.Slice(foundDocuments, func(i, j int) bool {
+			return foundDocuments[i].Score > foundDocuments[j].Score
+		})
 	}
 
-	var results []Document
-	for _, document := range documents {
-		if score, found := scores[document.Name]; found && score > 0 {
-			results = append(results, Document{
-				Name:  document.Name,
-				Path:  document.Path,
-				Text:  document.Text,
-				Score: score,
-			})
-		}
-	}
+	return foundDocuments, foundFiles
+}
 
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Score > results[j].Score
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	htmx := r.Header.Get("HX-Request") != ""
+
+	version := r.PathValue("version")
+	fmt.Printf("version %s %t\n", version, htmx)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:   "version",
+		Value:  version,
+		Path:   "/",
+		MaxAge: 60 * 60 * 24 * 365,
 	})
-
-	return results
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 	htmx := r.Header.Get("HX-Request") != ""
 
+	query := r.URL.Query()
+
+	q := query.Get("q")
+	exact := query.Get("exact")
+	version := query.Get("v")
+
+	if version != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:   "version",
+			Value:  version,
+			Path:   "/",
+			MaxAge: 60 * 60 * 24 * 365,
+		})
+		w.Header().Set("HX-Redirect", "/!")
+		return
+	} else {
+		cookie, err := r.Cookie("version")
+		if err == nil {
+			version = cookie.Value
+		}
+	}
+
+	if version == "" {
+		version = "3.5.0"
+	}
+	fmt.Printf("search %q exact=%t version=%s\n", q, exact != "", version)
+
 	var tmpl *template.Template
 	context := struct {
-		Query   string
-		Results []Document
-	}{Query: r.URL.Query().Get("q")}
+		Query          string
+		Exact          string
+		FoundDocuments []Document
+		FoundFiles     []Document
+		Version        string
+	}{Query: q, Exact: exact, Version: version}
 
 	if context.Query != "" {
-		context.Results = search(context.Query)
+		started := time.Now()
+		documents, files := search(context.Query, context.Exact != "", version)
+		context.FoundDocuments = documents
+		context.FoundFiles = files
+		fmt.Printf("found %d documents in %s\n", len(context.FoundDocuments), time.Since(started))
 	}
 
 	templName := "search.html"
@@ -134,19 +244,39 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, context)
 }
 
+//go:embed data/*
+var data embed.FS
+
+var fileServer = http.FileServer(http.Dir("./data"))
+
 func fileHandler(w http.ResponseWriter, r *http.Request) {
-	path := rootDir + r.URL.Path[1:]
-	fmt.Printf("GET %s -> %s\n", r.URL.Path, path)
-	http.ServeFile(w, r, path)
+	version := "3.5.0"
+	cookie, err := r.Cookie("version")
+	if err == nil {
+		version = cookie.Value
+	}
+	if r.URL.Path == "/" {
+		r.URL.Path = "/DOCUMENTATION.html"
+	}
+	r.URL.Path = version + r.URL.Path
+	fmt.Printf("fileserver %s %s\n", version, r.URL.Path)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	fileServer.ServeHTTP(w, r)
 }
 
 func main() {
-	fmt.Printf("ROOT_DIR: %s\n", rootDir)
-
+	started := time.Now()
 	loadDocuments()
-	buildIndex()
+	fmt.Printf("loaded documents in %s\n", time.Since(started))
 
-	http.HandleFunc("GET /{$}", searchHandler)
+	started = time.Now()
+	buildIndex()
+	fmt.Printf("built index in %s\n", time.Since(started))
+
+	http.HandleFunc("GET /!", searchHandler)
+	http.HandleFunc("GET /v/{version}", versionHandler)
 	http.HandleFunc("/{path...}", fileHandler)
 
 	fmt.Println("listening on :8000")

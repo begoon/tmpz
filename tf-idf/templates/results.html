@@ -1,5 +1,27 @@
-{{range .Results}}
-<div><a href="{{.Path}}" target="_blank">{{.Path}}</a></div>
-{{end}} {{if not .Results}}
-<div style="padding-top: 1em"><a href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
+{{if or .FoundDocuments .FoundFiles}}
+<table class="w-full border-spacing-1">
+    <tr>
+        <td class="w-1/2">content</td>
+        <td>files</td>
+    </tr>
+    <tr>
+        <td class="align-top">
+            {{range .FoundDocuments}}
+            <div><a class="underline" href="{{.Path}}" target="_blank">{{.Path}}</a></div>
+            {{end}} {{if not .FoundDocuments}}
+            <div><a class="underline" href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
+            {{end}}
+        </td>
+        <td class="align-top">
+            {{range .FoundFiles}}
+            <div><a class="underline" href="{{.Path}}" target="_blank">{{.Path}}</a></div>
+            {{end}} {{if not .FoundFiles}}
+            <div><a class="underline" href="!" target="_blank">...</a></div>
+            {{end}}
+        </td>
+    </tr>
+</table>
+{{else}}
+<div><a class="underline" href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
+<div><a class="underline" href="/" target="_blank">Files</a></div>
 {{end}}
