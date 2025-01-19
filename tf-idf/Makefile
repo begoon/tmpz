@@ -8,3 +8,6 @@ dev:
 
 run:
 	go run main.go
+
+index:
+	go run main.go --index

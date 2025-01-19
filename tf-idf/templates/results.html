@@ -1,27 +1,39 @@
-{{if or .FoundDocuments .FoundFiles}}
+{{define "results"}}
 <table class="w-full border-spacing-1">
     <tr>
-        <td class="w-1/2">content</td>
-        <td>files</td>
+        <td class="w-1/2">
+            <a class="underline" href="DOCUMENTATION.html" target="_blank">content</a>
+            <a href="DOCUMENTATION.html" target="_blank">▶︎</a>
+        </td>
+        <td>
+            <a class="underline" href="/?r=1" target="_blank">files</a>
+            <a href="/" target="_blank">▶︎</a>
+        </td>
     </tr>
     <tr>
-        <td class="align-top">
+        <td class="align-top text-xs">
             {{range .FoundDocuments}}
-            <div><a class="underline" href="{{.Path}}" target="_blank">{{.Path}}</a></div>
-            {{end}} {{if not .FoundDocuments}}
-            <div><a class="underline" href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
+            <div><a class="underline" href="{{.Link}}" target="_blank">{{.Link}}</a></div>
             {{end}}
         </td>
-        <td class="align-top">
+        <td class="align-top text-xs">
             {{range .FoundFiles}}
-            <div><a class="underline" href="{{.Path}}" target="_blank">{{.Path}}</a></div>
-            {{end}} {{if not .FoundFiles}}
-            <div><a class="underline" href="!" target="_blank">...</a></div>
+            <div><a class="underline" href="{{.Link}}" target="_blank">{{.Link}}</a></div>
             {{end}}
         </td>
     </tr>
 </table>
-{{else}}
-<div><a class="underline" href="DOCUMENTATION.html" target="_blank">Documentation</a></div>
-<div><a class="underline" href="/" target="_blank">Files</a></div>
+<div id="versions" hx-swap-oob="true">
+    {{range .Versions}}
+    <button
+        hx-get="/version/{{.}}"
+        hx-target="#results"
+        hx-include="#search, #exact"
+        hx-trigger="click"
+        class="pr-[2px] {{if eq $.Version .}}text-white bg-blue-200{{end}}"
+    >
+        <span class="p-[4px]">{{.}}</span>
+    </button>
+    {{end}}
+</div>
 {{end}}

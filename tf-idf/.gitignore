@@ -1,3 +1,6 @@
 data*
 tmp
 .env
+exe
+index.gob
+iproov-*.json

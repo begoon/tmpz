@@ -1,0 +1,71 @@
+all: build
+
+check:
+    gofumpt -l -w .
+    golangci-lint run
+    errcheck ./...
+
+#
+
+build:
+    CGO_ENABLED=0 \
+    go build \
+    -ldflags="-s -w" \
+    -o ./exe ./.
+
+build-amd64:
+    GOOS=linux GOARCH=amd64 make build
+
+#
+
+set unstable := true
+set dotenv-load := true
+
+BRANCH_DEFAULT := shell("git rev-parse --abbrev-ref HEAD")
+
+GITHUB_REF_NAME := env('GITHUB_REF_NAME', BRANCH_DEFAULT)
+GITHUB_HEAD_REF := env('GITHUB_HEAD_REF', '') || GITHUB_REF_NAME
+
+VERSION := trim(shell("cat VERSION.txt"))
+BRANCH := replace(GITHUB_HEAD_REF, "/", "-")
+SHORT_SHA := trim(shell("git rev-parse --short HEAD"))
+TIMESTAMP := datetime("%Y%m%d%H%M%S")
+TAG := VERSION + "-" + BRANCH + "-" + SHORT_SHA + "-" + TIMESTAMP
+IMAGE := env('IMAGE')
+
+#
+
+docker-release: docker-create-tag docker-build-linux docker-tag-push
+
+docker-create-tag:
+    @echo "TAG: {{ TAG }}"
+    @echo {{ TAG }} > TAG.txt
+
+docker-build:
+    docker build -t {{ IMAGE }} .
+
+docker-build-linux:
+    docker build --platform=linux/amd64 -t {{ IMAGE }} .
+
+docker-tag-push:
+    #!/usr/bin/env bash
+    docker tag {{ IMAGE }} ${REPO}/{{ IMAGE }}:{{ TAG }}
+    docker push ${REPO}/{{ IMAGE }}:{{ TAG }}
+    #
+    docker tag {{ IMAGE }} ${REPO}/{{ IMAGE }}:latest
+    docker push ${REPO}/{{ IMAGE }}:latest
+
+docker-run:
+    docker run --rm -it -p 8000:8000 {{ IMAGE }}
+
+#
+
+empty-commit:
+    git commit --allow-empty -m "chore: push"
+
+#
+
+lint-install:
+    go install mvdan.cc/gofumpt@latest
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    go install github.com/kisielk/errcheck@latest
