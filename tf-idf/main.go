@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"github.com/charlievieth/fastwalk"
+	"github.com/dustin/go-humanize"
+	"github.com/joho/godotenv"
 )
 
 type Document struct {
@@ -35,17 +35,21 @@ type Document struct {
 }
 
 var (
-	documents  []Document
-	tfidfIndex map[string]map[string]float64
+	documents []Document
+	index     map[string]map[string]float64
 )
 
 var dataDir = "data"
 
-var loadDocuments = loadDocumentsEmbed
+var versions = []string{"2.4.4", "2.5.0", "2.6.0", "2.7.0", "3.1.0", "3.3.0", "3.4.0", "3.5.0"}
 
-var verions = []string{"2.4.4", "2.5.0", "2.6.0", "2.7.0", "3.1.0", "3.3.0", "3.4.0", "3.5.0"}
+var debug = os.Getenv("DEBUG") != ""
+
+var documentsSize int
 
 func loadDocumentsFS() {
+	documentsSize = 0
+
 	skip := func(v string) bool {
 		return !strings.HasPrefix(v, dataDir)
 	}
@@ -63,6 +67,8 @@ func loadDocumentsFS() {
 			log.Fatalf("error reading file %s: %v", path, err)
 			return nil
 		}
+		documentsSize += len(content)
+
 		relativePath := strings.TrimPrefix(path, dataDir)
 		documents = append(documents, Document{
 			Name:      info.Name(),
@@ -76,10 +82,12 @@ func loadDocumentsFS() {
 	if err != nil {
 		log.Fatalf("error walking the path %q: %v\n", dataDir, err)
 	}
-	fmt.Printf("loaded %d documents\n", len(documents))
+	fmt.Printf("fs: loaded %d documents [%s]\n", len(documents), humanize.Comma(int64(documentsSize)))
 }
 
 func loadDocumentsEmbed() {
+	documentsSize = 0
+
 	skip := func(v string) bool {
 		return !strings.HasPrefix(v, dataDir)
 	}
@@ -97,6 +105,8 @@ func loadDocumentsEmbed() {
 				log.Printf("error reading file %s: %v", path, err)
 				return nil
 			}
+			documentsSize += len(content)
+
 			text := strings.ToLower(string(content))
 			relativePath := strings.TrimPrefix(path, dataDir)
 			pathLower := strings.ToLower(relativePath)
@@ -115,12 +125,11 @@ func loadDocumentsEmbed() {
 	}
 
 	duration := time.Since(started)
-
-	fmt.Printf("embed: loaded %d documents in %s\n", len(documents), duration)
+	fmt.Printf("embed: loaded %d documents / %d bytes in %s\n", len(documents), documentsSize, duration)
 }
 
 func buildIndex() {
-	tfidfIndex = make(map[string]map[string]float64)
+	index = make(map[string]map[string]float64)
 	number := len(documents)
 
 	for _, document := range documents {
@@ -132,24 +141,25 @@ func buildIndex() {
 		}
 
 		for word, count := range wordCount {
-			if tfidfIndex[word] == nil {
-				tfidfIndex[word] = make(map[string]float64)
+			if index[word] == nil {
+				index[word] = make(map[string]float64)
 			}
 			tf := float64(count) / float64(len(words))
-			tfidfIndex[word][document.Name] = tf
+			index[word][document.Name] = tf
 		}
 	}
 
-	for word, documentMap := range tfidfIndex {
+	for word, documentMap := range index {
 		frequency := float64(len(documentMap))
 		idf := math.Log(float64(number) / (1 + frequency))
 		for document, tf := range documentMap {
-			tfidfIndex[word][document] = tf * idf
+			index[word][document] = tf * idf
 		}
 	}
+	fmt.Printf("build index with %d words\n", len(index))
+}
 
-	fmt.Printf("build index with %d words\n", len(tfidfIndex))
-
+func storeIndex() {
 	indexGob, err := os.Create("index.gob")
 	if err != nil {
 		log.Fatalf("error creating index file: %v", err)
@@ -158,20 +168,27 @@ func buildIndex() {
 	defer indexGob.Close()
 
 	encoder := gob.NewEncoder(indexGob)
-	if err := encoder.Encode(tfidfIndex); err != nil {
+	if err := encoder.Encode(index); err != nil {
 		log.Fatalf("error encoding index: %v", err)
 		os.Exit(1)
 	}
+	fmt.Printf("store index\n")
+}
 
-	fmt.Printf("write index to index.gob\n")
+//go:embed index.gob
+var IndexGob []byte
+
+func loadIndex() {
+	decoder := gob.NewDecoder(bytes.NewReader(IndexGob))
+	if err := decoder.Decode(&index); err != nil {
+		log.Fatalf("error decoding index: %v", err)
+		os.Exit(1)
+	}
+	fmt.Printf("load index with %d words\n", len(index))
 }
 
 func search(query string, exact bool, version string) (foundDocuments []Document, foundFiles []Document) {
 	query = strings.ToLower(query)
-
-	words := strings.Fields(query)
-
-	scores := make(map[string]float64)
 
 	version = "/" + version + "/"
 	if exact {
@@ -180,10 +197,10 @@ func search(query string, exact bool, version string) (foundDocuments []Document
 			if !strings.HasPrefix(document.Path, version) {
 				continue
 			}
+			contentMatch := strings.Contains(document.Text, query)
 			pathMatch := strings.Contains(document.PathLower, query)
-			match := strings.Contains(document.Text, query)
 
-			if match || pathMatch {
+			if contentMatch || pathMatch {
 				document := Document{
 					Name:  document.Name,
 					Path:  document.Path,
@@ -191,7 +208,7 @@ func search(query string, exact bool, version string) (foundDocuments []Document
 					Link:  strings.TrimPrefix(document.Path, version),
 					Score: 1,
 				}
-				if match {
+				if contentMatch {
 					foundDocuments = append(foundDocuments, document)
 				}
 				if pathMatch {
@@ -200,8 +217,11 @@ func search(query string, exact bool, version string) (foundDocuments []Document
 			}
 		}
 	} else {
+		scores := make(map[string]float64)
+		words := strings.Fields(query)
+
 		for _, word := range words {
-			for document, tfidf := range tfidfIndex[word] {
+			for document, tfidf := range index[word] {
 				scores[document] += tfidf
 			}
 		}
@@ -234,17 +254,21 @@ func search(query string, exact bool, version string) (foundDocuments []Document
 				}
 			}
 		}
-
 		sort.Slice(foundDocuments, func(i, j int) bool {
 			return foundDocuments[i].Score > foundDocuments[j].Score
 		})
 	}
-
 	return foundDocuments, foundFiles
 }
 
+func htmx(r *http.Request) bool {
+	return r.Header.Get("HX-Request") != ""
+}
+
+type rankoneVersion struct{}
+
 func versionHandler(w http.ResponseWriter, r *http.Request) {
-	htmx := r.Header.Get("HX-Request") != ""
+	htmx := htmx(r)
 
 	version := r.PathValue("version")
 	fmt.Printf("version %s %t\n", version, htmx)
@@ -261,11 +285,7 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	q := r.URL.Query().Get("q")
-	exact := r.URL.Query().Get("exact")
-	fmt.Println(q, exact)
-
-	ctx := context.WithValue(r.Context(), "version", version)
+	ctx := context.WithValue(r.Context(), rankoneVersion{}, version)
 	searchHandler(w, r.WithContext(ctx))
 }
 
@@ -274,17 +294,16 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	htmx := r.Header.Get("HX-Request") != ""
+	htmx := htmx(r)
 
 	query := r.URL.Query()
-	fmt.Println(query)
 
 	q := query.Get("q")
 	exact := query.Get("exact")
 
-	version := "3.5.0"
+	version := versions[len(versions)-1]
 	if r.Context().Value("version") != nil {
-		version = r.Context().Value("version").(string)
+		version = r.Context().Value(rankoneVersion{}).(string)
 		fmt.Println("version/context", version)
 	} else if cookie, err := r.Cookie("version"); err == nil {
 		version = cookie.Value
@@ -299,7 +318,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		FoundFiles     []Document
 		Version        string
 		Versions       []string
-	}{Query: q, Exact: exact, Version: version, Versions: verions}
+	}{Query: q, Exact: exact, Version: version, Versions: versions}
 
 	if context.Query != "" {
 		started := time.Now()
@@ -335,7 +354,11 @@ var env string
 
 var ENV = must(godotenv.Parse(strings.NewReader(env)))
 
-func init() {}
+func init() {
+	for name, value := range ENV {
+		os.Setenv(name, value)
+	}
+}
 
 func basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	user, pass, ok := r.BasicAuth()
@@ -371,7 +394,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	url.Path = version + url.Path
 
-	fmt.Printf("file [%s] [%s] [%s] r=[%s]\n", rawPath, url.Path, version, raw)
+	if debug {
+		fmt.Printf("file [%s] [%s] [%s] r=[%s]\n", rawPath, url.Path, version, raw)
+	}
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
@@ -391,20 +416,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Indexer() {
-	loadDocuments()
+	loadDocumentsFS()
 	buildIndex()
-}
-
-//go:embed index.gob
-var IndexGob []byte
-
-func loadIndex() {
-	decoder := gob.NewDecoder(bytes.NewReader(IndexGob))
-	if err := decoder.Decode(&tfidfIndex); err != nil {
-		log.Fatalf("error decoding index: %v", err)
-		os.Exit(1)
-	}
-	fmt.Printf("loaded index with %d words\n", len(tfidfIndex))
+	storeIndex()
 }
 
 var flagIndex = flag.Bool("index", false, "index documents")
@@ -417,9 +431,9 @@ func main() {
 		return
 	}
 
-	fmt.Printf("loaded index: %d\n", len(IndexGob))
+	fmt.Printf("embed: index: %d\n", len(IndexGob))
 
-	loadDocuments()
+	loadDocumentsEmbed()
 	loadIndex()
 
 	http.HandleFunc("GET /-", searchHandler)
@@ -427,15 +441,35 @@ func main() {
 	http.HandleFunc("/{path...}", fileHandler)
 	http.HandleFunc("GET /health", healthHandler)
 
-	fmt.Println("listening on :8000")
-	http.ListenAndServe(":8000", nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+	fmt.Println("listening on :" + port)
+	http.ListenAndServe(":"+port, nil)
 }
+
+//go:embed VERSION.txt
+var version string
+
+//go:embed TAG.txt
+var tag string
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	health := struct {
-		Version string `json:"version"`
+		Version   string   `json:"version"`
+		TAG       string   `json:"tag"`
+		Versions  []string `json:"versions"`
+		Words     int      `json:"index"`
+		Documents int      `json:"documents"`
+		Data      string   `json:"data"`
 	}{
-		Version: "0.0.0",
+		Version:   version,
+		TAG:       tag,
+		Versions:  versions,
+		Words:     len(index),
+		Documents: len(documents),
+		Data:      humanize.Comma(int64(documentsSize)),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -451,7 +485,7 @@ func must[T any](x T, err error) T {
 
 func versionSelector(current string) string {
 	html := ""
-	for _, v := range verions {
+	for _, v := range versions {
 		style := ""
 		if v == current {
 			style = "color: white; background: #208eee;"

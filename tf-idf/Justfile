@@ -69,3 +69,17 @@ lint-install:
     go install mvdan.cc/gofumpt@latest
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
     go install github.com/kisielk/errcheck@latest
+
+# 
+
+data-zip:
+    zip -r data.zip data
+
+BUILD_ASSETS_BUCKET := env('BUILD_ASSETS_BUCKET')
+DATA_FILE := "rankone-documentaion-data.zip"
+
+data-upload:
+    gcloud storage cp data.zip gs://{{ BUILD_ASSETS_BUCKET }}/{{ DATA_FILE }}
+
+data-download:
+    gcloud storage cp gs://{{ BUILD_ASSETS_BUCKET }}/{{ DATA_FILE }} data.zip
