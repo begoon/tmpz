@@ -193,7 +193,6 @@ func search(query string, exact bool, version string) (foundDocuments []Document
 	version = "/" + version + "/"
 	if exact {
 		for _, document := range documents {
-			fmt.Println(document.Path)
 			if !strings.HasPrefix(document.Path, version) {
 				continue
 			}
@@ -376,7 +375,7 @@ func init() {
 func basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	user, pass, ok := r.BasicAuth()
 	if ok {
-		envPass := defaultEnv["USER_"+user]
+		envPass := os.Getenv("USER_" + user)
 		if envPass != "" && envPass == pass {
 			return true
 		}
