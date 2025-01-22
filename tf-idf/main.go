@@ -350,20 +350,33 @@ var dataFS = must(fs.Sub(dataEmbedFS, "data"))
 var fileServer = http.FileServer(http.FS(dataFS))
 
 //go:embed .env
-var env string
+var envEmbed string
 
-var ENV = must(godotenv.Parse(strings.NewReader(env)))
+var defaultEnv = must(godotenv.Parse(strings.NewReader(envEmbed)))
 
 func init() {
-	for name, value := range ENV {
+	for name, value := range defaultEnv {
 		os.Setenv(name, value)
+	}
+	explicitEnv := os.Getenv("ALLOWED_USERS")
+	if explicitEnv != "" {
+		err := godotenv.Load(explicitEnv)
+		if err != nil {
+			log.Printf("error reading allowed users: %v", err)
+		}
+	}
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, "USER_") {
+			user, _, _ := strings.Cut(v, "=")
+			fmt.Println(user)
+		}
 	}
 }
 
 func basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	user, pass, ok := r.BasicAuth()
 	if ok {
-		envPass := ENV["USER_"+user]
+		envPass := defaultEnv["USER_"+user]
 		if envPass != "" && envPass == pass {
 			return true
 		}
