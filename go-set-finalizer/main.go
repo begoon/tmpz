@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"runtime"
-	"time"
 )
 
 func x() {
@@ -14,8 +13,11 @@ func x() {
 	fmt.Println("a[]", a)
 	a = nil
 	runtime.GC()
-	time.Sleep(1 * time.Second)
 	fmt.Println("a[]", a)
+
+	s := make([]byte, 1024)
+	n := runtime.Stack(s, true)
+	fmt.Println("stack", string(s)[:n])
 }
 
 func main() {
