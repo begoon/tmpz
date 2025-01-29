@@ -286,7 +286,9 @@ async function tags(limit = 10) {
     return data
         .map((image: { tags: string[] }) => image.tags)
         .reduce((a: string[], v: string) => a.concat(v), [])
-        .filter((tag: string) => tag !== "latest") as string[];
+        .filter((tag: string) => tag !== "latest")
+        .sort()
+        .reverse() as string[];
 }
 
 async function notify(msg: string) {
