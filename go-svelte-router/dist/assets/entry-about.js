@@ -1,0 +1,1 @@
+import{t as i,C as o,a as s,s as m,c as n,m as r}from"./app.js";var g=i('<main><h1 class="fixed top-0 right-0 bg-blue-400 text-white p-2">Page 1</h1> <!> <a href="/">...back</a> <img src="/images/go.png" class="fixed bottom-0 right-0 w-[100px] hover:w-[500px]" alt="Go"></main>');function p(t){var a=g(),e=m(n(a),2);o(e),s(t,a)}r(p,{target:document.getElementById("app")});

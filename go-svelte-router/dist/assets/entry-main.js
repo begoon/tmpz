@@ -1,0 +1,1 @@
+import{t as i,C as m,a as n,s as o,c as s,m as r}from"./app.js";var p=i('<main><h1>ROOT</h1> <!> <a href="about/">▶︎ one</a> <img src="/images/vite.svg" alt="Vite" class="fixed left-0 bottom-0"></main>');function l(t){var a=p(),e=o(s(a),2);m(e),n(t,a)}r(l,{target:document.getElementById("app")});

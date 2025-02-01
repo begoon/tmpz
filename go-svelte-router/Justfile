@@ -1,0 +1,36 @@
+build: build-vite build-backend
+
+set unstable := true
+set dotenv-load := true
+
+REPO := env('REPO')
+
+build-vite:
+    bun run build
+
+build-backend:
+    go build -o ./tmp/main .
+
+build-backend-amd64:
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-s -w" -o ./tmp/main .
+
+docker-build:
+    docker build -t go-svelte .
+
+docker-build-amd64:
+    docker build --platform linux/amd64 -t go-svelte .
+
+docker-run:
+    docker run -t go-svelte --rm -it -p :8000 go-svelte
+
+docker-tag-push:
+    docker tag go-svelte:latest {{ REPO }}/tiner:latest
+    docker push {{ REPO }}/tiner:latest
+
+docker-release: docker-build-amd64 docker-tag-push
+
+cr-update:
+    gcloud run deploy tiner \
+    --image ${REPO}/tiner:latest \
+    --region ${REGION} --project=${PROJECT}
