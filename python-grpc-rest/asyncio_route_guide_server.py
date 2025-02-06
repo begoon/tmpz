@@ -18,7 +18,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 
 def get_feature(
-    feature_db: Iterable[route_guide_pb2.Feature], point: route_guide_pb2.Point
+    feature_db: Iterable[route_guide_pb2.Feature],
+    point: route_guide_pb2.Point,
 ) -> route_guide_pb2.Feature:
     """Returns Feature at given location or None."""
     for feature in feature_db:
@@ -54,13 +55,13 @@ def get_distance(
 
 
 class RouteGuideServicer(route_guide_pb2_grpc.RouteGuideServicer):
-    """Provides methods that implement functionality of route guide server."""
-
     def __init__(self) -> None:
         self.db = route_guide_resources.read_route_guide_database()
 
     def GetFeature(
-        self, request: route_guide_pb2.Point, unused_context
+        self,
+        request: route_guide_pb2.Point,
+        unused_context,
     ) -> route_guide_pb2.Feature:
         feature = get_feature(self.db, request)
         if feature is None:
@@ -69,7 +70,9 @@ class RouteGuideServicer(route_guide_pb2_grpc.RouteGuideServicer):
             return feature
 
     async def ListFeatures(
-        self, request: route_guide_pb2.Rectangle, unused_context
+        self,
+        request: route_guide_pb2.Rectangle,
+        unused_context,
     ) -> AsyncIterable[route_guide_pb2.Feature]:
         left = min(request.lo.longitude, request.hi.longitude)
         right = max(request.lo.longitude, request.hi.longitude)
@@ -127,7 +130,8 @@ class RouteGuideServicer(route_guide_pb2_grpc.RouteGuideServicer):
 async def serve() -> None:
     server = grpc.aio.server()
     route_guide_pb2_grpc.add_RouteGuideServicer_to_server(
-        RouteGuideServicer(), server
+        RouteGuideServicer(),
+        server,
     )
     server.add_insecure_port("[::]:50051")
     await server.start()
