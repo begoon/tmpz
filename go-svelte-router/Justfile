@@ -36,7 +36,7 @@ docker-run:
     docker run -t go-svelte --rm -it -p :8000 go-svelte
 
 docker-tag-push:
-    docker tag go-svelte:latest {{ REPO }}/tiner:{{ TAG}}
+    docker tag go-svelte:latest {{ REPO }}/tiner:{{ TAG }}
     docker push {{ REPO }}/tiner:{{ TAG }}
 
 docker-release: docker-create-tag build-amd64 docker-build-amd64 docker-tag-push

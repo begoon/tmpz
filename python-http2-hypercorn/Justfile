@@ -1,0 +1,29 @@
+default:
+
+set dotenv-load := true
+
+REPO := env('REPO')
+TAG := env('TAG', datetime("%Y%m%d%H%M%S"))
+
+run:
+    hypercorn \
+    --debug \
+    --log-level DEBUG \
+    --reload \
+    --bind 0.0.0.0:8000 \
+    main:application
+
+docker-build:
+    docker build -t http2-hypercorn .
+
+docker-build-amd64:
+    docker build --platform linux/amd64 -t http2-hypercorn .
+
+docker-run:
+    docker run --name http2-hypercorn --rm -it -p 8000:8000 http2-hypercorn
+
+docker-tag-push:
+    docker tag http2-hypercorn:latest {{ REPO }}/http2-hypercorn:{{ TAG }}
+    docker push {{ REPO }}/http2-hypercorn:{{ TAG }}
+
+docker-release: docker-build-amd64 docker-tag-push
