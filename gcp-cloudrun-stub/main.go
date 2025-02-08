@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 
 	"cloud.google.com/go/compute/metadata"
@@ -29,6 +30,9 @@ func main() {
 			}
 			return v
 		}
+
+		cpu := strconv.Itoa(runtime.NumCPU())
+		w.Write([]byte("CPU=" + cpu + "\n"))
 
 		gce := metadata.OnGCE()
 		w.Write([]byte("GGE=" + strconv.FormatBool(gce) + "\n"))
