@@ -43,9 +43,12 @@ class IO(io.BytesIO):
 
 
 if __name__ == "__main__":
-    response = httpx.get(host + "/health")
+    client = httpx.Client(http2=False)
+
+    response = client.get(host + "/health")
     response.raise_for_status()
-    print(response.text)
+    print(response.text, file=sys.stderr)
+    print(response.http_version, file=sys.stderr)
 
     data = ("0" * 1000 * 1000 * 80).encode()
     sha1 = hashlib.sha1(data).hexdigest()
@@ -53,7 +56,6 @@ if __name__ == "__main__":
 
     started = time.monotonic()
 
-    client = httpx.Client(http2=True)
     response = client.post(
         host + "/upload/",
         files=[

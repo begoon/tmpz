@@ -29,7 +29,7 @@ class Metadata(BaseModel):
 
 @application.post("/upload/")
 async def upload(request: Request, metadata: UploadFile, raw: UploadFile):
-    print(request.method, request.url.path)
+    print(request.method, request.url.path, request.http_version)
     metadata_ = Metadata(**json.load(metadata.file))
 
     started = time.monotonic()
