@@ -44,3 +44,6 @@ promote:
     --region=europe-west2 \
     --project=iproov-chiro \
     --set-env-vars=INITIAL=1
+
+clean:
+    rm -f ./exe
