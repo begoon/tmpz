@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"cloud.google.com/go/compute/metadata"
 	_ "golang.org/x/crypto/x509roots/fallback"
@@ -43,6 +44,12 @@ func main() {
 			w.Write([]byte("zone=" + ok(metadata.ZoneWithContext(ctx)) + "\n"))
 		}
 	})
+
+	http.HandleFunc("/fs/", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, "/fs")
+		http.FileServer(http.Dir("/")).ServeHTTP(w, r)
+	})
+
 	http.HandleFunc("/ip", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get("https://api.myip.com/")
 		if err != nil {
@@ -62,5 +69,6 @@ func main() {
 		}
 		w.Write([]byte(v.IP))
 	})
-	http.ListenAndServe("0.0.0.0:"+port, nil)
+
+	http.ListenAndServe(":"+port, nil)
 }
