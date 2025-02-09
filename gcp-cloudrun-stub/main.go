@@ -39,9 +39,11 @@ func main() {
 		w.Write([]byte("GGE=" + strconv.FormatBool(gce) + "\n"))
 
 		if gce {
+			w.Write([]byte("\n"))
 			w.Write([]byte("project=" + ok(metadata.ProjectIDWithContext(ctx)) + "\n"))
 			w.Write([]byte("project_id=" + ok(metadata.NumericProjectIDWithContext(ctx)) + "\n"))
 			w.Write([]byte("zone=" + ok(metadata.ZoneWithContext(ctx)) + "\n"))
+			w.Write([]byte("email=" + ok(metadata.EmailWithContext(ctx, "")) + "\n"))
 		}
 	})
 
