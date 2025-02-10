@@ -1,0 +1,7 @@
+default: build
+
+build:
+    go build -o exe main.go
+
+clean:
+    rm -f exe
