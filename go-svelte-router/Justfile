@@ -4,6 +4,7 @@ set unstable := true
 set dotenv-load := true
 
 REPO := env('REPO')
+NAME := env('NAME')
 
 BRANCH_DEFAULT := shell("git rev-parse --abbrev-ref HEAD")
 GITHUB_REF_NAME := env('GITHUB_REF_NAME', BRANCH_DEFAULT)
@@ -36,8 +37,8 @@ docker-run:
     docker run -t go-svelte --rm -it -p :8000 go-svelte
 
 docker-tag-push:
-    docker tag go-svelte:latest {{ REPO }}/tiner:{{ TAG }}
-    docker push {{ REPO }}/tiner:{{ TAG }}
+    docker tag go-svelte:latest {{ REPO }}/{{ NAME }}:{{ TAG }}
+    docker push {{ REPO }}/{{ NAME }}:{{ TAG }}
 
 docker-release: docker-create-tag build-amd64 docker-build-amd64 docker-tag-push
 
@@ -46,6 +47,6 @@ docker-create-tag:
     @echo {{ TAG }} > TAG.txt
 
 cr-update:
-    gcloud run deploy tiner \
-    --image ${REPO}/tiner:latest \
+    gcloud run deploy {{ NAME }} \
+    --image ${REPO}/{{ NAME }}:latest \
     --region ${REGION} --project=${PROJECT}
