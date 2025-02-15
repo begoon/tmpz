@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vue Fetch App</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    </head>
+    <body>
+        <div id="app">
+            <input v-model="inputValue" placeholder="Enter URL" />
+            <button @click="fetchData">Fetch</button>
+            <pre>{{ responseJson }}</pre>
+        </div>
+
+        <script>
+            const { createApp, ref } = Vue;
+
+            createApp({
+                setup() {
+                    const inputValue = ref("https://jsonplaceholder.typicode.com/todos/1");
+                    const responseJson = ref("");
+                    const fetchData = async () => {
+                        try {
+                            const response = await fetch(inputValue.value);
+                            responseJson.value = await response.json();
+                        } catch (error) {
+                            responseJson.value = `error: ${error.message}`;
+                        }
+                    };
+                    return { inputValue, responseJson, fetchData };
+                },
+            }).mount("#app");
+        </script>
+    </body>
+</html>
