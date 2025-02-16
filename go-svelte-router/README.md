@@ -30,7 +30,7 @@ If any .go, .svelte, .ts, .js, .css file changes, air rebuilds the application a
 
 ## Dockerfiles
 
-The application is tested to run on GCP Cloud Run. The application is built into a single binary from "scratch" base images. The root SSL/TLS certificates come from the "golang.org/x/crypto/x509roots/fallback" module, so the Go application can use SSL/TLS.
+The application is tested to run on GCP Cloud Run. The application is built into a single binary from "scratch" base image. The root SSL/TLS certificates come from the "golang.org/x/crypto/x509roots/fallback" module, so the Go application can use SSL/TLS.
 
 There are two Dockerfiles provided:
 
