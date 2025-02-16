@@ -51,6 +51,6 @@ A page can be available from multiple routes, specified in multiple `http.Handle
 
 Each page is an indendent Svelte SPA with index.html, main.ts and the ".svelte" file like "App.svelte".
 
-Note:
+## Note
 
 This project is not a library or framework. It is a demo project which can be used as a skeleton for other projects.
