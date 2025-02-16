@@ -3,8 +3,8 @@ build: build-vite build-backend
 set unstable := true
 set dotenv-load := true
 
-REPO := env('REPO')
-NAME := env('NAME')
+REPO := env('REPO', 'UNDEFINED')
+NAME := env('NAME', 'UNDEFINED')
 
 BRANCH_DEFAULT := shell("git rev-parse --abbrev-ref HEAD")
 GITHUB_REF_NAME := env('GITHUB_REF_NAME', BRANCH_DEFAULT)
@@ -34,13 +34,15 @@ docker-build-amd64:
     docker build --platform linux/amd64 -t go-svelte .
 
 docker-run:
-    docker run -t go-svelte --rm -it -p :8000 go-svelte
+    docker run --rm -it -p 8000:8000 go-svelte
 
 docker-tag-push:
     docker tag go-svelte:latest {{ REPO }}/{{ NAME }}:{{ TAG }}
     docker push {{ REPO }}/{{ NAME }}:{{ TAG }}
 
-docker-release: docker-create-tag build-amd64 docker-build-amd64 docker-tag-push
+docker-release: docker-create-tag build-amd64 docker-build-amd64
+
+docker-publish: docker-tag-push
 
 docker-create-tag:
     @echo "TAG: {{ TAG }}"
@@ -50,3 +52,9 @@ cr-update:
     gcloud run deploy {{ NAME }} \
     --image ${REPO}/{{ NAME }}:latest \
     --region ${REGION} --project=${PROJECT}
+
+prerequisites:
+    bun i
+
+clean:
+    -rm -rf tmp node_modules dist

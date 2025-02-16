@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/static-debian12
+FROM scratch
 
 COPY tmp/main /exe
 
