@@ -1,0 +1,21 @@
+default: build run open
+
+build:
+    go build -o exe main.go
+
+run:
+    ./exe
+
+open:
+    open example-go.pdf
+
+docker: docker-build docker-run docker-open
+
+docker-build:
+    docker build -t pdf .
+
+docker-run:
+    docker run --name pdf --rm -it -v ./shared:/shared -e OUTFILE=/shared/example.pdf pdf 
+
+docker-open:
+    open ./shared/example.pdf
