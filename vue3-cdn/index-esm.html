@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vue Fetch App</title>
+    </head>
+    <body>
+        <script type="module">
+            import { createApp, ref } from "https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.esm-browser.js";
+
+            createApp({
+                setup() {
+                    const inputValue = ref("https://jsonplaceholder.typicode.com/todos/1");
+                    const responseJson = ref("");
+                    const fetchData = async () => {
+                        try {
+                            const response = await fetch(inputValue.value);
+                            responseJson.value = await response.json();
+                        } catch (error) {
+                            responseJson.value = `error: ${error.message}`;
+                        }
+                    };
+                    return { inputValue, responseJson, fetchData };
+                },
+            }).mount("#app");
+        </script>
+        <div id="app">
+            <input v-model="inputValue" placeholder="Enter URL" />
+            <button @click="fetchData">Fetch</button>
+            <pre>{{ responseJson }}</pre>
+        </div>
+    </body>
+</html>
