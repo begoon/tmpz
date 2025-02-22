@@ -194,7 +194,6 @@ func main() {
 
 	regexPattern := flag.Arg(1)
 	if regexPattern == "" {
-
 		prompt := &survey.MultiSelect{
 			Message: "where to search:",
 			Options: CommonFolders,
