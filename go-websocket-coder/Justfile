@@ -1,0 +1,50 @@
+default: run
+
+set dotenv-load := true
+
+run:
+    go run main.go
+
+build:
+    go build -o tmp/main -ldflags="-s -w" main.go
+
+build-amd64:
+    CGO_ENABLED=0 \
+    GOOS=linux GOARCH=amd64 \
+    go build -o tmp/main -ldflags="-s -w" main.go
+
+IMAGE := env("IMAGE")
+REPO := env("REPO")
+
+TAG := datetime("%Y%m%d%H%M%S")
+
+docker-build:
+    docker build -t {{ IMAGE }} .
+
+docker-run:
+    docker run -p 3000:3000 -it --rm {{ IMAGE }}
+
+docker-tag-push:
+	docker tag {{ IMAGE }} {{ REPO }}/{{ IMAGE }}:{{ TAG }}
+	docker push {{ REPO }}/{{ IMAGE }}:{{ TAG }}
+
+docker-release: build-amd64 docker-build docker-tag-push
+
+UUID := uuid()
+URL := env("URL")
+
+connect:
+    bunx wscat -c ws://localhost:3000/{{ UUID }}
+
+trace:
+    curl http://localhost:3000
+
+connect-cr:
+    bunx wscat -c wss://{{ URL }}/ws/{{ UUID }}
+
+trace-cr:
+    curl https://{{ URL }}
+
+clean:
+    -rm -rf tmp
+    -rm -f main
