@@ -1,8 +1,2 @@
-.DS_Store
-js-sse/__pycache__
-svelte-balls/node_modules
-cloudinary/.env
-hono-bun/public
-js-pdf/node_modules
-*.pdf
-js-mysql/.env
+.env
+
