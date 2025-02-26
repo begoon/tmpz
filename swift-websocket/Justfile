@@ -1,0 +1,13 @@
+defaul: run
+
+set dotenv-load
+
+URL := env("WSS_URL")
+
+run:
+    swiftc -o exe main.swift && \
+    ./exe {{ URL }}/{{ uuid()}}
+
+clean:
+    -rm exe
+    -rm -rf .build
