@@ -72,6 +72,9 @@ func main() {
 		w.Header().Set("Content-Type", "text/plain")
 		data := strings.Split(tracer.String(), "\n")
 		for i := len(data) - 1; i >= 0; i-- {
+			if data[i] == "" {
+				continue
+			}
 			fmt.Fprintln(w, data[i])
 		}
 	})

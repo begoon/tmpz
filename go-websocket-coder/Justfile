@@ -34,7 +34,7 @@ UUID := uuid()
 URL := env("URL")
 
 connect:
-    bunx wscat -c ws://localhost:3000/{{ UUID }}
+    bunx wscat -c ws://localhost:3000/ws/{{ UUID }}
 
 trace:
     curl http://localhost:3000
