@@ -1,0 +1,11 @@
+#compdef xx
+
+_xx() {
+  echo ""
+  echo "words=[$words]"
+  echo "CURRENT=[$CURRENT]"
+  echo "ARGS=[${words[2,$CURRENT]}]"
+  echo "LAST=[${words[$CURRENT]}]"
+}
+
+compdef _xx xx

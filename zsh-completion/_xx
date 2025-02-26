@@ -1,0 +1,9 @@
+#compdef xx
+
+_xx() {
+  _arguments '-a+[description]:tag:((1 2 3))' -b --delete \
+  ':command:(("a":"command A" "b":"command B"))' \
+  ':subcommand:(("ab":"subcommand AB" "ba":"subcommand BA"))'
+}
+
+compdef _xx xx

@@ -1,0 +1,4 @@
+#!/bin/zsh
+echo "words=[$words]"
+echo "CURRENT=[$CURRENT]"
+
