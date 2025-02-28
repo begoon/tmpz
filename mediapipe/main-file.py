@@ -71,33 +71,20 @@ detector = vision.HandLandmarker.create_from_options(options)
 
 saves = 1
 
-cap = cv2.VideoCapture(0)
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+# read from file
+frame = cv2.imread("0001_left_index.jpg")
 
-    # !?
-    # image_np = mp.Image.create_from_numpy_array(frame)
+# !?
+# image_np = mp.Image.create_from_numpy_array(frame)
 
-    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
-    detection_result = detector.detect(mp_image)
+image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
+detection_result = detector.detect(mp_image)
 
-    # !?
-    # image_from_np = convert_bgra_to_bgr(image_np.numpy_view())
+# !?
+# image_from_np = convert_bgra_to_bgr(image_np.numpy_view())
 
-    annotated_image = draw_landmarks_on_image(image_rgb, detection_result)
+annotated_image = draw_landmarks_on_image(image_rgb, detection_result)
 
-    cv2.imshow("image", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-    if cv2.waitKey(1) & 0xFF == ord(" "):
-        cv2.imwrite(
-            f"output-{saves}.jpg",
-            cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR),
-        )
-        saves += 1
-        time.sleep(3)
+cv2.imshow("image", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
+cv2.waitKey(0)
