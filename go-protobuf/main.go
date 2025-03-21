@@ -8,6 +8,7 @@ import (
 
 	"go-protobuf/internal/proto"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	pb "google.golang.org/protobuf/proto"
 )
 
@@ -33,6 +34,12 @@ func main() {
 		log.Fatalf("Failed to deserialize user: %v", err)
 	}
 	fmt.Println("user:", newUser)
+
+	jsonData, err := protojson.Marshal(&newUser)
+	if err != nil {
+		log.Fatalf("marshal user to json: %v", err)
+	}
+	fmt.Println("user json:", string(jsonData))
 
 	err = validateUser(&newUser)
 	if err != nil {
