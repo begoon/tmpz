@@ -14,9 +14,10 @@ message User {
   int32 age = 2 [(buf.validate.field).int32 = {
     gte: 18
   }];
-  string email = 3 [(buf.validate.field).string = {
-    email: true
-  }];
+  string email = 3 [
+    (buf.validate.field).string = { email: true },
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
   string price = 4 [(buf.validate.field).cel = {
     message: "price must be positive and include a valid currency symbol ($ or £)",
     expression: "(this == '') || ((this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0)"

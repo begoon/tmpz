@@ -7,6 +7,8 @@ import (
 	"log"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
+
 	pb "google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protovalidate-go"
@@ -48,6 +50,10 @@ func main() {
 		log.Fatalf("marshal user to json: %v", err)
 	}
 	fmt.Println("user json:", string(jsonData))
+
+	textData := prototext.Format(&newUser)
+	fmt.Println("user text:")
+	fmt.Println(textData)
 
 	err = protovalidate.Validate(&newUser)
 	if err != nil {
