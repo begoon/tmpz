@@ -1,0 +1,27 @@
+set unstable := true
+
+default: protobuf run
+
+run:
+    go run main.go
+
+protobuf:
+    protoc \
+        --go_out=. \
+        --go-grpc_out=. \
+        proto/user.proto
+
+PROTOVALIDATE_REPO := "https://raw.githubusercontent.com/bufbuild/protovalidate"
+VALIDATE_PROTO_PATH := "main/proto/protovalidate/buf/validate/validate.proto"
+VALIDATE_PROTO_URL := PROTOVALIDATE_REPO + "/" + VALIDATE_PROTO_PATH
+VALIDATE_DIR := "validate"
+
+validate-proto-download:
+    -rm -rf buf/validate
+    -mkdir -p buf/validate
+    curl "{{ VALIDATE_PROTO_URL }}" -o buf/validate/validate.proto -s
+
+
+modules:
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest

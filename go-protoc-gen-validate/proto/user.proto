@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "./internal/proto";
+
+import "validate/validate.proto";
+
+message User {
+  string name = 1 [(validate.rules).string.min_len = 3];
+  int32 age = 2 [(validate.rules).int32.gte = 18];
+}
