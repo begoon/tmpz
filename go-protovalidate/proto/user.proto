@@ -18,8 +18,15 @@ message User {
     email: true
   }];
   string price = 4 [(buf.validate.field).cel = {
-    id: "transaction.price",
     message: "price must be positive and include a valid currency symbol ($ or £)",
-    expression: "(this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0"
+    expression: "(this == '') || ((this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0)"
   }];
+  string quantity = 5 [(buf.validate.field).cel = {
+    message: "quantity must be a positive integer",
+    expression: "(this == '') || (double(this.substring(1)) > 0)"
+  }];
+  option (buf.validate.message).cel = {
+    expression: "has(this.price) == has(this.quantity)",
+    message: "If 'price' is set, 'quantity' must also be set."
+  };
 }

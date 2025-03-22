@@ -18,14 +18,16 @@ func main() {
 	name := flag.String("name", "Alice", "name of the user")
 	age := flag.Int("age", 30, "age of the user")
 	email := flag.String("email", "a@test.com", "email of the user")
-	price := flag.String("price", "$0.1", "price of the user")
+	price := flag.String("price", "$0.1", "price")
+	quantity := flag.String("quantity", "1.5", "quantity")
 	flag.Parse()
 
 	user := &proto.User{
-		Name:  *name,
-		Age:   int32(*age),
-		Email: *email,
-		Price: *price,
+		Name:     *name,
+		Age:      int32(*age),
+		Email:    *email,
+		Price:    *price,
+		Quantity: *quantity,
 	}
 
 	data, err := pb.Marshal(user)

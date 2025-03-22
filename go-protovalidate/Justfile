@@ -16,7 +16,7 @@ VALIDATE_PROTO_PATH := "main/proto/protovalidate/buf/validate/validate.proto"
 VALIDATE_PROTO_URL := PROTOVALIDATE_REPO + "/" + VALIDATE_PROTO_PATH
 VALIDATE_DIR := "validate"
 
-validate-proto-download:
+validate-proto-vendor:
     -rm -rf buf/validate
     -mkdir -p buf/validate
     curl "{{ VALIDATE_PROTO_URL }}" -o buf/validate/validate.proto -s

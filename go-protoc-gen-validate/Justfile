@@ -17,12 +17,12 @@ VALIDATE_PROTO_PATH := "main/validate/validate.proto"
 VALIDATE_PROTO_URL := PROTOVALIDATE_REPO + "/" + VALIDATE_PROTO_PATH
 VALIDATE_DIR := "validate"
 
-validate-proto-download:
+validate-proto-vendor:
     -rm -rf validate
     -mkdir -p validate
     curl "{{ VALIDATE_PROTO_URL }}" -o validate/validate.proto -s
 
-validate-proto-install:
+validate-proto-module-vendor:
     cp \
         $(go list -m -f '{{ "{{" }} .Dir {{ "}}" }}' \
             github.com/envoyproxy/protoc-gen-validate)/validate/validate.proto \
