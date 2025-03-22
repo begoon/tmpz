@@ -1,4 +1,9 @@
-default:
+set unstable := true
+
+default: protobuf run
+
+run:
+    go run main.go
 
 protobuf:
     protoc \
@@ -6,3 +11,24 @@ protobuf:
         --go-grpc_out=. \
         --validate_out=lang=go:. \
         proto/user.proto
+
+PROTOVALIDATE_REPO := "https://raw.githubusercontent.com/bufbuild/protoc-gen-validate"
+VALIDATE_PROTO_PATH := "main/validate/validate.proto"
+VALIDATE_PROTO_URL := PROTOVALIDATE_REPO + "/" + VALIDATE_PROTO_PATH
+VALIDATE_DIR := "validate"
+
+validate-proto-download:
+    -rm -rf validate
+    -mkdir -p validate
+    curl "{{ VALIDATE_PROTO_URL }}" -o validate/validate.proto -s
+
+validate-proto-install:
+    cp \
+        $(go list -m -f '{{ "{{" }} .Dir {{ "}}" }}' \
+            github.com/envoyproxy/protoc-gen-validate)/validate/validate.proto \
+        validate/validate.proto
+
+modules:
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    go install github.com/envoyproxy/protoc-gen-validate@latest
