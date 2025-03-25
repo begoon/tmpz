@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -10,7 +11,7 @@ import (
 func drawText(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
 	row := y1
 	col := x1
-	for _, r := range []rune(text) {
+	for _, r := range text {
 		s.SetContent(col, row, r, nil, style)
 		col++
 		if col >= x2 {
@@ -57,6 +58,22 @@ func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string)
 	}
 
 	drawText(s, x1+1, y1+1, x2-1, y2-1, style, text)
+
+	titleStyle := style.Foreground(tcell.ColorWhite).Background(tcell.ColorPurple).Reverse(true)
+	drawText(s, x1+2, y1, x2, y1, titleStyle, " TITLE ")
+
+	// draw shadow
+	shadowStyle := style.Foreground(tcell.ColorBlack).Background(tcell.ColorBlack)
+	for row := y1 + 1; row <= y2; row++ {
+		s.SetContent(x2+1, row, ' ', nil, shadowStyle)
+	}
+	for col := x1 + 1; col <= x2+1; col++ {
+		s.SetContent(col, y2+1, ' ', nil, shadowStyle)
+	}
+}
+
+type tickEvent struct {
+	tcell.Event
 }
 
 func main() {
@@ -92,29 +109,34 @@ func main() {
 	}
 	defer quit()
 
-	// Here's how to get the screen size when you need it.
-	// xmax, ymax := s.Size()
-
 	// Here's an example of how to inject a keystroke where it will
 	// be picked up by the next PollEvent call.  Note that the
 	// queue is LIFO, it has a limited length, and PostEvent() can
 	// return an error.
 	// s.PostEvent(tcell.NewEventKey(tcell.KeyRune, rune('a'), 0))
 
-	// Event loop
+	ticker := time.NewTicker(1 * time.Second)
+	go func() {
+		for range ticker.C {
+			s.PostEvent(&tickEvent{})
+		}
+	}()
+
 	ox, oy := -1, -1
 	for {
-		// Update screen
 		s.Show()
 
-		// Poll event
 		ev := s.PollEvent()
 
-		// Process event
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
-			s.Sync()
+			xmax, ymax := s.Size()
+			size := fmt.Sprintf("%d x %d", xmax, ymax)
+			drawText(s, 0, 0, xmax-1, 1, defStyle, size)
+		case *tickEvent:
+			drawText(s, 0, 0, 42, 1, defStyle, time.Now().Format(time.Stamp))
 		case *tcell.EventKey:
+			drawText(s, 0, 1, 80, 1, defStyle, ev.Name()+"         ")
 			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
 				return
 			} else if ev.Key() == tcell.KeyCtrlL {
@@ -128,7 +150,7 @@ func main() {
 			switch ev.Buttons() {
 			case tcell.Button1, tcell.Button2:
 				if ox < 0 {
-					ox, oy = x, y // record location when click started
+					ox, oy = x, y
 				}
 
 			case tcell.ButtonNone:
