@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"go-bubbletea/bare/overlay"
 
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
-	"github.com/muesli/ansi"
 )
 
 type Main struct {
@@ -51,37 +49,24 @@ func (m Main) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func boxed(width, height int, title, content string) string {
+func boxed(width, height int, title, content, fgColor, bgColor string) string {
 	style := lipgloss.NewStyle().
 		Bold(true).
 		Width(width - 2).
 		Height(height - 2).
-		Border(lipgloss.RoundedBorder()).Align(lipgloss.Center).AlignVertical(lipgloss.Center)
+		Background(lipgloss.Color(bgColor)).
+		Foreground(lipgloss.Color(fgColor)).
+		Border(lipgloss.RoundedBorder()).
+		BorderBackground(lipgloss.Color(bgColor)).
+		BorderForeground(lipgloss.Color(fgColor)).
+		Align(lipgloss.Center).AlignVertical(lipgloss.Center)
 	contentRender := style.Render(content)
 
-	lines := strings.Split(contentRender, "\n")
-
 	title = " " + title + " "
-	titleRender := []rune(lipgloss.NewStyle().Background(lipgloss.Color("#00FF00")).Render(title))
+	titleRender := lipgloss.NewStyle().Background(lipgloss.Color("#00FF00")).Render(title)
 
-	sb := strings.Builder{}
-
-	titleY := len(lines) - 1
-	r := []rune(lines[titleY])
-
-	titleOffset := max((len(r) - len(title) - 2), 0)
-	for i := range titleOffset {
-		sb.WriteRune(r[i])
-	}
-	for i := range titleRender {
-		sb.WriteRune(titleRender[i])
-	}
-	for i := titleOffset + len(title); i < len(r); i++ {
-		sb.WriteRune(r[i])
-	}
-	lines[titleY] = sb.String()
-
-	return strings.Join(lines, "\n")
+	titleX := (width - runewidth.StringWidth(title)) / 2
+	return overlay.PlaceOverlay(titleX, 0, titleRender, contentRender, "", false)
 }
 
 func (m Main) View() string {
@@ -91,25 +76,12 @@ func (m Main) View() string {
 	content := fmt.Sprintf("width: %d, height: %d, index: %d", m.width, m.height, m.index)
 	v := lipgloss.JoinHorizontal(
 		lipgloss.Bottom,
-		boxed(m.width/2, m.height-3, "title 1", content),
-		boxed(m.width/2, m.height-3, "title 2", content),
+		boxed(m.width/2, m.height-3, "title 1", content, "#00FF00", "#000000"),
+		boxed(m.width/2, m.height-3, "title 2", content, "#0000FF", "#FFFFFF"),
 	)
-	msg := boxed(16, 5, "error", "overlay")
+	msg := boxed(16, 5, "error", "overlay", "#FFFFFF", "#FF0000")
 
-	v = overlay.PlaceOverlay(m.overX, m.overY, msg, v, true)
-
-	lines := strings.Split(v, "\n")
-	maxSz := 0
-	lengths := []int{}
-	for _, line := range lines {
-		sz := runewidth.StringWidth(line)
-		lengths = append(lengths, ansi.PrintableRuneWidth(line))
-		if sz > maxSz {
-			maxSz = sz
-		}
-	}
-
-	v += "\n" + fmt.Sprintf("view: %d x %d %v", maxSz, len(lines), lengths)
+	v = overlay.PlaceOverlay(m.overX, m.overY, msg, v, "#000000", true)
 	return v
 }
 
