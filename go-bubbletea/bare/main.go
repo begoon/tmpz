@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"go-bubbletea/bare/overlay"
+
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
@@ -16,6 +18,8 @@ type Main struct {
 	index  int
 	width  int
 	height int
+	overX  int
+	overY  int
 }
 
 func (m Main) Init() tea.Cmd {
@@ -34,7 +38,14 @@ func (m Main) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			m.index = m.index + 1
-			return m, nil
+		case "up":
+			m.overY = max(m.overY-1, 0)
+		case "down":
+			m.overY = min(m.overY+1, m.height-5)
+		case "left":
+			m.overX = max(m.overX-1, 0)
+		case "right":
+			m.overX = min(m.overX+1, m.width-16)
 		}
 	}
 	return m, cmd
@@ -73,19 +84,6 @@ func boxed(width, height int, title, content string) string {
 	return strings.Join(lines, "\n")
 }
 
-func overlay(bg, fg string) string {
-	bgLines := strings.Split(bg, "\n")
-	fgLines := strings.Split(fg, "\n")
-
-	y := (len(bgLines) - len(fgLines)) / 2
-	x := (ansi.PrintableRuneWidth(bgLines[0]) - ansi.PrintableRuneWidth(fgLines[0])) / 2
-
-	for i := range fgLines {
-		bgLines[y+i] = strings.Repeat(" ", x) + fgLines[i]
-	}
-	return strings.Join(bgLines, "\n")
-}
-
 func (m Main) View() string {
 	if m.width == 0 {
 		return "loading..."
@@ -98,7 +96,7 @@ func (m Main) View() string {
 	)
 	msg := boxed(16, 5, "error", "overlay")
 
-	v = overlay(v, msg)
+	v = overlay.PlaceOverlay(m.overX, m.overY, msg, v, true)
 
 	lines := strings.Split(v, "\n")
 	maxSz := 0
