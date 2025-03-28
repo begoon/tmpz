@@ -6,7 +6,7 @@ run := 'dosbox-x -nolog -c "mount c: ./c" -c "c:"'
 batch := run + ' -silent -exit'
 
 build:
-    {{ batch }} -c "tpc go.pas /ETP7 >output.txt"
+    {{ batch }} -c "tpc go.pas /B /ETP7 >output.txt"
     @if grep -i "error" c/OUTPUT.TXT; then exit 1; fi
 
 clean:
