@@ -17,3 +17,6 @@ run:
 
 ide:
     {{ run }} -exit -c turbo
+
+cmd:
+    {{ run }}
