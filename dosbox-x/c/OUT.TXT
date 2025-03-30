@@ -1,0 +1,42 @@
+0                                 t           t                t                           a
+1 Identifiers                     2 Sorts     3 Values         4 Strings numbers          5 
+0                                 t           t                t                           a
+1 ALTERR                          2 VAR       3 BOOLEAN        4 #86 96 98                5 
+1 ASUPASCAL                       2 PROGRAM   3 FAR            4 #9                       5 
+1 BASE                            2 VAR       3 BASTYP         4 #29 110 119 128 132      5 
+1                                 2           3                4 133 137 138 94           5 
+1 BASTYP                          2 TYPE      3 ARRAY          4 #27 29                   5 
+1 CMPSTR                          2 FUNCTION  3 FAR            4 #68 133 74 75            5 
+1 CNTLVL                          2 CONST     3 95             4 #17 135 96               5 
+1 COUNT                           2 VAR       3 INTEGER        4 #31 #60 141 143 63       5 
+1                                 2           3                4 64 65                    5 
+1 CURERR                          2 VAR       3 BOOLEAN        4 #87 100 98 99            5 
+1 DELTA                           2 CONST     3 1              4 #18 52                   5 
+1 ERRFLG                          2 VAR       3 BOOLEAN        4 #88 105 91 99            5 
+1 GETLVL                          2 FUNCTION  3 FAR            4 #50 112 52               5 
+1 I                               2 VAR       3 INTEGER        4 #32 #41 #61 #70 #89      5 
+1                                 2           3                4 101 118 119 126 127      5 
+1                                 2           3                4 128 130 131 132 133      5 
+1                                 2           3                4 135 137 144 44 45 64     5 
+1                                 2           3                4 72 73 75 92 94           5 
+1 J                               2 VAR       3 INTEGER        4 #33 127 128 131 132      5 
+1                                 2           3                4 133 136 137 138 139      5 
+1                                 2           3                4 41                       5 
+1 LOOP                            2 LABEL     3                4 #11                      5 
+1 MAXOBJ                          2 CONST     3 100            4 #14 109 27               5 
+1 NUMERR                          2 VAR       3 BOOLEAN        4 #85 102 95 98            5 
+1 NUMLEN                          2 CONST     3 8              4 #16 121 21               5 
+1 NUMSPC                          2 FUNCTION  3 FAR            4 #58 65 95                5 
+1 NUMSTR                          2 TYPE      3 STRING         4 #21                      5 
+1 OBJCNT                          2 VAR       3 INTEGER        4 #30 108 109 110 114      5 
+1                                 2           3                4 116 117 118 126 127      5 
+1                                 2           3                4 130 131 136 92           5 
+1 OBJREC                          2 TYPE      3 RECORD         4 #23 27                   5 
+1 PRIMST                          2 CONST     3 'DEMOCONST'    4 #13                      5 
+1 TRIMSTR                         2 FUNCTION  3 FAR            4 #39 120 121              5 
+1 TSTDTA                          2 FUNCTION  3 FAR            4 #81 105 124              5 
+1 TYPERR                          2 VAR       3 BOOLEAN        4 #84 93 98                5 
+1 TYPLEN                          2 CONST     3 20             4 #15 120 20               5 
+1 TYPSTR                          2 TYPE      3 STRING         4 #20                      5 
+1 WRKSTR                          2 TYPE      3 STRING         4 #22                      5 
+9                                                                                           

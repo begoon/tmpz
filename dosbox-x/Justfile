@@ -1,22 +1,25 @@
 default: clean build run
 
-T := "\\"
-
-run := 'dosbox-x -nolog -c "mount c: ./c" -c "c:"'
-batch := run + ' -silent -exit'
+run := 'dosbox-x -nolog -c "mount c: ./c" -c "c:" -c "PATH=%PATH%;C:\BP\BIN"'
+silent := run + ' -silent -exit'
+visual := run + ' -fastlaunch -set output=ttf'
+install := visual + ' -c "mount x: ./x" -c "PATH=%PATH%;C:\BP\BIN"'
 
 build:
-    {{ batch }} -c "tpc go.pas /B /ETP7 >output.txt"
+    {{ silent }} -c "bpc /m cref.pas >output.txt"
     @if grep -i "error" c/OUTPUT.TXT; then exit 1; fi
 
 clean:
-    {{ batch }} -silent -exit -c "del TP7{{ T }}go.exe"
+    {{ silent }} -c "del *.exe" -c "del output.txt" -c "del *.tpu"
 
 run:
-    {{ run }} -c go.exe -exit
+    {{ visual }} -exit -c cref.exe
 
 ide:
-    {{ run }} -exit -c turbo
+    {{ visual }} -exit -c "turbo go.pas"
 
 cmd:
-    {{ run }}
+    {{ visual }}
+
+install:
+    {{ install }}
