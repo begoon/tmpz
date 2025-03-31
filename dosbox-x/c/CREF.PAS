@@ -40,11 +40,13 @@ type
   TCRefApp = object(TApplication)
     Heap: PHeapView;
     Clock: PClockView;
+    EventView: PEventView;
 
     AboutStrs: PAboutCollection;
 
     constructor Init;
     destructor Done; virtual;
+    procedure GetEvent(var Event: TEvent); virtual;
     procedure HandleEvent(var Event: TEvent); virtual;
     procedure Idle; virtual;
     procedure InitStatusLine; virtual;
@@ -185,6 +187,11 @@ begin
   Clock := New(PClockView, Init(R));
   Insert(Clock);
 
+  Dec(R.A.X, 10);
+  R.B.X := R.A.X + 10;
+  EventView := New(PEventView, Init(R));
+  Insert(EventView);
+
   GetExtent(R);
   Dec(R.B.X);
   R.A.X := R.B.X - 9;
@@ -212,6 +219,7 @@ begin
   inherited Idle;
   Clock^.Update;
   Heap^.Update;
+  EventView^.Update;
 end;
 
 procedure TCRefApp.InitStatusLine;
@@ -230,6 +238,26 @@ begin
       NewStatusDef(hcAboutView, hcAboutView,
       NewStatusKey('~Esc~ Close dialog', kbEsc, cmClose, nil),
     nil)))));
+end;
+
+procedure TCrefApp.GetEvent(var Event: TEvent);
+begin
+  inherited GetEvent(Event);
+  {
+  case Event.What of
+    evMouse:
+      FormatStr('%dx%d', [Event.Where.X, Event.Where.Y]);
+      Writeln('Mouse Event: (', Event.Where.X, ', ', Event.Where.Y, ') Buttons: ', Event.Buttons);
+    evKeyboard:
+      Writeln('Keyboard Event: KeyCode ', Event.KeyCode);
+    evCommand:
+      Writeln('Command Event: Command ID ', Event.Command);
+    evBroadcast:
+      Writeln('Broadcast Event');
+  else
+    Writeln('Unknown Event');
+  end;
+  }
 end;
 
 procedure TCRefApp.HandleEvent;
@@ -252,12 +280,12 @@ begin
   R.Assign(25,6,60,20);
   M:=New(PMenuBox,Init(R,
            NewMenu(
-              NewItem('~T~able    ','...',kbAlt1,cmCRef,hcNoContext,
-              NewItem('~O~ptions  ','...',kbAlt2,cmConfig,hcNoContext,
+              NewItem('~T~able    ','...',kbAlt1, cmCRef, hcNoContext,
+              NewItem('~O~ptions  ','...',kbAlt2, cmConfig, hcNoContext,
               Newline(
-              NewItem('~A~bout    ','',kbAlt3,cmAbout,hcNoContext,
+              NewItem('~A~bout    ','',kbAlt3, cmAbout, hcNoContext,
               NewLine(
-              NewItem('~E~xit     ','Alt-X',kbAltX,cmQuit,hcNoContext,
+              NewItem('E~x~it     ','Alt-X',kbAltX, cmQuit, hcNoContext,
          nil))))))),
   nil));
   M^.Options:=M^.Options or ofCentered;

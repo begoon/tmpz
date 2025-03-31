@@ -26,6 +26,14 @@ type
     procedure Update; virtual;
   end;
 
+  PEventView = ^TEventView;
+  TEventView = object(TView)
+    buf: TDrawBuffer;
+    constructor Init(var Bounds: TRect);
+    procedure Draw; virtual;
+    procedure Update; virtual;
+  end;
+
 implementation
 
 constructor THeapView.Init(var Bounds: TRect);
@@ -108,7 +116,35 @@ var
   s: string;
 begin
   Str(I, S);
-  IntToStr:=S;
+  IntToStr := S;
+end;
+
+constructor TEventView.Init(var Bounds: TRect);
+begin
+  inherited Init(Bounds);
+end;
+
+procedure TEventView.Update;
+var
+  t: string;
+  p: array[0..3] of longint;
+  color: byte;
+begin
+  p[0] := MouseWhere.X; 
+  p[1] := MouseWhere.Y;
+  p[2] := MouseButtons;
+  p[3] := GetShiftState;
+  FormatStr(t, '%dx%d %d %d', p);
+
+  color := GetColor(2);
+  MoveChar(buf, ' ', color, Size.X);
+  MoveStr(buf, t, color);
+  DrawView;
+end;  
+
+procedure TEventView.Draw;
+begin
+  WriteLine(0, 0, Size.X, 1, buf);
 end;
 
 end.
