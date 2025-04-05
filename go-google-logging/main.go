@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"runtime/debug"
 	"time"
 
 	"cloud.google.com/go/logging"
@@ -39,12 +40,14 @@ func main() {
 			"env":        "production",
 		}),
 	)
+	stackTrace := debug.Stack()
 	l.Log(logging.Entry{
 		Payload: map[string]string{
-			"message": "abc-xyz " + time.Now().Format(time.RFC3339),
-			"a":       "A",
+			"message":     "abc-xyz " + time.Now().Format(time.RFC3339),
+			"a":           "A",
+			"stack_trace": string(stackTrace),
 		},
-		Severity:  logging.Alert,
+		Severity:  logging.Error,
 		Labels:    map[string]string{"extra": "extra-" + time.Now().Format(time.RFC3339)},
 		Timestamp: time.Now(),
 		Trace:     "trace|" + uuid.New().String(),
