@@ -29,3 +29,6 @@ docker-build-amd64:
 docker-tag-push:
     docker tag {{ NAME }} {{ REPO }}/{{ NAME }}:{{ TAG }}
     docker push {{ REPO }}/{{ NAME }}:{{ TAG }}
+
+clean:
+    rm -rf ./exe ./http/main
