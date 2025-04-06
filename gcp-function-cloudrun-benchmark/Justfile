@@ -2,20 +2,37 @@ set unstable := true
 set dotenv-load := true
 
 PROJECT := env("PROJECT")
-SERVICE_URL := env("SERVICE_URL")
+REGION := env("REGION")
 
 default:
 
 function-build:
-    gcloud functions deploy abc \
+    gcloud functions deploy abc-function \
     --gen2 \
     --runtime go123 \
-    --region europe-west2 \
+    --region {{ REGION }} \
     --project {{ PROJECT }} \
-    --entry-point=function.Handler \
+    --entry-point=Handler \
     --trigger-http \
     --allow-unauthenticated \
-    --source=.
+    --source=function
 
-function-run:
-    curl --write-out @format.txt {{ SERVICE_URL }}
+run-build:
+    gcloud run deploy abc-run \
+    --region {{ REGION }} \
+    --project {{ PROJECT }} \
+    --allow-unauthenticated \
+    --platform managed \
+    --source=./run
+
+FUNCTION_URL := env("FUNCTION_URL")
+
+function-invoke:
+    curl --write-out @format.txt {{ FUNCTION_URL }}
+
+RUN_URL := env("RUN_URL")
+
+run-invoke:
+    curl --write-out @format.txt {{ RUN_URL }}
+
+invoke: function-invoke run-invoke

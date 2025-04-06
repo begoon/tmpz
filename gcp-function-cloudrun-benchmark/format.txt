@@ -1,8 +1,10 @@
 \n
-http_code: %{http_code} / http/%{http_version}\n
-received: %{size_download} byte(s)\n
+code: %{http_code} / 
+http/%{http_version} / 
+received: %{size_download} byte(s) / 
 speed_download: %{speed_download} bytes/s\n
-time_namelookup:  %{time_namelookup}\n
-time_connect:  %{time_connect}\n
-time_starttransfer:  %{time_starttransfer}\n
-time_total: %{time_total}\n
+time_namelookup: %{time_namelookup}s / 
+time_connect: %{time_connect}s / 
+time_starttransfer: %{time_starttransfer}s\n
+time_total: %{time_total}s\n
+\n
