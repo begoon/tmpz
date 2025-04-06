@@ -1,4 +1,31 @@
+set unstable := true
+
 default: run
+
+image: build-amd64 docker-build-amd64 docker-tag-push
 
 run:
     go run -trimpath main.go
+
+build-amd64:
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags '-w -s' -trimpath \
+    -o ./exe \
+    ./http/main.go
+
+set dotenv-load := true
+
+TAG := datetime("%Y%m%dT%H%M%S")
+REPO := env("REPO")
+NAME := env("NAME")
+
+docker-build-amd64:
+    docker build \
+    -t {{ NAME }} \
+    --platform linux/amd64 \
+    -f http/Dockerfile \
+    .
+
+docker-tag-push:
+    docker tag {{ NAME }} {{ REPO }}/{{ NAME }}:{{ TAG }}
+    docker push {{ REPO }}/{{ NAME }}:{{ TAG }}
