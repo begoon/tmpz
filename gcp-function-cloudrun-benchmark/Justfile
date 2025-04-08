@@ -17,6 +17,16 @@ function-build:
     --allow-unauthenticated \
     --source=function
 
+function-explicit-build:
+    gcloud functions deploy abc-function-explicit \
+    --gen2 \
+    --runtime go123 \
+    --region {{ REGION }} \
+    --project {{ PROJECT }} \
+    --trigger-http \
+    --allow-unauthenticated \
+    --source=function-explicit
+
 run-build:
     gcloud run deploy abc-run \
     --region {{ REGION }} \
@@ -30,9 +40,14 @@ FUNCTION_URL := env("FUNCTION_URL")
 function-invoke:
     curl --write-out @format.txt {{ FUNCTION_URL }}
 
+FUNCTION_EXPLICIT_URL := env("FUNCTION_EXPLICIT_URL")
+
+function-explicit-invoke:
+    curl --write-out @format.txt {{ FUNCTION_EXPLICIT_URL }}
+
 RUN_URL := env("RUN_URL")
 
 run-invoke:
     curl --write-out @format.txt {{ RUN_URL }}
 
-invoke: function-invoke run-invoke
+invoke: function-invoke function-explicit-invoke run-invoke
