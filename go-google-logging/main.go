@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"runtime/debug"
 	"time"
 
-	errpb "cloud.google.com/go/errorreporting/apiv1beta1/errorreportingpb"
+	"cloud.google.com/go/errorreporting"
+	"cloud.google.com/go/errorreporting/apiv1beta1/errorreportingpb"
 	"cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -21,10 +23,38 @@ func main() {
 	if project == "" {
 		log.Fatal("PROJECT environment variable is not set")
 	}
+	log.Printf("project: %s", project)
 
+	if len(os.Args) > 1 && os.Args[1] == "error" {
+		errorClient, err := errorreporting.NewClient(context.Background(), project, errorreporting.Config{
+			ServiceName:    "dev-api",
+			ServiceVersion: "1.0.0",
+			OnError: func(err error) {
+				log.Fatalf("report error: %v", err)
+			},
+		})
+		defer func() {
+			if err := errorClient.Close(); err != nil {
+				log.Fatalf("close error client: %v", err)
+			}
+		}()
+		if err != nil {
+			log.Fatalf("initialize error client: %v", err)
+		}
+		errorClient.Report(errorreporting.Entry{
+			Error: errors.New("synthetic error / panic"),
+			Stack: debug.Stack(),
+			User:  os.Getenv("USER"),
+		})
+		errorClient.Report(errorreporting.Entry{
+			Error: errors.New("synthetic error / message"),
+			User:  os.Getenv("USER"),
+		})
+		return
+	}
 	ctx := context.Background()
 
-	client, err := logging.NewClient(ctx, "iproov-chiro")
+	client, err := logging.NewClient(ctx, project)
 	if err != nil {
 		log.Fatalf("initialize logging client: %v", err)
 	}
@@ -43,8 +73,8 @@ func main() {
 		}),
 	)
 	stackTrace := debug.Stack()
-	message := "panic: abc-xyz " + time.Now().Format(time.RFC3339)
-	serviceContext, err := protojson.Marshal(&errpb.ServiceContext{
+	message := "panic: synthetic " + time.Now().Format(time.RFC3339)
+	serviceContext, err := protojson.Marshal(&errorreportingpb.ServiceContext{
 		Service: "dev-api",
 		Version: "1.0.0",
 	})

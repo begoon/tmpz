@@ -19,6 +19,9 @@ TAG := datetime("%Y%m%dT%H%M%S")
 REPO := env("REPO")
 NAME := env("NAME")
 
+error:
+    go run -trimpath main.go error
+
 docker-build-amd64:
     docker build \
     -t {{ NAME }} \
