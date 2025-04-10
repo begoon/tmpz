@@ -1,0 +1,10 @@
+all: build run
+
+build:
+    cc -o main main.c -I/opt/X11/include -L/opt/X11/lib -lX11
+
+run:
+    DISPLAY=:0 ./main
+
+clean:
+    -rm -f main
