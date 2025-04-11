@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MWM_HINTS_DECORATIONS (1L << 1)
+
 int main()
 {
     Display *display;
@@ -25,10 +27,33 @@ int main()
     }
 
     screen = DefaultScreen(display);
-    window = XCreateSimpleWindow(display, RootWindow(display, screen),
-                                 100, 100, win_width, win_height, 1,
-                                 BlackPixel(display, screen),
-                                 WhitePixel(display, screen));
+
+    XSetWindowAttributes attrs = {.background_pixel = WhitePixel(display, screen),
+                                  .border_pixel = BlackPixel(display, screen),
+                                  .override_redirect = True};
+
+    window = XCreateWindow(display, RootWindow(display, screen),
+                           100, 100, win_width, win_height,
+                           10,
+                           CopyFromParent,
+                           InputOutput,
+                           CopyFromParent,
+                           CWBackPixel | CWBorderPixel,
+                           &attrs);
+
+    typedef struct
+    {
+        unsigned long flags;
+        unsigned long functions;
+        unsigned long decorations;
+        long input_mode;
+        unsigned long status;
+    } MotifWmHints;
+
+    MotifWmHints hints = {.flags = MWM_HINTS_DECORATIONS, .decorations = 0};
+    Atom property = XInternAtom(display, "_MOTIF_WM_HINTS", False);
+
+    XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
 
     XSelectInput(display, window, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
 
