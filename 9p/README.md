@@ -14,3 +14,5 @@
 - <https://plan9.io/sys/doc/9.html>
 
 - [Writing a 9P server from scratch](https://blog.aqwari.net/9p/)
+
+- <https://github.com/henesy/awesome-9p>
