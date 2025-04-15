@@ -1,0 +1,10 @@
+default: build run
+
+build:
+    go build -trimpath -o main main.go
+
+run:
+    ./main
+
+clean:
+    -rm -rf main
