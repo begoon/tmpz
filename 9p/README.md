@@ -16,3 +16,5 @@
 - [Writing a 9P server from scratch](https://blog.aqwari.net/9p/)
 
 - <https://github.com/henesy/awesome-9p>
+
+- <https://9fans.github.io/plan9port/man/man9/intro.html>
