@@ -1,4 +1,4 @@
-module gcp-logging-slog
+module gcp-logging-clog
 
 go 1.22.4
 
