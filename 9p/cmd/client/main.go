@@ -1,53 +1,80 @@
 package main
 
 import (
-	"bytes"
+	"flag"
 	"fmt"
+	"io"
 	"log"
-	"net"
-	"strings"
+	"os"
 
-	"github.com/knusbaum/go9p/client"
+	"github.com/lionkov/ninep"
+	"github.com/lionkov/ninep/clnt"
+)
+
+var (
+	debuglevel = flag.Int("d", 0, "debuglevel")
+	addr       = flag.String("addr", "127.0.0.1:5640", "network address")
+	msize      = flag.Uint("m", 8192, "Msize for 9p")
 )
 
 func main() {
-	s, err := net.Dial("tcp", "localhost:9999")
+	var user ninep.User
+	var err error
+	var c *clnt.Clnt
+	var file *clnt.File
+	var d []*ninep.Dir
+
+	flag.Parse()
+	user = ninep.OsUsers.Uid2User(os.Geteuid())
+	clnt.DefaultDebuglevel = *debuglevel
+	c, err = clnt.Mount("tcp", *addr, "", uint32(*msize), user)
 	if err != nil {
-		log.Fatal(fmt.Errorf("dial: %v", err))
+		log.Fatal(err)
 	}
-	defer s.Close()
-	c, err := client.NewClient(s, "alexander", "alexander")
+
+	lsarg := "/"
+	if flag.NArg() == 1 {
+		lsarg = flag.Arg(0)
+	} else if flag.NArg() > 1 {
+		log.Fatal("error: only one argument expected")
+	}
+
+	file, err = c.FOpen(lsarg, ninep.OREAD)
 	if err != nil {
-		log.Fatal(fmt.Errorf("new client: %v", err))
+		log.Fatal(err)
 	}
-	d, err := c.Readdir("/")
+
+	for {
+		d, err = file.Readdir(0)
+		if len(d) == 0 || (err != nil && err != io.EOF) {
+			break
+		}
+
+		for i := range d {
+			os.Stdout.WriteString(d[i].Name + "\n")
+		}
+
+		if err != nil && err != io.EOF {
+			log.Fatal(err)
+		}
+	}
+
+	file.Close()
+	if err != nil && err != io.EOF {
+		log.Fatal(err)
+	}
+
+	name := "kind"
+	file, err = c.FOpen(name, ninep.OREAD)
 	if err != nil {
-		log.Fatal(fmt.Errorf("readdir: %v", err))
+		log.Fatal(err)
 	}
-	for _, fi := range d {
-		log.Printf("%v %d", fi.Name, fi.Length)
-	}
-	f, err := c.Open("static", 0)
+	content := make([]byte, 1024*8)
+	n, err := file.Read(content)
 	if err != nil {
-		log.Fatal(fmt.Errorf("open/static: %v", err))
+		log.Fatal(fmt.Errorf("read %q error: %v", name, err))
 	}
-	defer f.Close()
-	b := make([]byte, 16)
-	_, err = f.Read(b)
-	if err != nil {
-		log.Fatal(fmt.Errorf("read/static: %v", err))
-	}
-	log.Printf("static [%s]", bytes.Trim(b, "\n\r\x00"))
-	f, err = c.Open("dynamic", 0)
-	if err != nil {
-		log.Fatal(fmt.Errorf("open/dynamic: %v", err))
-	}
-	defer f.Close()
-	b = make([]byte, 16)
-	_, err = f.Read(b)
-	if err != nil {
-		log.Fatal(fmt.Errorf("read/dynamic: %v", err))
-	}
-	log.Printf("dynamic [%s]", strings.Trim(string(b), "\n\r"))
-	log.Println(".")
+	fmt.Printf("read %d byte(s) from %q\n", n, name)
+	fmt.Println(string(content[:n]))
+	file.Close()
 }

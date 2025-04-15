@@ -1,0 +1,7 @@
+default:
+
+server:
+    go run ./cmd/server -D -v cmd/server/example.json
+
+client:
+    go run ./cmd/client
