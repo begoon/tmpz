@@ -1,0 +1,6 @@
+default: run
+
+run:
+    bun run build
+    rm -rf build/_app
+    open build/index.html
