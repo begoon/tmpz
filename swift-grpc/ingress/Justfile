@@ -1,0 +1,15 @@
+set dotenv-load := true
+
+default: invoke
+
+invoke: health logging
+
+INGRESS_GRPC_HOST := env("INGRESS_GRPC_HOST")
+
+health:
+    PROTOC_PATH=$(which protoc) \
+    swift run ingress-grpc-swift health --host {{ INGRESS_GRPC_HOST }}
+
+logging:
+    PROTOC_PATH=$(which protoc) \
+    swift run ingress-grpc-swift logging --host {{ INGRESS_GRPC_HOST }}

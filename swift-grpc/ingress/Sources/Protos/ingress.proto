@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package ingress;
+
+import "google/protobuf/struct.proto";
+
+option optimize_for = CODE_SIZE;
+
+service Ingress {
+  rpc Health (HealthRequest) returns (HealthResponse) {}
+  rpc Logging (stream LoggingRequest) returns (LoggingResponse) {}
+}
+
+message HealthRequest {
+  //
+}
+
+message HealthResponse {
+  string version = 1;
+  string tag = 2;
+}
+
+message LoggingRequest {
+  google.protobuf.Struct data = 1;
+}
+
+message LoggingResponse {
+  //
+}

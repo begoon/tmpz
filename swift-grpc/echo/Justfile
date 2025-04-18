@@ -1,0 +1,7 @@
+default:
+
+client:
+    PROTOC_PATH=$(which protoc) swift run echo greet --name "me"
+
+server:
+    PROTOC_PATH=$(which protoc) swift run echo serve
