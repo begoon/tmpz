@@ -3,7 +3,7 @@ export async function load({ fetch }) {
     console.log({ ip });
     //
     const started = performance.now();
-    const httpbin = fetch("https://httpbin.org/delay/1");
+    const httpbin = fetch("https://httpbin.org/delay/3");
     const elapsed = ((performance.now() - started) / 1000).toFixed(2);
     console.log({ elapsed, httpbin });
     //

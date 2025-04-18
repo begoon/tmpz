@@ -26,7 +26,7 @@
         });
 </script>
 
-<div>{title} / {preload}: {ip}</div>
+<div>{title} | {preload}: {ip}</div>
 <div>
     {#if elapsed}
         loaded:
