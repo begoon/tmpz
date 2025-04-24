@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; width: fit-content; gap: 1rem">
+            <div>sse</div>
+            <div>stream</div>
+            <output id="sse"></output>
+            <output id="stream"></output>
+        </div>
+        <script>
+            const sseOutput = document.getElementById("sse");
+            const streamOutput = document.getElementById("stream");
+
+            const print = (element, message) => {
+                const v = JSON.parse(message);
+                const tag = document.createElement("div");
+                tag.textContent = `${v.n}: ${v.when}`;
+                element.insertAdjacentElement("afterbegin", tag);
+            };
+            // ----------------------------------------------------------
+            const eventSource = new EventSource("/sse");
+            eventSource.onmessage = (event) => print(sseOutput, event.data);
+            eventSource.onerror = (event) => console.error("sse error:", event);
+            eventSource.onopen = (event) => console.log("opened:", event);
+            eventSource.onclose = (event) => console.log("closed:", event);
+            // ----------------------------------------------------------
+            (async function readStream() {
+                const response = await fetch("/stream");
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    let lines = buffer.split("\n");
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.trim() === "") continue;
+                        try {
+                            print(streamOutput, line);
+                        } catch (e) {
+                            console.error("parse line:", line);
+                        }
+                    }
+                }
+
+                if (buffer.trim()) {
+                    try {
+                        print(streamOutput, buffer);
+                    } catch (e) {
+                        console.error("parse last line:", buffer);
+                    }
+                }
+            })();
+            // ----------------------------------------------------------
+        </script>
+    </body>
+</html>

@@ -1,0 +1,3 @@
+.mypy*
+.venv
+__pycache__
