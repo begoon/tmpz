@@ -11,6 +11,7 @@ async function* streamer(): AsyncGenerator<string, void, unknown> {
 export async function GET() {
     const stream = new ReadableStream({
         async start(controller) {
+            console.log("sse started");
             for await (const msg of streamer()) {
                 controller.enqueue(new TextEncoder().encode(msg));
             }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
 
     type Message = {
         n: number;
@@ -7,15 +7,14 @@
         origin: string;
     };
 
-    let streamOutput = $state<Message[]>([]);
-    let sseOutput = $state<Message[]>([]);
+    let output = $state<Message[]>([]);
 
-    const print_ = (target: Message[], data: string) => {
+    const print_ = (data: string) => {
         const message = JSON.parse(data) as Message;
-        target.push(message);
+        output.push(message);
     };
 
-    let streamReader: ReadableStreamDefaultReader<Uint8Array>;
+    let streamReader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
     async function readStream() {
         const response = await fetch("/stream");
@@ -31,7 +30,7 @@
         while (true) {
             const { done, value } = await streamReader.read();
             if (done) {
-                if (buffer?.trim()) print_(streamOutput, buffer);
+                if (buffer?.trim()) print_(buffer);
                 break;
             }
 
@@ -40,53 +39,41 @@
             let lines: string[] = buffer?.split("\n") || [];
             buffer = lines.pop();
 
-            for (const line of lines) {
-                print_(streamOutput, line);
-            }
+            for (const line of lines) print_(line);
         }
     }
 
-    let eventSource: EventSource;
+    let eventSource: EventSource | undefined;
+
+    function cancel() {
+        streamReader?.cancel();
+        eventSource?.close();
+    }
 
     onMount(async () => {
         readStream();
         eventSource = new EventSource("/sse");
-        eventSource.onmessage = (event) => print_(sseOutput, event.data);
+        eventSource.onmessage = (event) => print_(event.data);
     });
+
+    onDestroy(() => cancel());
 </script>
 
 <button onclick={() => window.location.reload()}> reload </button>
-<div
-    style="
-        display: grid; grid-template-columns: 20em 20em; gap: 1rem; 
-        width: fit-content; border: 1px solid black; padding: 1rem; 
-        align-items: start;
-    "
->
-    <div>stream <button onclick={() => streamReader.cancel()}>stop</button></div>
-    <div>sse <button onclick={() => eventSource.close()}>stop</button></div>
-    <div
-        style="
-            display: grid; grid-template-columns: 1fr 1fr 3fr;
-            gap-x: 0.1rem; border: 1px solid red; background: lightcoral;
-        "
-    >
-        {#each streamOutput.toReversed().slice(0, 10) as line}
-            <b>{line.n}</b>
-            <span>{line.origin}</span>
-            <span>{line.when}</span>
-        {/each}
-    </div>
-    <div
-        style="
-            display: grid; grid-template-columns: 1fr 1fr 3fr; 
-            gap-x: 0.1rem; border: 1px solid blue; background: lightblue;
-        "
-    >
-        {#each sseOutput.toReversed().slice(0, 10) as line}
-            <b>{line.n}</b>
-            <span>{line.origin}</span>
-            <span>{line.when}</span>
-        {/each}
-    </div>
+<button onclick={cancel}>stop</button>
+<div style="display: grid; grid-template-columns: 3em 5em 20em; gap-x: 1em;">
+    {#each output.toReversed().slice(0, 20) as line}
+        <b>{line.n}</b>
+        <span>{line.origin}</span>
+        <span class={line.origin}>{line.when}</span>
+    {/each}
 </div>
+
+<style>
+    .sse {
+        color: red;
+    }
+    .stream {
+        color: blue;
+    }
+</style>
