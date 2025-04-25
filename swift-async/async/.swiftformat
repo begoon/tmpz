@@ -1,0 +1,33 @@
+# .swiftformat
+
+# -- General Settings --
+indent 4                             # 4-space indents (use 2 if you prefer)
+linebreaks lf                        # Use Unix-style line endings
+allman false                         # Use K&R-style braces
+semicolons never                     # Remove all semicolons
+commas inline                        # Commas stay on the same line
+decimalgrouping 3                    # 1_000 style grouping
+
+# -- Spacing & Wrapping --
+wraparguments beforefirst            # Multi-line arguments: one per line
+wrapelements beforefirst             # Multi-line array/dict elements: one per line
+spaceinsideparens true              # Add space inside parentheses
+spacearoundoperators true           # Add spaces around operators
+
+# -- Code Organization --
+reorderImports true                  # Alphabetize and group imports
+stripunusedargs closure-only        # Remove unused closure args (e.g. (_, _) → _)
+sortswitchcases true                # Sort switch cases alphabetically
+
+# -- Enforcement --
+self remove                          # Remove unnecessary `self.` usage
+redundantself remove                 # Remove only redundant `self.`
+explicitself insert                 # But require `self.` when ambiguity exists
+
+# -- Others --
+importgrouping testable,std,local   # Group imports: testable → stdlib → project
+header ignore                        # Don’t enforce file headers
+ifdef no-indent                      # Don't indent #if/#endif contents
+
+# -- Exclude these paths --
+exclude Pods, Carthage, .build, build
