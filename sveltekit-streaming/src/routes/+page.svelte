@@ -4,7 +4,7 @@
     type Message = {
         n: number;
         when: string;
-        origin: string;
+        mode: string;
     };
 
     let output = $state<Message[]>([]);
@@ -17,7 +17,7 @@
     let streamReader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
     async function readStream() {
-        const response = await fetch("/stream");
+        const response = await fetch("/stream/raw");
         if (!response.ok || !response.body) {
             console.error("fetch stream:", response.statusText);
             return;
@@ -52,7 +52,7 @@
 
     onMount(async () => {
         readStream();
-        eventSource = new EventSource("/sse");
+        eventSource = new EventSource("/stream/sse");
         eventSource.onmessage = (event) => print_(event.data);
     });
 
@@ -64,8 +64,8 @@
 <div style="display: grid; grid-template-columns: 3em 5em 20em; gap-x: 1em;">
     {#each output.toReversed().slice(0, 20) as line}
         <b>{line.n}</b>
-        <span>{line.origin}</span>
-        <span class={line.origin}>{line.when}</span>
+        <span>{line.mode}</span>
+        <span class={line.mode}>{line.when}</span>
     {/each}
 </div>
 
