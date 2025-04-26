@@ -42,10 +42,11 @@ struct cli {
         }
 
         let back = Task.detached {
-            let delay = 3 + Double.random(in: 0 ... 1)
+            let delay = 4 + Double.random(in: 0 ... 1)
             print("background task started, sleep for \(delay) seconds...")
             try await Task.sleep(for: .seconds(Int(delay)))
             print("background task finished")
+            return 100
         }
         let clock = ContinuousClock()
         let elapsed = try await clock.measure {
@@ -68,7 +69,11 @@ struct cli {
             back.cancel()
         }
         print(elapsed)
-        print("background:", await back.result)
+        do {
+            print("background:", try await back.value)
+        } catch {
+            print("background has been cancelled:", await back.result)
+        }
     }
 
     static func fetch(task n: Int) async throws -> FetchResult {
