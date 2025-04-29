@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		11B2BA3E2D6F409A00E646EC /* pinger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pinger.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		11B2BA3E2D6F409A00E646EC /* OTP/VPN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OTP/VPN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		11B2BA402D6F409A00E646EC /* pinger */ = {
+		11B2BA402D6F409A00E646EC /* connector */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = pinger;
+			path = connector;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		11B2BA352D6F409900E646EC = {
 			isa = PBXGroup;
 			children = (
-				11B2BA402D6F409A00E646EC /* pinger */,
+				11B2BA402D6F409A00E646EC /* connector */,
 				11B2BA3F2D6F409A00E646EC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 		11B2BA3F2D6F409A00E646EC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				11B2BA3E2D6F409A00E646EC /* pinger.app */,
+				11B2BA3E2D6F409A00E646EC /* OTP/VPN.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		11B2BA3D2D6F409900E646EC /* pinger */ = {
+		11B2BA3D2D6F409900E646EC /* OTP/VPN */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 11B2BA4D2D6F409B00E646EC /* Build configuration list for PBXNativeTarget "pinger" */;
+			buildConfigurationList = 11B2BA4D2D6F409B00E646EC /* Build configuration list for PBXNativeTarget "OTP/VPN" */;
 			buildPhases = (
 				11B2BA3A2D6F409900E646EC /* Sources */,
 				11B2BA3B2D6F409900E646EC /* Frameworks */,
@@ -61,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				11B2BA402D6F409A00E646EC /* pinger */,
+				11B2BA402D6F409A00E646EC /* connector */,
 			);
-			name = pinger;
+			name = OTP/VPN;
 			packageProductDependencies = (
 			);
-			productName = pinger;
-			productReference = 11B2BA3E2D6F409A00E646EC /* pinger.app */;
+			productName = connector;
+			productReference = 11B2BA3E2D6F409A00E646EC /* OTP/VPN.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -78,14 +78,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					11B2BA3D2D6F409900E646EC = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
 			};
-			buildConfigurationList = 11B2BA392D6F409900E646EC /* Build configuration list for PBXProject "pinger" */;
+			buildConfigurationList = 11B2BA392D6F409900E646EC /* Build configuration list for PBXProject "connector" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -94,12 +94,14 @@
 			);
 			mainGroup = 11B2BA352D6F409900E646EC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 11B2BA3F2D6F409A00E646EC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				11B2BA3D2D6F409900E646EC /* pinger */,
+				11B2BA3D2D6F409900E646EC /* OTP/VPN */,
 			);
 		};
 /* End PBXProject section */
@@ -159,6 +161,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -222,6 +225,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -248,11 +252,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pinger/pinger.entitlements;
+				CODE_SIGN_ENTITLEMENTS = connector/entitlements.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -262,10 +267,11 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = me.pinger;
+				NEW_SETTING = "";
+				PRODUCT_BUNDLE_IDENTIFIER = me.otpvpn;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -274,11 +280,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pinger/pinger.entitlements;
+				CODE_SIGN_ENTITLEMENTS = connector/entitlements.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -288,17 +295,18 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = me.pinger;
+				NEW_SETTING = "";
+				PRODUCT_BUNDLE_IDENTIFIER = me.otpvpn;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		11B2BA392D6F409900E646EC /* Build configuration list for PBXProject "pinger" */ = {
+		11B2BA392D6F409900E646EC /* Build configuration list for PBXProject "connector" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				11B2BA4B2D6F409B00E646EC /* Debug */,
@@ -307,7 +315,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		11B2BA4D2D6F409B00E646EC /* Build configuration list for PBXNativeTarget "pinger" */ = {
+		11B2BA4D2D6F409B00E646EC /* Build configuration list for PBXNativeTarget "OTP/VPN" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				11B2BA4E2D6F409B00E646EC /* Debug */,
