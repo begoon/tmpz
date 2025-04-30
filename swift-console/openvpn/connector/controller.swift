@@ -262,7 +262,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 func fetchIP() async throws -> String {
     debugPrint("BEFORE: ip")
     guard let url = URL(string: "https://api.ipify.org") else { throw URLError(.badURL) }
-//    let session = URLSession(configuration: .ephemeral)
     let (data, _) = try await URLSession.shared.data(from: url)
     debugPrint("AFTER: ip")
     return String(data: data, encoding: .utf8)!
