@@ -1,0 +1,15 @@
+set dotenv-load := true
+set export := true
+
+default: run
+
+preset:
+    @echo WIFI_SSID = '"{{ env("WIFI_SSID") }}"' > settings.py
+    @echo WIFI_PASSWORD = '"{{ env("WIFI_PASSWORD") }}"' >> settings.py
+
+run: preset
+    uvx mpremote fs cp settings.py :
+    uvx mpremote run pico-https-client.py
+
+packages:
+    uv pip install -U micropython-rp2-pico_w-stubs --target typings
