@@ -35,9 +35,9 @@ def connect_wifi():
 
     led = Pin("LED", Pin.OUT)
 
-    timer = Timer(-1)
+    timer = Timer()
 
-    timer.init(period=100, mode=Timer.PERIODIC, callback=lambda t: led.toggle())
+    timer.init(period=100, mode=Timer.PERIODIC, callback=lambda v: led.toggle())
 
     def timeout():
         return time.ticks_diff(time.ticks_ms(), start_time) < max_wait_s * 1000
