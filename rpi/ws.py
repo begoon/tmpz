@@ -15,7 +15,7 @@ import settings
 
 
 def base64_encode(data: bytes) -> str:
-    return binascii.b2a_base64(data).decode().strip()
+    return binascii.b2a_base64(data, newline=False).decode()
 
 
 def create_websocket_key():
