@@ -149,7 +149,7 @@ def websocket_client_ssl(host: str, port: int, path: str) -> None:
     print("websocket connected")
 
     uname = os.uname()
-    device = str(uname.machine) + " " + str(uname.version) + " " + ip
+    device = str(uname.machine) + " " + str(uname.version) + " " + IP
     sock.send((encode_text_message("/device " + device)))
 
     try:
@@ -250,7 +250,7 @@ def connect_wifi():
     print("\r")
     if wlan.isconnected():
         print("WIFI connected")
-        print("local ip", wlan.ifconfig()[0])
+        print("local IP", wlan.ifconfig()[0])
         return True
     else:
         status = wlan.status()
@@ -259,12 +259,12 @@ def connect_wifi():
         return False
 
 
-ip: str | None = None
+IP: str | None = None
 
 HOST, PORT, PATH = settings.WS_HOST, settings.WS_PORT, settings.WS_PATH
 if connect_wifi():
     response = urequests.get(IPIFY)
-    ip = response.text
-    print("public IP", ip)
+    IP = response.text
+    print("public IP", IP)
 
     websocket_client_ssl(HOST, PORT, PATH)
