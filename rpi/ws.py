@@ -192,18 +192,18 @@ print(os.uname())
 WIFI_SSID = settings.WIFI_SSID
 WIFI_PASSWORD = settings.WIFI_PASSWORD
 
-API_URL = "https://api.ipify.org"
+IPIFY = "https://api.ipify.org"
 
 wlan = network.WLAN(network.STA_IF)
 
 
 def connect_wifi():
     if wlan.isconnected():
-        print("already connected to wifi")
+        print("WIFI already connected")
         print("local IP", wlan.ifconfig()[0])
         return True
 
-    print(f"connecting to wifi network: {WIFI_SSID}...")
+    print(f"connecting to WIFI network: {WIFI_SSID}...")
     print(wlan.ifconfig())
 
     wlan.active(True)
@@ -216,7 +216,7 @@ def connect_wifi():
 
     timer = Timer()
 
-    timer.init(period=100, mode=Timer.PERIODIC, callback=lambda v: led.toggle())
+    timer.init(period=100, callback=lambda v: led.toggle())
 
     def timeout():
         return time.ticks_diff(time.ticks_ms(), start_time) < max_wait_s * 1000
@@ -230,7 +230,7 @@ def connect_wifi():
                 spinner.append(ch)
                 print(f"\r{ch}", end="")
             elif status == network.STAT_WRONG_PASSWORD:
-                print("\nerror: wrong wifi password")
+                print("\nerror: wrong WIFI password")
                 return False
             elif status == network.STAT_NO_AP_FOUND:
                 print("\nerror: SSID not found")
@@ -249,12 +249,12 @@ def connect_wifi():
 
     print("\r")
     if wlan.isconnected():
-        print("wifi connected successfully")
-        print("local ip:", wlan.ifconfig()[0])
+        print("WIFI connected")
+        print("local ip", wlan.ifconfig()[0])
         return True
     else:
         status = wlan.status()
-        print(f"failed to connect to wifim status code: {status}")
+        print(f"failed to connect to WIFI: {status=}")
         wlan.active(False)
         return False
 
@@ -263,8 +263,8 @@ ip: str | None = None
 
 HOST, PORT, PATH = settings.WS_HOST, settings.WS_PORT, settings.WS_PATH
 if connect_wifi():
-    response = urequests.get(API_URL)
+    response = urequests.get(IPIFY)
     ip = response.text
-    print("public IP:", ip)
+    print("public IP", ip)
 
     websocket_client_ssl(HOST, PORT, PATH)
