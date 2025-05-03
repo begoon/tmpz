@@ -106,7 +106,7 @@ def decode_text_message(data: bytes) -> str:
     return data[idx : idx + length].decode()
 
 
-def websocket_client_ssl(host: str, port: int, path: str) -> None:
+def websocket_client_ssl(host: str, port: int, path: str, IP: str) -> None:
     key = create_websocket_key()
     raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     af = socket.getaddrinfo(host, port)[0][-1]
@@ -248,11 +248,9 @@ def disconnect_wifi() -> None:
     print("WIFI disconnected")
 
 
-IP: str | None = None
-
 HOST, PORT, PATH = settings.WS_HOST, settings.WS_PORT, settings.WS_PATH
 if connect_wifi():
     IP = urequests.get("https://api.ipify.org").text
     print("public IP", IP)
 
-    websocket_client_ssl(HOST, PORT, PATH)
+    websocket_client_ssl(HOST, PORT, PATH, IP)
