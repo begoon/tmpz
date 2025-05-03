@@ -6,10 +6,20 @@ default: run
 preset:
     @echo WIFI_SSID = '"{{ env("WIFI_SSID") }}"' > settings.py
     @echo WIFI_PASSWORD = '"{{ env("WIFI_PASSWORD") }}"' >> settings.py
+    @echo WS_HOST = '"{{ env("WS_HOST") }}"' >> settings.py
+    @echo WS_PORT = {{ env("WS_PORT") }} >> settings.py
+    @echo WS_PATH = '"{{ env("WS_PATH") }}"' >> settings.py
 
 run: preset
     uvx mpremote fs cp settings.py :
-    uvx mpremote run pico-https-client.py
+    uvx mpremote run https-client.py
+
+run-ws: preset reset
+    uvx mpremote fs cp settings.py :
+    uvx mpremote run ws.py
 
 packages:
     uv pip install -U micropython-rp2-pico_w-stubs --target typings
+
+reset:
+    uvx mpremote soft-reset

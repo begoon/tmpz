@@ -96,11 +96,6 @@ if connect_wifi():
 
     except OSError as e:
         print(f"os error: {e}")
-        # Common OSError codes:
-        # -2 = ENOMEM (Memory Error, might happen with large responses or SSL)
-        # -12 = EIO (I/O error, often network related)
-        # -78 = ECONNRESET (Connection reset by peer)
-        # Check MicroPython docs for more specific error codes
     except Exception as e:
         print(f"an unexpected error occurred: {e}")
 
