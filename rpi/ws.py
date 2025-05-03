@@ -1,3 +1,4 @@
+import binascii  # type: ignore
 import hashlib
 import os
 import socket
@@ -12,26 +13,9 @@ from machine import Pin, Timer  # type: ignore
 
 import settings
 
-BASE64 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-
-def base64_encode(data):
-    result = bytearray()
-    for i in range(0, len(data), 3):
-        triple = data[i : i + 3]
-        padding = 3 - len(triple)
-        triple += b"\x00" * padding
-
-        b = (triple[0] << 16) | (triple[1] << 8) | triple[2]
-
-        result.append(BASE64[(b >> 18) & 0x3F])
-        result.append(BASE64[(b >> 12) & 0x3F])
-        result.append(BASE64[(b >> 6) & 0x3F])
-        result.append(BASE64[b & 0x3F])
-
-    if padding:
-        result[-padding:] = b"=" * padding
-    return bytes(result).decode()
+def base64_encode(data: bytes) -> str:
+    return binascii.b2a_base64(data).decode().strip()
 
 
 def create_websocket_key():
