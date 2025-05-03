@@ -18,11 +18,11 @@ def base64_encode(data: bytes) -> str:
     return binascii.b2a_base64(data, newline=False).decode()
 
 
-def create_websocket_key():
+def create_websocket_key() -> str:
     return base64_encode(os.urandom(16))
 
 
-def create_handshake_request(host, path, websocket_key):
+def create_handshake_request(host: str, path: str, websocket_key: str) -> str:
     return (
         f"GET {path} HTTP/1.1\r\n"
         f"Host: {host}\r\n"
@@ -109,7 +109,7 @@ def decode_text_message(data: bytes) -> str:
 def websocket_client_ssl(host: str, port: int, path: str) -> None:
     key = create_websocket_key()
     raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    af = socket.getaddrinfo(host, 443)[0][-1]
+    af = socket.getaddrinfo(host, port)[0][-1]
     raw_sock.connect(af)
     sock = ssl.wrap_socket(raw_sock, server_hostname=host)
 
@@ -176,8 +176,6 @@ print(os.uname())
 WIFI_SSID = settings.WIFI_SSID
 WIFI_PASSWORD = settings.WIFI_PASSWORD
 
-IPIFY = "https://api.ipify.org"
-
 wlan = network.WLAN(network.STA_IF)
 
 
@@ -243,12 +241,18 @@ def connect_wifi():
         return False
 
 
+def disconnect_wifi() -> None:
+    print("disconnecting WIFI...")
+    wlan.disconnect()
+    wlan.active(False)
+    print("WIFI disconnected")
+
+
 IP: str | None = None
 
 HOST, PORT, PATH = settings.WS_HOST, settings.WS_PORT, settings.WS_PATH
 if connect_wifi():
-    response = urequests.get(IPIFY)
-    IP = response.text
+    IP = urequests.get("https://api.ipify.org").text
     print("public IP", IP)
 
     websocket_client_ssl(HOST, PORT, PATH)
