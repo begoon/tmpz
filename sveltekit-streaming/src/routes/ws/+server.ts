@@ -19,7 +19,7 @@ export async function GET({ request }) {
         async start(controller) {
             console.log(`[websocket] stream started`);
             for await (const msg of streamer()) {
-                controller.enqueue(new TextEncoder().encode(msg));
+                controller.enqueue(msg);
             }
         },
         async cancel() {
