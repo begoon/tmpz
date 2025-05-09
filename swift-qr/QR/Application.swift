@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct swift_qrApp: App {
+struct QRApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
