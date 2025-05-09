@@ -51,7 +51,10 @@ struct ContentView: View {
         Spacer()
         VStack {
             Spacer()
-            Image(systemName: "globe").imageScale(.large).symbolEffect(.pulse)
+            Image(systemName: "globe").imageScale(.large).symbolEffect(
+                .bounce,
+                options: .repeat(100)
+            )
             Text(message)
             Spacer()
         }
