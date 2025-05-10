@@ -1,10 +1,11 @@
+import AVFoundation
 import CodeScanner
 import SwiftUI
 
 struct ContentView: View {
     @State private var isShowingAbout = false
 
-    @State private var isShowingScanner = false
+    @State var scannedData: String = ""
 
     let message: AttributedString
 
@@ -21,20 +22,22 @@ struct ContentView: View {
         switch result {
         case .success(let scanResult):
             print("scanned: \(scanResult)")
+            scannedData = scanResult.string
         case .failure(let error):
             print("scanning failed: \(error)")
+            scannedData = "\(error)"
         }
-        isShowingScanner = false
     }
 
     let title = try! colorizedMarkdown(
         "^[QR](color: 'blue')" + " ~code~ " + "^[**scanner**](color: 'green')"
     )
+
     var body: some View {
         NavigationStack {
             Text(title).font(.largeTitle)
                 .bold().toolbar {
-                    Button("QR") { isShowingScanner = true }
+                    QRButtonView(completion: handleScan)
                     Button("About") { isShowingAbout = true }
                         .sheet(isPresented: $isShowingAbout) {
                             Text("Ha?")
@@ -42,16 +45,9 @@ struct ContentView: View {
                         }
                     Text(message)
                 }
-                .sheet(isPresented: $isShowingScanner) {
-                    CodeScannerView(
-                        codeTypes: [.qr],
-                        simulatedData: "-data-",
-                        completion: handleScan
-                    )
-                    Button("Close") { isShowingScanner = false }
-                }
         }.frame(height: 100)
         Spacer()
+        Text(scannedData)
         VStack {
             Spacer()
             Image(systemName: "globe").imageScale(.large).symbolEffect(
@@ -63,14 +59,44 @@ struct ContentView: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         DownloaderView()
-        Button("QR") { isShowingScanner = true }
-            .sheet(isPresented: $isShowingScanner) {
+        QRButtonView(completion: handleScan)
+    }
+}
+
+let codeTypes: [AVMetadataObject.ObjectType] = [
+    .aztec,
+    .code128,
+    .code39,
+    .code39Mod43,
+    .code93,
+    .dataMatrix,
+    .ean13,
+    .ean8,
+    .interleaved2of5,
+    .itf14,
+    .pdf417,
+    .qr,
+    .upce
+]
+
+struct QRButtonView: View {
+    @State private var isShowing: Bool = false
+
+    @State var completion: (Result<ScanResult, ScanError>) -> Void
+    @State var simulatedData = "<unknown>"
+
+    var body: some View {
+        Button("QR") { isShowing = true }
+            .sheet(isPresented: $isShowing) {
                 CodeScannerView(
-                    codeTypes: [.qr],
-                    simulatedData: "-data-",
-                    completion: handleScan
+                    codeTypes: codeTypes,
+                    showViewfinder: true,
+                    simulatedData: simulatedData,
+                    completion: { result in isShowing = false
+                        completion(result)
+                    }
                 )
-                Button("Close") { isShowingScanner = false }
+                Button("Close") { isShowing = false }
             }
     }
 }
