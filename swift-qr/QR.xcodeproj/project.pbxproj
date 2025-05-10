@@ -23,6 +23,7 @@
 /* Begin PBXFileReference section */
 		114AC9232DCE41C400C642E7 /* QR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		114AC9302DCE41C600C642E7 /* QRTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QRTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		11B6968C2DCF88A3008F6FF6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -60,6 +61,7 @@
 		114AC91A2DCE41C400C642E7 = {
 			isa = PBXGroup;
 			children = (
+				11B6968C2DCF88A3008F6FF6 /* Info.plist */,
 				114AC9252DCE41C400C642E7 /* QR */,
 				114AC9332DCE41C600C642E7 /* Tests */,
 				114AC9242DCE41C400C642E7 /* Products */,
@@ -338,6 +340,7 @@
 				DEVELOPMENT_TEAM = R3YW96985W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR code";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -367,6 +370,7 @@
 				DEVELOPMENT_TEAM = R3YW96985W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR code";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

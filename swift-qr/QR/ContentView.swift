@@ -62,7 +62,7 @@ struct ContentView: View {
             Spacer()
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        Text(try! AttributedString(markdown: "This is ^[in red](color: 'red')!", including: \.custom))
+        DownloaderView()
         Button("QR") { isShowingScanner = true }
             .sheet(isPresented: $isShowingScanner) {
                 CodeScannerView(
