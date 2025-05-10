@@ -19,18 +19,21 @@ struct ContentView: View {
 
     func handleScan(result: Result<ScanResult, ScanError>) {
         switch result {
-            case .success(let scanResult):
-                print("scanned: \(scanResult)")
-            case .failure(let error):
-                print("scanning failed: \(error)")
+        case .success(let scanResult):
+            print("scanned: \(scanResult)")
+        case .failure(let error):
+            print("scanning failed: \(error)")
         }
         isShowingScanner = false
     }
 
+    let title = try! colorizedMarkdown(
+        "^[QR](color: 'blue')" + " ~code~ " + "^[**scanner**](color: 'green')"
+    )
     var body: some View {
         NavigationStack {
-            Text("QR code scanner").bold()
-                .toolbar {
+            Text(title).font(.largeTitle)
+                .bold().toolbar {
                     Button("QR") { isShowingScanner = true }
                     Button("About") { isShowingAbout = true }
                         .sheet(isPresented: $isShowingAbout) {
@@ -39,7 +42,7 @@ struct ContentView: View {
                         }
                     Text(message)
                 }
-                .sheet(isPresented: self.$isShowingScanner) {
+                .sheet(isPresented: $isShowingScanner) {
                     CodeScannerView(
                         codeTypes: [.qr],
                         simulatedData: "-data-",
@@ -59,6 +62,7 @@ struct ContentView: View {
             Spacer()
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        Text(try! AttributedString(markdown: "This is ^[in red](color: 'red')!", including: \.custom))
         Button("QR") { isShowingScanner = true }
             .sheet(isPresented: $isShowingScanner) {
                 CodeScannerView(
@@ -69,6 +73,26 @@ struct ContentView: View {
                 Button("Close") { isShowingScanner = false }
             }
     }
+}
+
+extension AttributeScopes {
+    struct CustomAttributes: AttributeScope {
+        let swiftUI: SwiftUIAttributes
+        let foundation: FoundationAttributes
+
+        struct ColorNameAttribute: CodableAttributedStringKey, MarkdownDecodableAttributedStringKey {
+            typealias Value = String
+            static let name = "color"
+
+            static func decodeMarkdown(from markdown: String) throws -> Value {
+                return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+
+        var color: ColorNameAttribute
+    }
+
+    var custom: CustomAttributes.Type { CustomAttributes.self }
 }
 
 #Preview {
