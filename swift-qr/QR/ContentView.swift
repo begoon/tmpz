@@ -47,7 +47,13 @@ struct ContentView: View {
                 }
         }.frame(height: 100)
         Spacer()
-        Text(scannedData)
+        if scannedData.hasPrefix("http") {
+            Link(destination: URL(string: scannedData)!, label: {
+                Text(scannedData)
+            })
+        } else {
+            Text(scannedData)
+        }
         VStack {
             Spacer()
             Image(systemName: "globe").imageScale(.large).symbolEffect(
@@ -58,6 +64,7 @@ struct ContentView: View {
             Spacer()
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        WebSocketView()
         DownloaderView()
         QRButtonView(completion: handleScan)
     }
@@ -83,7 +90,7 @@ struct QRButtonView: View {
     @State private var isShowing: Bool = false
 
     @State var completion: (Result<ScanResult, ScanError>) -> Void
-    @State var simulatedData = "<unknown>"
+    @State var simulatedData = "https://google.com"
 
     var body: some View {
         Button("QR") { isShowing = true }

@@ -1,79 +1,95 @@
+import Foundation
 import SwiftUI
 
 struct WebSocketView: View {
     @State private var webSocketTask: URLSessionWebSocketTask?
-    @State private var receivedMessage: String = "No message yet"
+    @State private var receivedMessage: String = ""
     @State private var messageToSend: String = ""
     @State private var isConnected = false
 
+    var endpoint = "wss://ws.ifelse.io"
+
     var body: some View {
         VStack(spacing: 20) {
-            Text("Received: \(receivedMessage)")
+            Text("→ \(receivedMessage.lowercased())")
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
 
-            TextField("Enter message", text: $messageToSend)
+            TextField("", text: $messageToSend)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
+                .disableAutocorrection(true)
+                .autocapitalization(.none)
+                .keyboardType(.default)
+
+            Link(destination: URL(string: endpoint.replacingOccurrences(of: "wss://", with: "https://"))!, label: { Text(endpoint) })
 
             HStack(spacing: 20) {
                 Button("Connect") {
                     connectWebSocket()
                 }
                 .disabled(isConnected)
+                .buttonStyle(.borderedProminent)
 
                 Button("Send") {
                     sendMessage()
                 }
                 .disabled(!isConnected || messageToSend.isEmpty)
+                .buttonStyle(.borderedProminent)
 
                 Button("Disconnect") {
                     disconnectWebSocket()
                 }
                 .disabled(!isConnected)
+                .buttonStyle(.borderedProminent)
             }
         }
         .padding()
     }
 
     func connectWebSocket() {
-        guard let url = URL(string: "wss://ws.ifelse.io") else { return }
+        guard let url = URL(string: endpoint) else { return }
 
         let session = URLSession(configuration: .default)
         webSocketTask = session.webSocketTask(with: url)
         webSocketTask?.resume()
         isConnected = true
-        receiveMessage()
+
+        Task {
+            await receiveMessage()
+        }
     }
 
     func sendMessage() {
+        guard let task = webSocketTask else { return }
+
         let message = URLSessionWebSocketTask.Message.string(messageToSend)
-        webSocketTask?.send(message) { error in
+        task.send(message) { error in
             if let error = error {
-                print("WebSocket sending error: \(error)")
+                print("send error: \(error)")
             }
         }
         messageToSend = ""
     }
 
-    func receiveMessage() {
-        webSocketTask?.receive { result in
-            switch result {
-            case .success(let message):
+    @MainActor
+    func receiveMessage() async {
+        guard let task = webSocketTask else { return }
+
+        do {
+            while true {
+                let message = try await task.receive()
                 switch message {
                 case .string(let text):
-                    DispatchQueue.main.async {
-                        receivedMessage = text
-                    }
-                default:
-                    break
-                }
-                receiveMessage() // Keep listening
-            case .failure(let error):
-                print("WebSocket receiving error: \(error)")
-                DispatchQueue.main.async {
-                    isConnected = false
+                    receivedMessage = text
+                case .data(let data):
+                    receivedMessage = "<- binary data: \(data.count) bytes"
+                @unknown default:
+                    receivedMessage = "<- unknown type"
                 }
             }
+        } catch {
+            isConnected = false
         }
     }
 
@@ -81,4 +97,8 @@ struct WebSocketView: View {
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
         isConnected = false
     }
+}
+
+#Preview {
+    WebSocketView()
 }
