@@ -2,10 +2,15 @@ import AVFoundation
 import CodeScanner
 import SwiftUI
 
+struct Storage: Codable {
+    var scannedData: String = ""
+    var when: Date = Date()
+}
+
 struct ContentView: View {
     @State private var isShowingAbout = false
 
-    @State var scannedData: String = ""
+    @State var scannedData: String = "https://google.com"
 
     let message: AttributedString
 
@@ -40,10 +45,12 @@ struct ContentView: View {
                     QRButtonView(completion: handleScan)
                     Button("About") { isShowingAbout = true }
                         .sheet(isPresented: $isShowingAbout) {
-                            Text("Ha?")
-                            Button("Dismiss") { isShowingAbout = false }
+                            AboutView()
                         }
                     Text(message)
+                        .sheet(isPresented: $isShowingAbout) {
+                            AboutView()
+                        }
                 }
         }.frame(height: 100)
         Spacer()
@@ -64,6 +71,15 @@ struct ContentView: View {
             Spacer()
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        Button("Store") {
+            print("store")
+            let storage = Storage(scannedData: self.scannedData)
+            print(storage)
+            let data = try! JSONEncoder().encode(storage)
+            print(type(of: data), data)
+            persistDataLocally(data: data, filename: "swift_data.json")
+
+        }.buttonStyle(.borderedProminent)
         WebSocketView()
         DownloaderView()
         QRButtonView(completion: handleScan)
@@ -126,6 +142,37 @@ extension AttributeScopes {
     }
 
     var custom: CustomAttributes.Type { CustomAttributes.self }
+}
+
+func persistData(_ data: Data, to storageURL: URL, with filename: String) {
+    let documentsURL = storageURL.appendingPathComponent("Documents")
+    let fileURL = documentsURL.appendingPathComponent(filename)
+
+    do {
+        try FileManager.default.createDirectory(at: documentsURL, withIntermediateDirectories: true, attributes: nil)
+        try data.write(to: fileURL, options: .atomic)
+        print("saved to: \(fileURL.path)")
+    } catch {
+        print("save failed: \(error)")
+    }
+}
+
+func persistDataLocally(data: Data, filename: String) {
+    let storageURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    persistData(data, to: storageURL, with: filename)
+}
+
+func persistDataToCloud(data: Data, filename: String) {
+    print("ubiquityIdentityToken:",
+          FileManager.default.ubiquityIdentityToken != nil ?
+          "✅ icloud available" : "❌ icloud unavailable")
+
+    guard let storageURL = FileManager.default.url(forUbiquityContainerIdentifier: nil) else {
+        print("forUbiquityContainerIdentifier:", "❌ icloud not available")
+        return
+    }
+
+    persistData(data, to: storageURL, with: filename)
 }
 
 #Preview {
