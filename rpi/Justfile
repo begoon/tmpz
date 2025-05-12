@@ -1,7 +1,7 @@
 set dotenv-load := true
 set export := true
 
-default: run
+default: run-http
 
 preset:
     @echo WIFI_SSID = '"{{ env("WIFI_SSID") }}"' > settings.py
@@ -10,13 +10,17 @@ preset:
     @echo WS_PORT = {{ env("WS_PORT") }} >> settings.py
     @echo WS_PATH = '"{{ env("WS_PATH") }}"' >> settings.py
 
-run: preset
-    uvx mpremote fs cp settings.py :
-    uvx mpremote run https-client.py
+run-http: preset
+    uvx mpremote fs cp --force settings.py :
+    uvx mpremote run http.py
 
 run-ws: preset reset
     uvx mpremote fs cp settings.py :
     uvx mpremote run ws.py
+
+run-oled: reset
+    uvx mpremote fs cp ssd1306.py :
+    uvx mpremote run oled.py
 
 packages:
     uv pip install -U micropython-rp2-pico_w-stubs --target typings

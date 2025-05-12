@@ -20,11 +20,11 @@ wlan = network.WLAN(network.STA_IF)
 
 def connect_wifi():
     if wlan.isconnected():
-        print("already connected to wifi")
-        print("local IP", wlan.ifconfig()[0])
+        print("already connected to WIFI")
+        print("local IP:", wlan.ifconfig()[0])
         return True
 
-    print(f"connecting to wifi network: {WIFI_SSID}...")
+    print(f"connecting to WIFI network: {WIFI_SSID}...")
     print(wlan.ifconfig())
 
     wlan.active(True)
@@ -70,12 +70,12 @@ def connect_wifi():
 
     print("\r")
     if wlan.isconnected():
-        print("wifi connected successfully")
-        print("local ip:", wlan.ifconfig()[0])
+        print("WIFI connected successfully")
+        print("local IP:", wlan.ifconfig()[0])
         return True
     else:
         status = wlan.status()
-        print(f"failed to connect to wifim status code: {status}")
+        print(f"failed to connect to WIFI: {status}")
         wlan.active(False)
         return False
 
@@ -89,7 +89,7 @@ if connect_wifi():
         if response.status_code == 200:
             public_ip = response.text
             print("-" * 20)
-            print(f"successfully retrieved public IP: {public_ip}")
+            print(f"retrieved public IP: {public_ip}")
             print("-" * 20)
         else:
             print(f"error: {response.status_code} / {response.text}")
@@ -97,17 +97,17 @@ if connect_wifi():
     except OSError as e:
         print(f"os error: {e}")
     except Exception as e:
-        print(f"an unexpected error occurred: {e}")
+        print(f"unexpected error: {e}")
 
     finally:
         if response:
             response.close()
             print("response closed")
 
-    print("disconnecting wifi...")
+    print("disconnecting WIFI...")
     wlan.disconnect()
     wlan.active(False)
-    print("wifi disconnected")
+    print("WIFI disconnected")
 
 else:
-    print("cannot proceed without a wifi connection")
+    print("cannot proceed without a WIFI connection")

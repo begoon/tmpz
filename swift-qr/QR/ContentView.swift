@@ -20,7 +20,7 @@ struct ContentView: View {
     let message: AttributedString
 
     init() {
-        var message = try! AttributedString(markdown: "*A*loh*a!")
+        var message = try! AttributedString(markdown: "*A*loh*a*!")
         if let range = message.range(of: "oh") {
             message[range].font = .body.bold()
             message[range].foregroundColor = .red
