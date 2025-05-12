@@ -10,13 +10,12 @@ struct Storage: Codable {
 }
 
 struct ContentView: View {
-    @State private var isShowingAbout = false
+    @State private var showAbout = false
 
     @State var scannedData: String = "https://google.com"
     @State var storageURL: URL?
 
     @State private var showImporter = false
-    @State private var fileContent: String?
 
     let message: AttributedString
 
@@ -49,17 +48,13 @@ struct ContentView: View {
             Text(title).font(.largeTitle)
                 .bold().toolbar {
                     QRButtonView(completion: handleScan)
-                    Button("About") { isShowingAbout = true }
-                        .sheet(isPresented: $isShowingAbout) {
+                    Button("About") { showAbout = true }
+                        .sheet(isPresented: $showAbout) {
                             AboutView()
                         }
                     Text(message)
-                        .sheet(isPresented: $isShowingAbout) {
-                            AboutView()
-                        }
                 }
-        }.frame(height: 100)
-        Spacer()
+        }
         if scannedData.hasPrefix("http") {
             Link(destination: URL(string: scannedData)!, label: {
                 Text(scannedData)
@@ -69,42 +64,26 @@ struct ContentView: View {
         }
         VStack {
             Spacer()
-            Image(systemName: "globe").imageScale(.large).symbolEffect(
-                .bounce,
-                options: .repeat(100)
+            Image(systemName: "trash").imageScale(.large).symbolEffect(
+                .bounce, options: .repeat(100)
             )
             Text(message)
-            Spacer()
         }
         .frame(alignment: .top)
         HStack {
             Button("Store") {
-                print("store")
+                print("exporting")
                 let storage = Storage(scannedData: self.scannedData)
-                print(storage)
+                print("storage", storage)
                 let data = try! JSONEncoder().encode(storage)
-                print(type(of: data), data)
                 self.storageURL = persistDataLocally(data: data, filename: "swift_data.json")
             }.buttonStyle(.borderedProminent)
             if self.storageURL != nil {
-                let url: URL = self.storageURL!
-                ShareLink("Share", item: url).padding()
+                let url = self.storageURL!
+                ShareLink("Share", item: url)
             }
-        }
-        VStack(spacing: 20) {
-            Button("Import JSON File") {
+            Button("Import") {
                 showImporter = true
-            }
-
-            if let fileContent {
-                ScrollView {
-                    Text(fileContent)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(12)
-                .padding()
             }
         }
         .fileImporter(
@@ -115,22 +94,30 @@ struct ContentView: View {
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                do {
-                    guard FileManager.default.fileExists(atPath: url.path) else {
-                        fileContent = "File not found."
-                        return
-                    }
-                    let data = try Data(contentsOf: url)
-                    fileContent = String(decoding: data, as: UTF8.self)
-                } catch {
-                    fileContent = "Failed to read file: \(error.localizedDescription)"
+
+                print("importing", url)
+                guard url.startAccessingSecurityScopedResource() else {
+                    print("unable to access file due to security restrictions")
+                    return
+                }
+                defer { url.stopAccessingSecurityScopedResource() }
+
+                guard FileManager.default.fileExists(atPath: url.path) else {
+                    print("file not found")
+                    return
                 }
 
+                do {
+                    let data = try Data(contentsOf: url)
+                    let storage = try JSONDecoder().decode(Storage.self, from: data)
+                    print("IMPORTED", storage)
+                } catch {
+                    print("failed to read or parse file: \(error)")
+                }
             case .failure(let error):
-                fileContent = "Import failed: \(error.localizedDescription)"
+                print("import failed: \(error)")
             }
         }
-        .padding()
         WebSocketView()
         DownloaderView()
         QRButtonView(completion: handleScan)

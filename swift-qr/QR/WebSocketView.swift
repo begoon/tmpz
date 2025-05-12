@@ -12,8 +12,7 @@ struct WebSocketView: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("→ \(receivedMessage.lowercased())")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading).padding()
 
             TextField("", text: $messageToSend)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -44,7 +43,6 @@ struct WebSocketView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding()
     }
 
     func connectWebSocket() {
