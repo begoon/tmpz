@@ -2,6 +2,7 @@ import AVFoundation
 import CodeScanner
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct Storage: Codable {
     var scannedData: String = ""
@@ -13,6 +14,9 @@ struct ContentView: View {
 
     @State var scannedData: String = "https://google.com"
     @State var storageURL: URL?
+
+    @State private var showImporter = false
+    @State private var fileContent: String?
 
     let message: AttributedString
 
@@ -87,6 +91,46 @@ struct ContentView: View {
                 ShareLink("Share", item: url).padding()
             }
         }
+        VStack(spacing: 20) {
+            Button("Import JSON File") {
+                showImporter = true
+            }
+
+            if let fileContent {
+                ScrollView {
+                    Text(fileContent)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
+                .padding()
+            }
+        }
+        .fileImporter(
+            isPresented: $showImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                do {
+                    guard FileManager.default.fileExists(atPath: url.path) else {
+                        fileContent = "File not found."
+                        return
+                    }
+                    let data = try Data(contentsOf: url)
+                    fileContent = String(decoding: data, as: UTF8.self)
+                } catch {
+                    fileContent = "Failed to read file: \(error.localizedDescription)"
+                }
+
+            case .failure(let error):
+                fileContent = "Import failed: \(error.localizedDescription)"
+            }
+        }
+        .padding()
         WebSocketView()
         DownloaderView()
         QRButtonView(completion: handleScan)
@@ -152,11 +196,9 @@ extension AttributeScopes {
 }
 
 func persistData(_ data: Data, to storageURL: URL, with filename: String) -> URL? {
-    let documentsURL = storageURL.appendingPathComponent("Documents")
-    let fileURL = documentsURL.appendingPathComponent(filename)
-
+    let fileURL = storageURL.appendingPathComponent(filename)
     do {
-        try FileManager.default.createDirectory(at: documentsURL, withIntermediateDirectories: true, attributes: nil)
+        try FileManager.default.createDirectory(at: storageURL, withIntermediateDirectories: true, attributes: nil)
         try data.write(to: fileURL, options: .atomic)
         print("saved to: \(fileURL.path)")
     } catch {
