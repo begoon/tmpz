@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <style>
+            @keyframes spin {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            input {
+                font-size: 1em;
+                padding: 0.5em;
+                border: 2px solid #ccc;
+                border-radius: 4px;
+            }
+            button {
+                font-size: 1em;
+                padding: 0.5em 1em;
+                margin: 0.5em;
+                border-radius: 8px;
+                border: none;
+                background-color: #007bff;
+                color: white;
+                cursor: pointer;
+            }
+            button:hover {
+                background-color: #0056b3;
+            }
+            button:active {
+                background-color: #004085;
+            }
+            button:disabled {
+                background-color: #6c757d;
+                cursor: not-allowed;
+            }
+            #counter {
+                font-size: 2em;
+                margin: 0 0.1em;
+                display: inline-block;
+                vertical-align: middle;
+            }
+            input[type="url"]:invalid,
+            input[type="url"]:focus {
+                border: 2px solid red;
+            }
+        </style>
+    </head>
+    <body>
+        <div style="position: fixed; right: 0; top: 0; display: flex; justify-content: center; align-items: center">
+            <button id="decrementCounter">-</button>
+            <div id="counter" style="display: inline-block"></div>
+            <button id="incrementCounter">+</button>
+            <button id="resetCounter">0</button>
+        </div>
+        <div>
+            <div>
+                <input type="url" id="url" style="width: fit-content; min-width: 20em" />
+                <button id="connect">Connect</button>
+                <button id="disconnect" style="display: none">Disconnect</button>
+            </div>
+            <div id="spinner" style="animation: spin 1s linear infinite; font-size: 2em; display: none">⏳</div>
+            <div id="message-form" style="display: none; min-width: 20em">
+                <div>
+                    <input type="text" id="message" placeholder="message..." />
+                    <button id="send" disabled>Send</button>
+                </div>
+                <textarea
+                    id="log"
+                    style="
+                        min-width: 100%;
+                        width: fit-content;
+                        height: 20em;
+                        resize: none;
+                        font-family: monospace;
+                        font-size: 1em;
+                        padding: 0.5em;
+                        margin-top: 0.5em;
+                        border-radius: 4px;
+                        border: 2px solid #ccc;
+                    "
+                    readonly
+                ></textarea>
+            </div>
+        </div>
+
+        <script type="module">
+            import { signal, effect } from "https://esm.sh/@preact/signals@1.2.1";
+
+            const $ = (selector) => document.querySelector(selector);
+
+            const ws = signal(localStorage.getItem("ws") || "wss://echo.websocket.org/");
+            const counter = signal(parseInt(localStorage.getItem("counter") || "0", 10));
+            const exchange = signal([]);
+
+            effect(() => {
+                $("#log").value = exchange.value.join("\n");
+                $("#log").scrollTop = $("#log").scrollHeight;
+            });
+
+            let socket = undefined;
+            const connected = signal(false);
+            const connecting = signal(false);
+
+            function debounce(func, delay) {
+                let timeoutID;
+                return function (...args) {
+                    clearTimeout(timeoutID);
+                    timeoutID = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            function connect(onclose) {
+                exchange.value = [];
+                trace(`connecting to ${ws.value}`);
+                const socket = new WebSocket(ws.value);
+                socket.onopen = () => {
+                    console.info("open");
+                    trace("connected");
+
+                    connecting.value = false;
+                    connected.value = true;
+
+                    send(socket, "ha?");
+
+                    $("#message").focus();
+                };
+                socket.onmessage = (event) => {
+                    receive(socket, `${event.data}`.toLowerCase());
+                };
+                socket.onclose = () => {
+                    console.info("close");
+                    trace("disconnected");
+                    disconnect(socket);
+                    onclose?.();
+                };
+                socket.onerror = (error) => {
+                    console.error("error", error);
+                };
+                return socket;
+            }
+
+            function disconnect(socket) {
+                if (!socket) return;
+                socket.close();
+                connected.value = false;
+                return undefined;
+            }
+
+            function trace(message) {
+                exchange.value = [message, ...exchange.value];
+            }
+
+            function send(socket, message) {
+                if (!socket) return;
+                console.log(`message -> %c${message}`, "color: green");
+                socket.send(message);
+                trace("-> " + message);
+            }
+
+            function receive(socket, message) {
+                if (!socket) return;
+                console.log(`message <- %c${message}`, "color: blue");
+                trace("<- " + message);
+            }
+
+            effect(() => {
+                $("#counter").textContent = `${counter.value}`;
+                $("#resetCounter").disabled = counter.value === 0;
+                localStorage.setItem("counter", counter.value);
+            });
+
+            effect(() => {
+                $("#url").value = ws.value;
+                localStorage.setItem("ws", ws.value);
+                console.info("ws", ws.value);
+            });
+
+            effect(() => {
+                $("#connect").style.display = connected.value ? "none" : "inline-block";
+                $("#disconnect").style.display = connected.value ? "inline-block" : "none";
+                $("#message-form").style.display = connected.value ? "inline-block" : "none";
+            });
+
+            effect(() => {
+                $("#spinner").style.display = connecting.value ? "inline-block" : "none";
+            });
+
+            $("#incrementCounter").addEventListener("click", () => (counter.value += 1));
+            $("#decrementCounter").addEventListener("click", () => (counter.value -= 1));
+            $("#resetCounter").addEventListener("click", () => (counter.value = 0));
+
+            $("#url").addEventListener("input", (e) => {
+                try {
+                    new URL(e.target.value);
+                    ws.value = e.target.value;
+                } catch {
+                    $("#url").style.invalid = true;
+                }
+            });
+
+            $("#url").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    $("#connect").click();
+                }
+            });
+
+            $("#connect").addEventListener("click", () => {
+                if (socket) return;
+                socket = connect(() => {
+                    socket = undefined;
+                    $("#connect").focus();
+                });
+                connecting.value = true;
+            });
+
+            $("#send").addEventListener("click", () => {
+                const message = $("#message").value;
+                send(socket, message);
+            });
+
+            $("#message").addEventListener("keyup", (e) => {
+                const notEmpty = $("#message").value.trim().length > 0;
+                $("#send").disabled = !notEmpty;
+                if (e.key === "Enter" && notEmpty) {
+                    const message = $("#message").value;
+                    send(socket, message);
+                }
+            });
+
+            $("#disconnect").addEventListener("click", () => disconnect(socket));
+
+            $("#connect").focus();
+        </script>
+    </body>
+</html>
