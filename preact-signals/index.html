@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <script type="importmap">
+            {
+                "imports": {
+                    "preact": "https://esm.sh/preact@10.23.1",
+                    "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact",
+                    "signals": "https://esm.sh/@preact/signals@1.2.1"
+                }
+            }
+        </script>
         <meta charset="UTF-8" />
         <style>
             @keyframes spin {
@@ -63,13 +72,13 @@
                 <button id="disconnect" style="display: none">Disconnect</button>
             </div>
             <div id="spinner" style="animation: spin 1s linear infinite; font-size: 2em; display: none">⏳</div>
-            <div id="message-form" style="display: none; min-width: 20em">
+            <div id="message-form" style="display: none; min-width: 50em">
                 <div>
                     <input type="text" id="message" placeholder="message..." />
                     <button id="send" disabled>Send</button>
                 </div>
                 <textarea
-                    id="log"
+                    id="exchange"
                     style="
                         min-width: 100%;
                         width: fit-content;
@@ -86,19 +95,26 @@
                 ></textarea>
             </div>
         </div>
-
+        <div id="flash" style="position: fixed; right: 0; bottom: 0"></div>
         <script type="module">
-            import { signal, effect } from "https://esm.sh/@preact/signals@1.2.1";
-
             const $ = (selector) => document.querySelector(selector);
+
+            import { signal, effect } from "signals";
+            import { render } from "preact";
+            import { html } from "htm/preact";
 
             const ws = signal(localStorage.getItem("ws") || "wss://echo.websocket.org/");
             const counter = signal(parseInt(localStorage.getItem("counter") || "0", 10));
             const exchange = signal([]);
 
+            function flash(msg) {
+                return html`<b>${exchange.value.at(0) || "?"}</b>`;
+            }
+
             effect(() => {
-                $("#log").value = exchange.value.join("\n");
-                $("#log").scrollTop = $("#log").scrollHeight;
+                $("#exchange").value = exchange.value.join("\n");
+                $("#exchange").scrollTop = $("#exchange").scrollHeight;
+                render(html`<${flash} />`, $("#flash"));
             });
 
             let socket = undefined;
