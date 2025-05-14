@@ -10,17 +10,31 @@ preset:
     @echo WS_PORT = {{ env("WS_PORT") }} >> settings.py
     @echo WS_PATH = '"{{ env("WS_PATH") }}"' >> settings.py
 
-run-http: preset
+install-settings: preset
     uvx mpremote fs cp --force settings.py :
-    uvx mpremote run http.py
 
-run-ws: preset reset
-    uvx mpremote fs cp settings.py :
-    uvx mpremote run ws.py
+# http.py
+run-http: install-settings main-http run
 
-run-oled: reset
+main-http:
+    cp http.py main.py
+
+# ws.py
+run-ws: reset install-settings main-ws run
+
+main-ws:
+    cp ws.py main.py
+
+# oled.py
+run-oled: reset main-oled run
+
+main-oled:
     uvx mpremote fs cp ssd1306.py :
-    uvx mpremote run oled.py
+    cp oled.py main.py
+
+# ---
+run:
+    uvx mpremote run main.py
 
 packages:
     uv pip install -U micropython-rp2-pico_w-stubs --target typings
