@@ -4,10 +4,15 @@ import framebuf  # type: ignore
 import utime  # type: ignore
 from machine import I2C, Pin  # type: ignore
 
+import settings
 from ssd1306 import SSD1306_I2C
 
 pix_res_x = 128
 pix_res_y = 64
+
+I2C_CHANNEL = settings.I2C_CHANNEL
+I2C_SCL = settings.I2C_SCL
+I2C_SDA = settings.I2C_SDA
 
 
 def init_i2c(device, scl_pin, sda_pin):
@@ -100,8 +105,8 @@ def display_animation(oled):
 
 
 def main():
-    i2c_dev = init_i2c(device=1, scl_pin=27, sda_pin=26)
-    oled = SSD1306_I2C(pix_res_x, pix_res_y, i2c_dev)
+    i2c = init_i2c(device=I2C_CHANNEL, scl_pin=I2C_SCL, sda_pin=I2C_SDA)
+    oled = SSD1306_I2C(pix_res_x, pix_res_y, i2c)
     oled.invert(1)
 
     while True:

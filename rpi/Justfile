@@ -10,6 +10,10 @@ preset:
     @echo WS_PORT = {{ env("WS_PORT") }} >> settings.py
     @echo WS_PATH = '"{{ env("WS_PATH") }}"' >> settings.py
 
+    @echo I2C_CHANNEL = {{ env("I2C_CHANNEL") }} >> settings.py
+    @echo I2C_SDA = {{ env("I2C_SDA") }} >> settings.py
+    @echo I2C_SCL = {{ env("I2C_SCL") }} >> settings.py
+
 install-settings: preset
     uvx mpremote fs cp --force settings.py :
 
@@ -26,11 +30,14 @@ main-ws:
     cp ws.py main.py
 
 # oled.py
-run-oled: reset main-oled run
+run-oled: reset install-settings main-oled install-ssd1306 run
 
 main-oled:
-    uvx mpremote fs cp ssd1306.py :
     cp oled.py main.py
+
+# 
+install-ssd1306: preset
+    uvx mpremote fs cp ssd1306.py :
 
 # ---
 run:
