@@ -130,6 +130,10 @@
                 return html`<b>${exchange.value.at(0) || "?"}</b>`;
             }
 
+            document.addEventListener("errorEvent", function (event) {
+                console.log(`event: %c${event.detail}`, "color: lightblue");
+            });
+
             effect(() => {
                 $("#exchange").value = exchange.value.join("\n");
                 $("#exchange").scrollTop = $("#exchange").scrollHeight;
@@ -205,6 +209,9 @@
             effect(() => {
                 $("#counter").textContent = `${counter.value}`;
                 $("#resetCounter").disabled = counter.value === 0;
+                if (counter.value === 7) {
+                    document.dispatchEvent(new CustomEvent("errorEvent", { detail: "counter reached 7" }));
+                }
                 localStorage.setItem("counter", counter.value);
             });
 
