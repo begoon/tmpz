@@ -83,6 +83,21 @@
                 <span class="link">ws://localhost:8000/ws</span>
                 <span class="link">wss://echo.websocket.org</span>
             </div>
+            <style>
+                #monitor table {
+                    border-collapse: collapse;
+                    border: 1px solid #ccc;
+                    margin-top: 8px;
+                }
+                #monitor tr {
+                    border-bottom: 1px solid #ddd;
+                }
+                #monitor td {
+                    padding: 8px;
+                    text-align: left;
+                    border: 1px solid #ccc;
+                }
+            </style>
             <div id="monitor"></div>
             <div id="spinner" style="animation: spin 1s linear infinite; font-size: 2em; display: none">⏳</div>
             <div id="message-form" style="display: none; min-width: 50em">
@@ -299,17 +314,21 @@
             $("#connect").focus();
 
             const monitor = $("#monitor");
-            for (const url of ["google.com", "aws.amazon.com", "github.com"]) {
-                const id = "X-" + url.replace(".", "-");
-                const element = monitor.appendChild(
-                    createElement("div", {
-                        id,
-                        style: "color: gray; margin-top: 0.5em; padding: 0.5em; border-radius: 4px; border: 2px solid #ccc;",
-                    })
-                );
-                await (async function _(url) {
+            const table = monitor.appendChild(createElement("table", { id: "monitor-table" }));
+
+            const monitors = {};
+            for (const url of ["google.com", "aws.amazon.com", "github.com", "echo.websocket.org"]) {
+                const tr = table.appendChild(createElement("tr", {}));
+
+                tr.appendChild(createElement("td", { textContent: url }));
+                monitors[url] = tr.appendChild(createElement("td", { textContent: "0ms" }));
+            }
+
+            for (const url of Object.keys(monitors)) {
+                const td = monitors[url];
+                (async function _(url) {
                     const elapsed = (await (await fetch(`/ping/${url}`)).json()).elapsed;
-                    element.textContent = `${url} ${elapsed.toFixed(2)}ms`;
+                    td.textContent = elapsed.toFixed(2) + `ms`;
                     setTimeout(() => _(url), 1000);
                 })(url);
             }
