@@ -1,0 +1,2 @@
+run:
+    swift main.swift 2 5Mb
