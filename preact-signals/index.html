@@ -17,6 +17,10 @@
                 border: 2px solid #ccc;
                 border-radius: 4px;
             }
+            input[type="url"]:invalid,
+            input[type="url"]:focus {
+                border: 2px solid red;
+            }
             button {
                 font-size: 1em;
                 padding: 0.5em 1em;
@@ -43,18 +47,19 @@
                 display: inline-block;
                 vertical-align: middle;
             }
-            input[type="url"]:invalid,
-            input[type="url"]:focus {
-                border: 2px solid red;
-            }
         </style>
     </head>
     <body>
         <div style="position: fixed; right: 0; top: 0; display: flex; justify-content: center; align-items: center">
-            <button id="decrementCounter">-</button>
-            <div id="counter" style="display: inline-block"></div>
-            <button id="incrementCounter">+</button>
-            <button id="resetCounter">0</button>
+            <button id="decrement">-</button>
+            <div id="counter"></div>
+            <button id="increment">+</button>
+            <style>
+                #reset[data-status="error"] {
+                    background-color: red;
+                }
+            </style>
+            <button id="reset" data-status="error">0</button>
         </div>
         <div>
             <div>
@@ -64,20 +69,19 @@
             </div>
             <div>
                 <style>
-                    span.wslink {
+                    .link {
                         font-size: 0.8em;
                         color: gray;
                         margin-left: 0.5em;
                         text-decoration: underline;
                         cursor: pointer;
                     }
-                    span.wslink:hover {
-                        text-decoration: none;
+                    .link:hover {
                         color: black;
                     }
                 </style>
-                <span class="wslink">ws://localhost:8000/ws</span>
-                <span class="wslink">wss://echo.websocket.org</span>
+                <span class="link">ws://localhost:8000/ws</span>
+                <span class="link">wss://echo.websocket.org</span>
             </div>
             <div id="spinner" style="animation: spin 1s linear infinite; font-size: 2em; display: none">⏳</div>
             <div id="message-form" style="display: none; min-width: 50em">
@@ -103,46 +107,72 @@
                 ></textarea>
             </div>
         </div>
-        <div id="flash" style="position: fixed; right: 0; bottom: 0"></div>
-        <script type="importmap">
-            {
-                "imports": {
-                    "preact": "https://esm.sh/preact@10.23.1",
-                    "preact/": "https://esm.sh/preact@10.23.1/",
-                    "@preact/signals": "https://esm.sh/@preact/signals@1.3.0?external=preact",
-                    "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact"
-                }
-            }
-        </script>
+        <div style="position: fixed; right: 0; bottom: 0"><b id="flash"></b></div>
         <script type="module">
             const $ = (selector) => document.querySelector(selector);
             const $$ = (selector) => document.querySelectorAll(selector);
 
-            import { signal, effect } from "@preact/signals";
-            import { render } from "preact";
-            import { html } from "htm/preact";
-
-            const ws = signal(localStorage.getItem("ws") || "wss://echo.websocket.org/");
-            const counter = signal(parseInt(localStorage.getItem("counter") || "0", 10));
-            const exchange = signal([]);
-
-            function flash(msg) {
-                return html`<b>${exchange.value.at(0) || "?"}</b>`;
+            function $state(value, effect) {
+                let current = value;
+                effect({ current: value });
+                return {
+                    set: (value) => {
+                        if (current === value) return;
+                        effect({ previous: current, current: value });
+                        current = value;
+                    },
+                    get: () => current,
+                };
             }
 
-            document.addEventListener("errorEvent", function (event) {
-                console.log(`event: %c${event.detail}`, "color: lightblue");
+            const ws = $state(localStorage.getItem("ws") || "wss://echo.websocket.org/", ({ current }) => {
+                $("#url").value = current;
+                localStorage.setItem("ws", current);
             });
 
-            effect(() => {
-                $("#exchange").value = exchange.value.join("\n");
-                $("#exchange").scrollTop = $("#exchange").scrollHeight;
-                render(html`<${flash} />`, $("#flash"));
+            const initialCounter = parseInt(localStorage.getItem("counter") || "0", 10);
+            const counter = $state(initialCounter, (change) => {
+                const { current } = change;
+                $("#counter").textContent = `${current}`;
+
+                const reset = $("#reset");
+                reset.disabled = current === 0;
+                reset.dataset.status = current === 7 ? "error" : "normal";
+                if (current === 7) {
+                    document.dispatchEvent(new CustomEvent("errorEvent", { detail: "counter reached 7" }));
+                }
+                localStorage.setItem("counter", current);
+            });
+
+            const exchange = $state([], ({ current }) => {
+                const exchange = $("#exchange");
+                exchange.value = current.join("\n");
+                exchange.scrollTop = exchange.scrollHeight;
+
+                const first = current.at(0) || "?";
+                $("#flash").innerHTML = first;
+
+                let color = "black";
+                if (first.includes("<-")) color = "blue";
+                else if (first.includes("->")) color = "green";
+                $("#flash").style.color = color;
+            });
+
+            document.addEventListener("errorEvent", function (event) {
+                console.log(`event: %c${event.detail}`, "color: red");
             });
 
             let socket = undefined;
-            const connected = signal(false);
-            const connecting = signal(false);
+
+            const connected = $state(false, ({ current }) => {
+                $("#connect").style.display = current ? "none" : "inline-block";
+                $("#disconnect").style.display = current ? "inline-block" : "none";
+                $("#message-form").style.display = current ? "inline-block" : "none";
+            });
+
+            const connecting = $state(false, ({ current }) => {
+                $("#spinner").style.display = current ? "inline-block" : "none";
+            });
 
             function debounce(func, delay) {
                 let timeoutID;
@@ -153,15 +183,15 @@
             }
 
             function connect(onclose) {
-                exchange.value = [];
-                trace(`connecting to ${ws.value}`);
-                const socket = new WebSocket(ws.value);
+                exchange.set([]);
+                trace(`connecting to ${ws.get()}`);
+                const socket = new WebSocket(ws.get());
                 socket.onopen = () => {
                     console.info("open");
                     trace("connected");
 
-                    connecting.value = false;
-                    connected.value = true;
+                    connecting.set(false);
+                    connected.set(true);
 
                     send(socket, "ha?");
 
@@ -185,12 +215,12 @@
             function disconnect(socket) {
                 if (!socket) return;
                 socket.close(1000);
-                connected.value = false;
+                connected.set(false);
                 return undefined;
             }
 
             function trace(message) {
-                exchange.value = [message, ...exchange.value];
+                exchange.set([message, ...exchange.get()]);
             }
 
             function send(socket, message) {
@@ -206,38 +236,15 @@
                 trace("<- " + message);
             }
 
-            effect(() => {
-                $("#counter").textContent = `${counter.value}`;
-                $("#resetCounter").disabled = counter.value === 0;
-                if (counter.value === 7) {
-                    document.dispatchEvent(new CustomEvent("errorEvent", { detail: "counter reached 7" }));
-                }
-                localStorage.setItem("counter", counter.value);
-            });
-
-            effect(() => {
-                $("#url").value = ws.value;
-                localStorage.setItem("ws", ws.value);
-            });
-
-            effect(() => {
-                $("#connect").style.display = connected.value ? "none" : "inline-block";
-                $("#disconnect").style.display = connected.value ? "inline-block" : "none";
-                $("#message-form").style.display = connected.value ? "inline-block" : "none";
-            });
-
-            effect(() => {
-                $("#spinner").style.display = connecting.value ? "inline-block" : "none";
-            });
-
-            $("#incrementCounter").addEventListener("click", () => (counter.value += 1));
-            $("#decrementCounter").addEventListener("click", () => (counter.value -= 1));
-            $("#resetCounter").addEventListener("click", () => (counter.value = 0));
+            $("#increment").addEventListener("click", () => counter.set(counter.get() + 1));
+            $("#decrement").addEventListener("click", () => counter.set(counter.get() - 1));
+            $("#reset").addEventListener("click", () => counter.set(0));
 
             $("#url").addEventListener("input", (e) => {
                 try {
                     new URL(e.target.value);
-                    ws.value = e.target.value;
+                    ws.set(e.target.value);
+                    $("#url").style.invalid = false;
                 } catch {
                     $("#url").style.invalid = true;
                 }
@@ -253,7 +260,7 @@
                     socket = undefined;
                     $("#connect").focus();
                 });
-                connecting.value = true;
+                connecting.set(true);
             });
 
             $("#send").addEventListener("click", () => {
@@ -272,11 +279,9 @@
 
             $("#disconnect").addEventListener("click", () => disconnect(socket));
 
-            $$("span.wslink").forEach((element) => {
+            $$(".link").forEach((element) => {
                 element.addEventListener("click", (e) => {
-                    ws.value = e.target.innerText;
-                    $("#url").value = ws.value;
-                    console.log("ws.value", ws.value);
+                    ws.set(e.target.innerText);
                 });
             });
 
