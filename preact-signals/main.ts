@@ -26,5 +26,13 @@ Deno.serve({ port: 8000 }, async (req) => {
         return response;
     }
 
+    const match = new URLPattern({ pathname: "/ping/:path" }).exec(req.url);
+    if (match) {
+        const path = match.pathname.groups.path;
+        const started = performance.now();
+        (await Deno.connect({ hostname: path, port: 443, transport: "tcp" })).close();
+        const elapsed = performance.now() - started;
+        return Response.json({ elapsed });
+    }
     return new Response("ha?", { status: 404 });
 });
