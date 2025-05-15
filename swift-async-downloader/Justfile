@@ -1,2 +1,5 @@
 run:
     swift main.swift 2 5Mb
+
+clean-git:
+    git clean -dfx
