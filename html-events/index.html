@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body>
+        <div>
+            <input type="text" id="input" />
+            <select id="select">
+                <option value="1">one</option>
+                <option value="2" selected>two</option>
+                <option value="3">three</option>
+            </select>
+        </div>
+        <div style="display: flex; flex-direction: row; gap: 1em">
+            <canvas
+                id="canvas"
+                style="display: inline-block; border: 1px solid black; width: 300px; height: 300px"
+            ></canvas>
+            <output id="xy" style="display: grid; grid-template-columns: 10em 10em; height: fit-content"></output>
+        </div>
+    </body>
+    <script type="module">
+        console.log("ha?");
+        const event = [
+            "keydown",
+            "keyup",
+            "input",
+            "change",
+            "submit",
+            "focus",
+            "blur",
+            "click",
+            "dblclick",
+            "focusin",
+            "focusout",
+            //
+            "pointerdown",
+            "pointerup",
+            "pointermove",
+            "pointerover",
+            "pointerout",
+            "pointerenter",
+            "pointerleave",
+            "pointercancel",
+            "pointerlockchange",
+            "pointerlockerror",
+            "pointercapturechange",
+            "pointercaptureerror",
+            "pointerrawupdate",
+            "pointercancel",
+            "pointerlockchange",
+            "pointerlockerror",
+            "pointercapturechange",
+            "pointercaptureerror",
+            "pointerrawupdate",
+            //
+            "mouseout",
+            "mouseenter",
+            "mouseleave",
+            "mousedown",
+            "mouseup",
+            "mousemove",
+            "mouseover",
+            //
+            "wheel",
+            "scroll",
+            //
+            "resize",
+            "resizeend",
+            "resizestart",
+            "resizecancel",
+            //
+            "drag",
+            "dragstart",
+            "dragend",
+            "dragenter",
+            "dragover",
+            "dragleave",
+            "dragdrop",
+            "draggesture",
+            "draggestureend",
+            "draggesturecancel",
+            "draggesturestart",
+            "draggesturemove",
+            "draggestureenter",
+            "draggestureleave",
+            "draggestureover",
+            "draggestureout",
+            "draggesturedrop",
+            //
+            "contextmenu",
+            "contextmenuhide",
+            "contextmenuitemclick",
+            //
+            "touchstart",
+            "touchend",
+            "touchmove",
+            "touchcancel",
+            "touchenter",
+            "touchleave",
+            "touchcancel",
+            "touchforcechange",
+            "touchaction",
+            "touchactionchange",
+            "touchactioncancel",
+            "touchactionstart",
+            "touchactionend",
+            "touchactionmove",
+            "touchactionenter",
+            "touchactionleave",
+        ];
+
+        const handler = (e) => {
+            const { key, code, type } = e;
+            const ignore = ["mouse", "pointer", "drag", "touch"];
+            if (ignore.some((i) => type.startsWith(i))) return;
+            const { value } = e.target;
+            const data = { type, key, code, value };
+            const pairs = Object.entries(data).filter(([_, v]) => v !== undefined);
+            const str = pairs
+                .filter(([_, v]) => v !== undefined)
+                .map(([k, v]) => [k, k == "value" ? `"${v}"` : v])
+                .map(([k, v]) => `%c${k}=%c${v}`)
+                .join(", ");
+            const colors = Array.from({ length: pairs.length * 2 }, (_, i) => {
+                return i % 2 === 0 ? "color: blue" : "color: green";
+            });
+            console.log(str, ...colors);
+        };
+
+        const handlerX = (e) => {
+            const values = [];
+
+            let obj = e;
+            while (obj) {
+                for (const name of Object.getOwnPropertyNames(obj)) {
+                    const value = e[name];
+                    if (name.endsWith("X")) {
+                        values.push(`${name} = ${value}`);
+                    } else if (name.endsWith("Y")) {
+                        values.push(`${name} = ${value}`);
+                    }
+                }
+                obj = Object.getPrototypeOf(obj);
+            }
+
+            const xy = document.querySelector("#xy");
+            xy.innerHTML = values.map((v) => `<div>${v}</div>`).join("");
+        };
+        const input = document.querySelector("#input");
+        event.forEach((event) => input.addEventListener(event, handler, { passive: true }));
+        const select = document.querySelector("#select");
+        event.forEach((event) => select.addEventListener(event, handler, { passive: true }));
+
+        const canvas = document.querySelector("#canvas");
+        event.forEach((event) => canvas.addEventListener(event, handlerX, { passive: true }));
+    </script>
+</html>
