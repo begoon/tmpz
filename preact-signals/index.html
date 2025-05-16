@@ -129,7 +129,7 @@
         <script type="module">
             const $ = (selector) => document.querySelector(selector);
             const $$ = (selector) => document.querySelectorAll(selector);
-            const createElement = (tag, attributes) => {
+            const $element = (tag, attributes) => {
                 const element = document.createElement(tag);
                 Object.entries(attributes).forEach(([key, value]) => {
                     if (key === "textContent") element.textContent = value;
@@ -139,7 +139,15 @@
                 });
                 return element;
             };
-            const createTextNode = (text) => document.createTextNode(text);
+            const $textNode = (text) => document.createTextNode(text);
+
+            HTMLElement.prototype.on = function (event, callback) {
+                this.addEventListener(event, callback);
+            };
+
+            EventTarget.prototype.on = function (event, callback) {
+                this.addEventListener(event, callback);
+            };
 
             function $state(value, effect) {
                 let current = value;
@@ -264,11 +272,11 @@
                 trace("<- " + message);
             }
 
-            $("#increment").addEventListener("click", () => counter.set(counter.get() + 1));
-            $("#decrement").addEventListener("click", () => counter.set(counter.get() - 1));
-            $("#reset").addEventListener("click", () => counter.set(0));
+            $("#increment").on("click", () => counter.set(counter.get() + 1));
+            $("#decrement").on("click", () => counter.set(counter.get() - 1));
+            $("#reset").on("click", () => counter.set(0));
 
-            $("#url").addEventListener("input", (e) => {
+            $("#url").on("input", (e) => {
                 try {
                     new URL(e.target.value);
                     ws.set(e.target.value);
@@ -278,11 +286,11 @@
                 }
             });
 
-            $("#url").addEventListener("keydown", (e) => {
+            $("#url").on("keydown", (e) => {
                 if (e.key === "Enter") $("#connect").click();
             });
 
-            $("#connect").addEventListener("click", () => {
+            $("#connect").on("click", () => {
                 if (socket) return;
                 socket = connect(() => {
                     socket = undefined;
@@ -291,12 +299,12 @@
                 connecting.set(true);
             });
 
-            $("#send").addEventListener("click", () => {
+            $("#send").on("click", () => {
                 const message = $("#message").value;
                 send(socket, message);
             });
 
-            $("#message").addEventListener("keyup", (e) => {
+            $("#message").on("keyup", (e) => {
                 const notEmpty = $("#message").value.trim().length > 0;
                 $("#send").disabled = !notEmpty;
                 if (e.key === "Enter" && notEmpty) {
@@ -305,23 +313,23 @@
                 }
             });
 
-            $("#disconnect").addEventListener("click", () => disconnect(socket));
+            $("#disconnect").on("click", () => disconnect(socket));
 
             $$(".link").forEach((element) => {
-                element.addEventListener("click", (e) => ws.set(e.target.innerText));
+                element.on("click", (e) => ws.set(e.target.innerText));
             });
 
             $("#connect").focus();
 
             const monitor = $("#monitor");
-            const table = monitor.appendChild(createElement("table", { id: "monitor-table" }));
+            const table = monitor.appendChild($element("table", { id: "monitor-table" }));
 
             const monitors = {};
             for (const url of ["google.com", "aws.amazon.com", "github.com", "echo.websocket.org"]) {
-                const tr = table.appendChild(createElement("tr", {}));
+                const tr = table.appendChild($element("tr", {}));
 
-                tr.appendChild(createElement("td", { textContent: url }));
-                monitors[url] = tr.appendChild(createElement("td", { textContent: "0ms" }));
+                tr.appendChild($element("td", { textContent: url }));
+                monitors[url] = tr.appendChild($element("td", { textContent: "0ms" }));
             }
 
             for (const url of Object.keys(monitors)) {
