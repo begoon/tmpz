@@ -19,6 +19,10 @@
                 style="display: inline-block; border: 1px solid black; width: 300px; height: 300px"
             ></canvas>
             <output id="xy" style="display: grid; grid-template-columns: 10em 10em; height: fit-content"></output>
+            <textarea
+                id="textarea"
+                style="display: inline-block; border: 1px solid black; width: 300px; height: 300px"
+            ></textarea>
         </div>
     </body>
     <script type="module">
@@ -118,10 +122,16 @@
             if (ignore.some((i) => type.startsWith(i))) return;
             const { value } = e.target;
             const data = { type, key, code, value };
+            data.target = e.target.type;
             const pairs = Object.entries(data).filter(([_, v]) => v !== undefined);
+            if (e.target.type === "textarea") {
+                const { selectionStart: from, selectionEnd: to } = e.target;
+                const selected = value.substring(from, to);
+                pairs.push(["from", from], ["to", to], ["selected", selected]);
+            }
             const str = pairs
                 .filter(([_, v]) => v !== undefined)
-                .map(([k, v]) => [k, k == "value" ? `"${v}"` : v])
+                .map(([k, v]) => [k, k == "value" || k == "selected" ? `"${v}"` : v])
                 .map(([k, v]) => `%c${k}=%c${v}`)
                 .join(", ");
             const colors = Array.from({ length: pairs.length * 2 }, (_, i) => {
@@ -153,6 +163,8 @@
         event.forEach((event) => input.addEventListener(event, handler, { passive: true }));
         const select = document.querySelector("#select");
         event.forEach((event) => select.addEventListener(event, handler, { passive: true }));
+        const textarea = document.querySelector("#textarea");
+        event.forEach((event) => textarea.addEventListener(event, handler, { passive: true }));
 
         const canvas = document.querySelector("#canvas");
         event.forEach((event) => canvas.addEventListener(event, handlerX, { passive: true }));
