@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body></body>
+    <script type="module">
+        import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.5.5.js";
+        const { button, div, pre, span, input, a, textarea, label, p, table, thead, tbody, tr, th, td } = van.tags;
+
+        // --------------------------------------------------------------
+        const Counter = () => {
+            const counter = van.state(0);
+            return div(
+                "❤️ ",
+                counter,
+                " ",
+                button({ onclick: () => ++counter.val }, "👍"),
+                button({ onclick: () => --counter.val }, "👎")
+            );
+        };
+        van.add(document.body, Counter());
+
+        // --------------------------------------------------------------
+        const buttonStyleList = [
+            ["👆", "👇"],
+            ["👍", "👎"],
+            ["🔼", "🔽"],
+            ["⬆️", "⬇️"],
+            ["⏫", "⏬"],
+            ["📈", "📉"],
+        ];
+
+        const FlexibleCounter = ({ buttons }) => {
+            const counter = van.state(0);
+            const dom = div(
+                "❤️ ",
+                counter,
+                " ",
+                button({ onclick: () => ++counter.val }, buttons[0]),
+                button({ onclick: () => --counter.val }, buttons[1]),
+                button({ onclick: () => dom.remove() }, "❌")
+            );
+            return dom;
+        };
+
+        const CounterSet = () => {
+            const container = div();
+            return div(
+                container,
+                button(
+                    {
+                        onclick: () =>
+                            van.add(
+                                container,
+                                FlexibleCounter({
+                                    buttons: buttonStyleList[Math.floor(Math.random() * buttonStyleList.length)],
+                                })
+                            ),
+                    },
+                    "➕"
+                )
+            );
+        };
+        van.add(document.body, CounterSet());
+
+        // --------------------------------------------------------------
+        const Stopwatch = () => {
+            const elapsed = van.state(0);
+            let id;
+            const start = () => (id = id || setInterval(() => (elapsed.val += 0.01), 10));
+            return span(
+                pre({ style: "display: inline;" }, () => elapsed.val.toFixed(2), "s "),
+                button({ onclick: start }, "Start"),
+                button({ onclick: () => (clearInterval(id), (id = 0)) }, "Stop"),
+                button({ onclick: () => (clearInterval(id), (id = 0), (elapsed.val = 0)) }, "Reset")
+            );
+        };
+        van.add(document.body, Stopwatch());
+
+        // --------------------------------------------------------------
+        const TodoItem = ({ text }) =>
+            div(
+                input({
+                    type: "checkbox",
+                    onchange: (e) =>
+                        (e.target.closest("div").querySelector("span").style["text-decoration"] = e.target.checked
+                            ? "line-through"
+                            : ""),
+                }),
+                span(text),
+                a({ onclick: (e) => e.target.closest("div").remove() }, "❌")
+            );
+
+        const TodoList = () => {
+            const inputDom = input({ type: "text" });
+            const dom = div(
+                inputDom,
+                button({ onclick: () => van.add(dom, TodoItem({ text: inputDom.value })) }, "Add")
+            );
+            return dom;
+        };
+        van.add(document.body, TodoList());
+
+        // --------------------------------------------------------------
+        const Label = (text) => span({ class: "label" }, text);
+        const Value = (text) => span({ class: "value" }, text);
+
+        const Inspector = () => {
+            const keyEvent = van.state(new KeyboardEvent("keydown"));
+
+            const Result = (prop) =>
+                span(
+                    Label(prop + ": "),
+                    Value(() => keyEvent.val[prop] || "-")
+                );
+
+            return div(
+                div(
+                    input({
+                        placeholder: "Focus here and press keys…",
+                        style: "width: 260px",
+                        onkeydown: (e) => (e.preventDefault(), (keyEvent.val = e)),
+                    })
+                ),
+                div(
+                    { style: "display: grid; grid-template-columns: repeat(3, 8em);" },
+                    Result("key"),
+                    Result("code"),
+                    Result("which"),
+                    Result("keyCode"),
+                    Result("ctrlKey"),
+                    Result("metaKey"),
+                    Result("altKey"),
+                    Result("shiftKey")
+                )
+            );
+        };
+        van.add(document.body, Inspector());
+
+        // --------------------------------------------------------------
+        const Calculator = () => {
+            let lhs = van.state(null),
+                op = null,
+                rhs = van.state(0);
+
+            const calc = (lhs, op, rhs) =>
+                !op || lhs === null
+                    ? rhs
+                    : op === "+"
+                    ? lhs + rhs
+                    : op === "-"
+                    ? lhs - rhs
+                    : op === "x"
+                    ? lhs * rhs
+                    : lhs / rhs;
+
+            const onclick = (e) => {
+                const str = e.target.innerText;
+                if (str >= "0" && str <= "9")
+                    typeof rhs.val === "string" ? (rhs.val += str) : (rhs.val = rhs.val * 10 + Number(str));
+                else if (str === "AC") (lhs.val = op = null), (rhs.val = 0);
+                else if (str === "+/-" && rhs.val) rhs.val = -rhs.val;
+                else if (str === "%" && rhs.val) rhs.val *= 0.01;
+                else if (str === "+" || str === "-" || str === "x" || str === "÷") {
+                    if (rhs.val !== null) (lhs.val = calc(lhs.val, op, Number(rhs.val))), (rhs.val = null);
+                    op = str;
+                } else if (str === "=" && op && rhs.val !== null)
+                    (lhs.val = calc(lhs.val, op, Number(rhs.val))), (op = null), (rhs.val = null);
+                else if (str === ".") rhs.val = rhs.val ? rhs.val + "." : "0.";
+            };
+
+            const Button = (str, wide = false) =>
+                button({ ["data-type"]: str, class: "pad" + (wide ? " wide" : "") }, str);
+
+            return div(
+                { id: "calculator" },
+                div(
+                    { id: "display" },
+                    div(() => rhs.val ?? lhs.val)
+                ),
+                div(
+                    { id: "pad", onclick },
+                    Button("1"),
+                    Button("2"),
+                    Button("3"),
+                    Button("+"),
+                    Button("4"),
+                    Button("5"),
+                    Button("6"),
+                    Button("-"),
+                    Button("7"),
+                    Button("8"),
+                    Button("9"),
+                    Button("x"),
+                    Button("0"),
+                    Button("."),
+                    Button("+/-"),
+                    Button("%"),
+                    Button("AC"),
+                    Button("÷"),
+                    Button("=", true)
+                )
+            );
+        };
+        van.add(document.body, Calculator());
+
+        // --------------------------------------------------------------
+        const TableViewer = ({ inputText, inputType }) => {
+            const tableFromJson = (text) => {
+                const json = JSON.parse(text),
+                    head = Object.keys(json[0]);
+                return {
+                    head,
+                    data: json.map((row) => head.map((h) => row[h])),
+                };
+            };
+            return div(
+                p(() => {
+                    try {
+                        const { head, data } = tableFromJson(inputText);
+                        return table(
+                            thead(tr(head.map((h) => th(h)))),
+                            tbody(data.map((row) => tr(row.map((col) => td(col)))))
+                        );
+                    } catch (e) {
+                        return pre({ class: "err" }, e.toString());
+                    }
+                })
+            );
+        };
+        const jsonData = [
+            { id: 1, name: "John Doe", email: "john.doe@example.com", age: 35, country: "USA" },
+            { id: 2, name: "Jane Smith", email: "jane.smith@example.com", age: 28, country: "Canada" },
+            { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", age: 42, country: "Australia" },
+        ];
+        van.add(document.body, TableViewer({ inputText: JSON.stringify(jsonData), inputType: "json" }));
+    </script>
+
+    <style>
+        #calculator {
+            display: flex;
+            flex-direction: column;
+            width: 13em;
+            margin: 1em auto;
+        }
+        #display {
+            font-size: 1.2em;
+            text-align: right;
+            padding: 0.5em;
+            background-color: #eee;
+            border-radius: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        #pad {
+            display: grid;
+            grid-template-columns: repeat(4, 3em);
+            grid-gap: 0.2em;
+        }
+        button.wide {
+            grid-column: span 2;
+        }
+        button[data-type="0"],
+        button[data-type="1"],
+        button[data-type="2"],
+        button[data-type="3"],
+        button[data-type="4"],
+        button[data-type="5"],
+        button[data-type="6"],
+        button[data-type="7"],
+        button[data-type="8"],
+        button[data-type="9"] {
+            background-color: orange;
+        }
+    </style>
+</html>
