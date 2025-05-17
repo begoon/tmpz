@@ -1,0 +1,6 @@
+{
+  "version": "5",
+  "remote": {
+    "https://deno.land/x/minivan@0.6.3/src/van-plate.js": "3f0b78df283fb6229e3c74e67be3d700ccf7cac162bd09c7946cc556ec870489"
+  }
+}

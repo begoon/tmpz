@@ -182,25 +182,7 @@
                 ),
                 div(
                     { id: "pad", onclick },
-                    Button("1"),
-                    Button("2"),
-                    Button("3"),
-                    Button("+"),
-                    Button("4"),
-                    Button("5"),
-                    Button("6"),
-                    Button("-"),
-                    Button("7"),
-                    Button("8"),
-                    Button("9"),
-                    Button("x"),
-                    Button("0"),
-                    Button("."),
-                    Button("+/-"),
-                    Button("%"),
-                    Button("AC"),
-                    Button("÷"),
-                    Button("=", true)
+                    ..."1 2 3 + 4 5 6 - 7 8 9 x 0 . +/- % AC ÷ =".split(" ").map((str) => Button(str, str === "="))
                 )
             );
         };
