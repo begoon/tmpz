@@ -1,0 +1,15 @@
+default: build run
+
+build:
+    xcodebuild -scheme swiftdata -derivedDataPath $PWD/build
+
+run:
+     ./build/Build/Products/Debug/swiftdata
+
+clean:
+    rm -rf build
+    git clean -ndx
+
+[confirm]
+clean-git:
+    git clean -dfx

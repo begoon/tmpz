@@ -1,0 +1,15 @@
+default: build run
+
+build:
+    xcodebuild -scheme async -derivedDataPath $PWD/build
+
+run:
+     ./build/Build/Products/Debug/async
+
+clean:
+    rm -rf build
+    git clean -ndx
+
+[confirm]
+clean-git:
+    git clean -dfx

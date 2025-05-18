@@ -1,0 +1,5 @@
+project.xcworkspace
+xcschemes
+xcuserdata
+build
+database.store*
