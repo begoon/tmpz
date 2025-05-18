@@ -6,7 +6,6 @@ struct AboutView: View {
     var body: some View {
         NavigationView {
             Text("ha?")
-                .navigationTitle("About")
                 .toolbar {
                     Button ("Dismiss") {
                         dismiss()

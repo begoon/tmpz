@@ -1,5 +1,7 @@
 import AVFoundation
 import CodeScanner
+import Foundation
+import RegexBuilder
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -12,116 +14,95 @@ struct Storage: Codable {
 struct ContentView: View {
     @State private var showAbout = false
 
-    @State var scannedData: String = "https://google.com"
+    @State var scannedData: String = [
+        "https://google.com",
+        "https://github.com",
+    ].joined(separator: " ")
+
     @State var storageURL: URL?
-
-    @State private var showImporter = false
-
-    let message: AttributedString
-
-    init() {
-        var message = try! AttributedString(markdown: "*A*loh*a*!")
-        if let range = message.range(of: "oh") {
-            message[range].font = .body.bold()
-            message[range].foregroundColor = .red
-        }
-        self.message = message
-    }
 
     func handleScan(result: Result<ScanResult, ScanError>) {
         switch result {
         case .success(let scanResult):
             print("scanned: \(scanResult)")
             scannedData = scanResult.string
+            let storage = Storage(scannedData: scannedData)
+            let data = try! JSONEncoder().encode(storage)
+            storageURL = persistToDocuments(data: data, filename: "qr.json")
         case .failure(let error):
             print("scanning failed: \(error)")
             scannedData = "\(error)"
         }
     }
 
-    let title = try! colorizedMarkdown(
-        "^[QR](color: 'blue')" + " ~code~ " + "^[**scanner**](color: 'green')"
-    )
+    func textify(_ input: String) -> AttributedString {
+        var string: String = input
+        if let data = Data(base64Encoded: input) {
+            string = asciify(from: data)
+        }
+        if let markdown = try? AttributedString(markdown: string) {
+            return markdown
+        }
+        return AttributedString(string)
+    }
+
+    func asciify(from data: Data) -> String {
+        return data.map { byte -> String in
+            if byte >= 0x20 && byte <= 0x7E {
+                return String(UnicodeScalar(byte))
+            }
+            return String(format: "<%02X>", byte)
+        }.joined()
+    }
 
     var body: some View {
         NavigationStack {
-            Text(title).font(.largeTitle)
-                .bold().toolbar {
-                    QRButtonView(completion: handleScan)
-                    Button("About") { showAbout = true }
-                        .sheet(isPresented: $showAbout) {
-                            AboutView()
-                        }
-                    Text(message)
-                }
-        }
-        if scannedData.hasPrefix("http") {
-            Link(destination: URL(string: scannedData)!, label: {
-                Text(scannedData)
-            })
-        } else {
-            Text(scannedData)
-        }
-        VStack {
-            Spacer()
-            Image(systemName: "trash").imageScale(.large).symbolEffect(
-                .bounce, options: .repeat(100)
-            )
-            Text(message)
-        }
-        .frame(alignment: .top)
-        HStack {
-            Button("Store") {
-                print("exporting")
-                let storage = Storage(scannedData: self.scannedData)
-                print("storage", storage)
-                let data = try! JSONEncoder().encode(storage)
-                self.storageURL = persistDataLocally(data: data, filename: "swift_data.json")
-            }.buttonStyle(.borderedProminent)
-            if self.storageURL != nil {
-                let url = self.storageURL!
-                ShareLink("Share", item: url)
+            ScrollView {
+                HStack(alignment: .top) {
+                    Text(textify(scannedData))
+                        .padding()
+                        .textSelection(.enabled)
+                }.multilineTextAlignment(.leading)
             }
-            Button("Import") {
-                showImporter = true
+            HStack {
+                QRButtonView(completion: handleScan)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .buttonStyle(.borderless)
+                    .cornerRadius(8)
+                if storageURL != nil {
+                    Spacer()
+                    ShareLink("Share", item: storageURL!)
+                }
+            }
+            .padding()
+            .toolbar {
+                Button("About") { showAbout = true }
+                    .sheet(isPresented: $showAbout) {
+                        AboutView()
+                    }
             }
         }
-        .fileImporter(
-            isPresented: $showImporter,
-            allowedContentTypes: [.json],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                guard let url = urls.first else { return }
-
-                print("importing", url)
-                guard url.startAccessingSecurityScopedResource() else {
-                    print("unable to access file due to security restrictions")
-                    return
-                }
-                defer { url.stopAccessingSecurityScopedResource() }
-
-                guard FileManager.default.fileExists(atPath: url.path) else {
-                    print("file not found")
-                    return
-                }
-
-                do {
-                    let data = try Data(contentsOf: url)
-                    let storage = try JSONDecoder().decode(Storage.self, from: data)
-                    print("IMPORTED", storage)
-                } catch {
-                    print("failed to read or parse file: \(error)")
-                }
-            case .failure(let error):
-                print("import failed: \(error)")
-            }
-        }
-        WebSocketView()
-        DownloaderView()
-        QRButtonView(completion: handleScan)
     }
+}
+
+func markdownFrom(_ input: String) -> String {
+    let re = /https:\/\/[^ ]+/
+
+    var markdown = input
+    let matches = input.matches(of: re).reversed()
+
+    for match in matches {
+        let url = String(match.0)
+        let markdownLink = "[\(url)](\(url))"
+        if let range = markdown.range(of: url, options: .literal, range: markdown.startIndex ..< markdown.endIndex, locale: nil) {
+            markdown.replaceSubrange(range, with: markdownLink)
+        }
+    }
+
+    return markdown
 }
 
 let codeTypes: [AVMetadataObject.ObjectType] = [
@@ -137,7 +118,7 @@ let codeTypes: [AVMetadataObject.ObjectType] = [
     .itf14,
     .pdf417,
     .qr,
-    .upce
+    .upce,
 ]
 
 struct QRButtonView: View {
@@ -153,33 +134,14 @@ struct QRButtonView: View {
                     codeTypes: codeTypes,
                     showViewfinder: true,
                     simulatedData: simulatedData,
-                    completion: { result in isShowing = false
+                    completion: { result in
+                        isShowing = false
                         completion(result)
                     }
                 )
                 Button("Close") { isShowing = false }
             }
     }
-}
-
-extension AttributeScopes {
-    struct CustomAttributes: AttributeScope {
-        let swiftUI: SwiftUIAttributes
-        let foundation: FoundationAttributes
-
-        struct ColorNameAttribute: CodableAttributedStringKey, MarkdownDecodableAttributedStringKey {
-            typealias Value = String
-            static let name = "color"
-
-            static func decodeMarkdown(from markdown: String) throws -> Value {
-                return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
-
-        var color: ColorNameAttribute
-    }
-
-    var custom: CustomAttributes.Type { CustomAttributes.self }
 }
 
 func persistData(_ data: Data, to storageURL: URL, with filename: String) -> URL? {
@@ -195,25 +157,12 @@ func persistData(_ data: Data, to storageURL: URL, with filename: String) -> URL
     return fileURL
 }
 
-func persistDataLocally(data: Data, filename: String) -> URL? {
+func persistToDocuments(data: Data, filename: String) -> URL? {
     guard let storageURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
         print("documentDirectory:", "❌ could not locate document directory")
         return nil
     }
     return persistData(data, to: storageURL, with: filename)
-}
-
-func persistDataToCloud(data: Data, filename: String) {
-    print("ubiquityIdentityToken:",
-          FileManager.default.ubiquityIdentityToken != nil ?
-              "✅ icloud available" : "❌ icloud unavailable")
-
-    guard let storageURL = FileManager.default.url(forUbiquityContainerIdentifier: nil) else {
-        print("forUbiquityContainerIdentifier:", "❌ icloud not available")
-        return
-    }
-
-    _ = persistData(data, to: storageURL, with: filename)
 }
 
 #Preview {
