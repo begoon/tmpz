@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package iproov.ingress.config;
+
+message Platform {
+  string url = 1; // URL of the platform like https://eu.ingress.iproov.io
+  string api_key = 2; // API key for the kiosk on that platform
+}
+
+message RemoteEndpoint {
+  string broker_url = 1; // URL of the broker like wss://eu.ingress.iproov.io:8080
+  string namespace = 2; // Namespace for the kiosk
+  string server_url = 3; // URL of the imagery server like wss://eu.ingress.iproov.io/epp
+  string server_device_id = 4; // Device ID for the imagery server (like alwaysPass, LAXSBE001 etc)
+}
+
+message KioskConfig {
+  uint32 config_version = 1; // Version of the config
+  Platform platform = 2; // Base platform on which to connect
+  RemoteEndpoint remote_endpoint = 3; // Endpoint on the platform on which to connect
+}

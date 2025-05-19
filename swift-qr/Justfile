@@ -1,0 +1,2 @@
+proto:
+    protoc --swift_out=./QR  -I ./QR ./QR/Config.proto

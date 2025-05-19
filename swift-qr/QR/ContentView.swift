@@ -2,6 +2,7 @@ import AVFoundation
 import CodeScanner
 import Foundation
 import RegexBuilder
+import SwiftProtobuf
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -14,10 +15,7 @@ struct Storage: Codable {
 struct ContentView: View {
     @State private var showAbout = false
 
-    @State var scannedData: String = [
-        "https://google.com",
-        "https://github.com",
-    ].joined(separator: " ")
+    @State var scannedData: String = ""
 
     @State var storageURL: URL?
 
@@ -35,12 +33,36 @@ struct ContentView: View {
         }
     }
 
+    func ingressKioskConfig(_ bytes: Data) throws -> Iproov_Ingress_Config_KioskConfig {
+        let config = try Iproov_Ingress_Config_KioskConfig(serializedBytes: bytes)
+        return config
+    }
+
     func textify(_ input: String) -> AttributedString {
         var string: String = input
-        if let data = Data(base64Encoded: input) {
-            string = asciify(from: data)
+        print(input)
+        if let data = Data(base64Encoded: input), !data.isEmpty {
+            if let kioskConfig = try? ingressKioskConfig(data) {
+                if let compactJSON = try? kioskConfig.jsonString(),
+                   let data = compactJSON.data(using: .utf8),
+                   let object = try? JSONSerialization.jsonObject(with: data),
+                   let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .withoutEscapingSlashes]),
+                   let prettyString = String(data: prettyData, encoding: .utf8)
+                {
+                    string = prettyString
+                } else {
+                    string = "\(kioskConfig)"
+                }
+            } else {
+                string = asciify(from: data)
+            }
         }
-        if let markdown = try? AttributedString(markdown: string) {
+        print(string)
+        if let markdown = try? AttributedString(
+            markdown: string,
+            options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnly
+            )
+        ) {
             return markdown
         }
         return AttributedString(string)
@@ -64,17 +86,32 @@ struct ContentView: View {
                         .textSelection(.enabled)
                 }.multilineTextAlignment(.leading)
             }
-            HStack {
-                QRButtonView(completion: handleScan)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .buttonStyle(.borderless)
-                    .cornerRadius(8)
-                if storageURL != nil {
+            VStack {
+                HStack {
+                    QRButtonView(completion: handleScan)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .buttonStyle(.borderless)
+                        .cornerRadius(8)
+                    if storageURL != nil {
+                        Spacer()
+                        ShareLink("Share", item: storageURL!)
+                    }
+                }
+                HStack {
+                    Button("URL") {
+                        scannedData = [
+                            "https://google.com",
+                            "https://github.com",
+                        ].joined(separator: "\n")
+                    }
+                    Button("Kiosk") {
+                        scannedData = "CAESNAokaHR0cHM6Ly9zYW11ZWwuZGV2LmluZ3Jlc3MuaXByb292LmlvEgwtc2VjcmV0X2tleS0aZAoqd3NzOi8vc2FuZGJveC5kZXYuaW5ncmVzcy5pcHJvb3YuaW8vYnJva2VyEgdkZWZhdWx0Gid3c3M6Ly9zYW5kYm94LmRldi5pbmdyZXNzLmlwcm9vdi5pby9lcHAiBGF1dG8="
+                    }
                     Spacer()
-                    ShareLink("Share", item: storageURL!)
+                    Button("Clear") { scannedData = "" }
                 }
             }
             .padding()

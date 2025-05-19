@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1117C0A02DDB51FE0076275B /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 1117C09F2DDB51FE0076275B /* SwiftProtobuf */; };
 		114AC94F2DCE4DE300C642E7 /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 114AC94E2DCE4DE300C642E7 /* CodeScanner */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				114AC94F2DCE4DE300C642E7 /* CodeScanner in Frameworks */,
+				1117C0A02DDB51FE0076275B /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +100,7 @@
 			name = QR;
 			packageProductDependencies = (
 				114AC94E2DCE4DE300C642E7 /* CodeScanner */,
+				1117C09F2DDB51FE0076275B /* SwiftProtobuf */,
 			);
 			productName = "swift-qr";
 			productReference = 114AC9232DCE41C400C642E7 /* QR.app */;
@@ -156,6 +159,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				114AC94D2DCE4C6D00C642E7 /* XCRemoteSwiftPackageReference "CodeScanner" */,
+				1117C09E2DDB51FE0076275B /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 114AC9242DCE41C400C642E7 /* Products */;
@@ -461,6 +465,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		1117C09E2DDB51FE0076275B /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.29.0;
+			};
+		};
 		114AC94D2DCE4C6D00C642E7 /* XCRemoteSwiftPackageReference "CodeScanner" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/twostraws/CodeScanner";
@@ -472,6 +484,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1117C09F2DDB51FE0076275B /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1117C09E2DDB51FE0076275B /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
 		114AC94E2DCE4DE300C642E7 /* CodeScanner */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 114AC94D2DCE4C6D00C642E7 /* XCRemoteSwiftPackageReference "CodeScanner" */;
