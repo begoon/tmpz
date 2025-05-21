@@ -13,6 +13,7 @@ actor Counter {
 }
 
 var counter = Counter()
+print(CFGetRetainCount(counter))
 
 Task {
     for i in 0 ..< 10 {

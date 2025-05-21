@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+
+            #console {
+                width: 200px;
+                height: 150px;
+                background-color: lightblue;
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                box-sizing: border-box;
+                border: 2px solid #333;
+            }
+
+            #resizer {
+                width: 15px;
+                height: 15px;
+                background: #333;
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                cursor: se-resize;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="console">
+            <div id="resizer"></div>
+        </div>
+
+        <script>
+            const div = document.getElementById("console");
+            const resizer = document.getElementById("resizer");
+
+            div.addEventListener("contextmenu", (e) => e.preventDefault());
+
+            function toAbsolutePosition(el) {
+                const rect = el.getBoundingClientRect();
+                el.style.left = rect.left + "px";
+                el.style.top = rect.top + "px";
+                el.style.right = "";
+                el.style.bottom = "";
+            }
+
+            let offsetX,
+                offsetY,
+                isDragging = false;
+
+            div.addEventListener("mousedown", (e) => {
+                // right-click only
+                if (e.button !== 2 || e.target === resizer) return;
+                toAbsolutePosition(div);
+                isDragging = true;
+                offsetX = e.clientX - div.offsetLeft;
+                offsetY = e.clientY - div.offsetTop;
+                e.preventDefault();
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                if (isDragging) {
+                    div.style.left = `${e.clientX - offsetX}px`;
+                    div.style.top = `${e.clientY - offsetY}px`;
+                }
+            });
+
+            document.addEventListener("mouseup", () => {
+                isDragging = false;
+                isResizing = false;
+            });
+
+            // Resizing with left-click
+            let isResizing = false;
+
+            resizer.addEventListener("mousedown", (e) => {
+                // left-click only for resize
+                if (e.button !== 0) return;
+                toAbsolutePosition(div);
+                isResizing = true;
+                e.stopPropagation();
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                if (isResizing) {
+                    div.style.width = `${e.clientX - div.offsetLeft}px`;
+                    div.style.height = `${e.clientY - div.offsetTop}px`;
+                }
+            });
+        </script>
+    </body>
+</html>
