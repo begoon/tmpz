@@ -1,0 +1,44 @@
+set dotenv-load := true
+
+BOT_TOKEN := env("BOT_TOKEN")
+NGROK_API_KEY := env("NGROK_API_KEY")
+
+set export := true
+
+PORT := "3000"
+
+run:
+    ngrok http {{ PORT }}
+
+bot:
+    export APPLICATION_URL=$(just tunnel) && uv run ./bot.py
+
+web:
+    python3 -m http.server {{ PORT }} --bind 0.0.0.0
+
+install:
+    URL=$(just tunnel) && \
+    echo curl -X POST "https://api.telegram.org/bot{{ BOT_TOKEN }}/setChatMenuButton" \
+    -H "Content-Type: application/json" \
+    -d '{ \
+    "menu_button": { \
+        "type": "web_app", \
+        "text": "Open Application", \
+        "web_app": { \
+        "url": "'$URL'" \
+        } \
+    } \
+    }'
+
+uninstall:
+    URL=$(just tunnel) && \
+    echo curl -X POST "https://api.telegram.org/bot{{ BOT_TOKEN }}/setChatMenuButton" \
+    -H "Content-Type: application/json" \
+    -d '{ \
+    "menu_button": { \
+        "type": "default" \
+    } \
+    }'
+
+tunnel:
+    ngrok api tunnels list | jq -r '.tunnels[0].public_url'
