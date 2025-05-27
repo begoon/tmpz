@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Telegram Mini Application</title>
+        <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
+        <style>
+            body {
+                font-family: sans-serif;
+                text-align: center;
+                margin-top: 50px;
+                background: #f0f0f0;
+            }
+
+            img {
+                width: 200px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #0088cc;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+            a {
+                display: block;
+                margin-top: 20px;
+                color: #0077cc;
+                text-decoration: none;
+            }
+
+            a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Hello from Telegram Mini Application</h1>
+        <p id="user"></p>
+
+        <img
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/512px-Telegram_logo.svg.png"
+            alt="Telegram Logo"
+        />
+
+        <br />
+        <br />
+        <output id="info"></output>
+        <br />
+        <br />
+        <output id="biometricInfo"></output>
+        <br />
+        <br />
+
+        <button onclick="showAlert()">Alert!</button>
+        <button id="actionButton">Action</button>
+        <button id="qrButton">QR</button>
+        <button id="homeButon">Home</button>
+        <br />
+        <p>
+            <button id="accelerometerOnButton">Accelerometer On</button>
+            <button id="accelerometerOffButton">Accelerometer Off</button>
+            <br />
+            <output id="accelerometerXYZ"></output>
+        </p>
+        <p>
+            <button id="orientationOnButton">Orientation On</button>
+            <button id="orientationOffButton">Orientation Off</button>
+            <br />
+            <output id="orientationAlhpaBetaGamma"></output>
+        </p>
+        <p>
+            <button id="gyroscopeOnButton">Gyroscope On</button>
+            <button id="gyroscopeOffButton">Gyroscope Off</button>
+            <br />
+            <output id="gyroscopeXYZ"></output>
+        </p>
+        <p>
+            <button id="storageStoreButton">Store</button>
+            <button id="storageGetButton">Get</button>
+            <button id="storageRemoveButton">Remove</button>
+        </p>
+
+        <a href="https://google.com" target="_blank">Visit Google</a>
+
+        <script>
+            console.log("boot");
+
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+
+            const biometricInfo =
+                `Biometrics: ` +
+                `available=${tg.BiometricManager.isBiometricAvailable}, ` +
+                `deviceID=${tg.BiometricManager.deviceId}, ` +
+                `type=${tg.BiometricManager.biometricType}`;
+            document.getElementById("biometricInfo").innerText = biometricInfo;
+
+            const info = document.getElementById("info");
+            const v = [tg.version, tg.platform, tg.viewportHeight, tg.viewportStableHeight];
+
+            info.innerText = v.join(" | ");
+            info.style.color = "#0088cc";
+            info.style.fontSize = "18px";
+            info.style.fontWeight = "bold";
+
+            const user = document.getElementById("user");
+            if (tg.initDataUnsafe) {
+                if (tg.initDataUnsafe.user) {
+                    user.innerText = "Aloha, " + tg.initDataUnsafe.user.first_name + "!";
+                } else if (tg.initDataUnsafe.receiver) {
+                    user.innerText = "Receiver, " + tg.initDataUnsafe.receiver.first_name + "!";
+                } else if (tg.initDataUnsafe.chat) {
+                    user.innerText = "Chat, " + tg.initDataUnsafe.chat.username + "!";
+                } else {
+                    user.innerText = "Como estas, amigo?";
+                }
+            } else {
+                user.innerText = "ERROR: initDataUnsafe not found";
+            }
+
+            function showAlert() {
+                alert("HTML button clicked!");
+            }
+
+            function sendData() {
+                const data = {
+                    message: "message from web application at " + new Date().toLocaleString(),
+                    user: tg.initDataUnsafe.user,
+                };
+                tg.sendData(JSON.stringify(data));
+            }
+
+            document.getElementById("actionButton").addEventListener("click", function () {
+                sendData();
+            });
+
+            document.getElementById("qrButton").addEventListener("click", function () {
+                tg.showScanQrPopup({ text: "Scan a QR code to continue" });
+            });
+
+            document.getElementById("homeButon").addEventListener("click", function () {
+                tg.addToHomeScreen();
+            });
+
+            let accelerometerTimer = null;
+            document.getElementById("accelerometerOnButton").addEventListener("click", function () {
+                tg.Accelerometer.start({ refresh_rate: 20 }, function () {
+                    alert("Accelerometer started");
+                    accelerometerTimer = setInterval(() => {
+                        document.getElementById("accelerometerXYZ").innerText = `X: ${tg.Accelerometer.x.toFixed(
+                            6
+                        )}, Y: ${tg.Accelerometer.y.toFixed(6)}, Z: ${tg.Accelerometer.z.toFixed(6)}`;
+                    }, 1000);
+                });
+            });
+            document.getElementById("accelerometerOffButton").addEventListener("click", function () {
+                tg.Accelerometer.stop(function () {
+                    alert("Accelerometer stopped");
+                    clearInterval(accelerometerTimer);
+                });
+            });
+
+            let orientationTimer = null;
+            document.getElementById("orientationOnButton").addEventListener("click", function () {
+                tg.DeviceOrientation.start({ refresh_rate: 20 }, function () {
+                    alert("Orientation started");
+                    orientationTimer = setInterval(() => {
+                        document.getElementById(
+                            "orientationAlhpaBetaGamma"
+                        ).innerText = `alpha: ${tg.DeviceOrientation.alpha.toFixed(
+                            6
+                        )}, beta: ${tg.DeviceOrientation.beta.toFixed(6)}, gamma: ${tg.DeviceOrientation.gamma.toFixed(
+                            6
+                        )}`;
+                    }, 1000);
+                });
+            });
+            document.getElementById("orientationOffButton").addEventListener("click", function () {
+                tg.DeviceOrientation.stop(function () {
+                    alert("Orientation stopped");
+                    clearInterval(orientationTimer);
+                });
+            });
+
+            let gyroscopeTimer = null;
+            document.getElementById("gyroscopeOnButton").addEventListener("click", function () {
+                tg.Gyroscope.start({ refresh_rate: 20 }, function () {
+                    alert("Gyroscope started");
+                    gyroscopeTimer = setInterval(() => {
+                        document.getElementById("gyroscopeXYZ").innerText = `X: ${tg.Gyroscope.x.toFixed(
+                            6
+                        )}, Y: ${tg.Gyroscope.y.toFixed(6)}, Z: ${tg.Gyroscope.z.toFixed(6)}`;
+                    }, 1000);
+                });
+            });
+            document.getElementById("gyroscopeOffButton").addEventListener("click", function () {
+                tg.Gyroscope.stop(function () {
+                    alert("Gyroscope stopped");
+                    clearInterval(gyroscopeTimer);
+                });
+            });
+
+            document.getElementById("storageStoreButton").addEventListener("click", function () {
+                tg.CloudStorage.setItem("when", new Date().toLocaleString(), function (error, stored) {
+                    error ? alert("error: " + error) : alert("data stored: " + stored);
+                });
+            });
+            document.getElementById("storageGetButton").addEventListener("click", function () {
+                tg.CloudStorage.getItem("when", function (error, data) {
+                    error ? alert("error: " + error) : alert("data retrieved: " + data);
+                });
+            });
+            document.getElementById("storageRemoveButton").addEventListener("click", function () {
+                tg.CloudStorage.removeItem("when", function (error, removed) {
+                    alert(error ? "error: " + error : "data removed: " + removed);
+                });
+            });
+
+            tg.MainButton.setText("Result").show();
+            tg.MainButton.color = "#ff0000";
+            tg.MainButton.hasShineEffect = true;
+            tg.MainButton.showProgress();
+            setTimeout(() => {
+                tg.MainButton.hideProgress();
+            }, 2000);
+            tg.MainButton.onClick(function () {
+                sendData();
+            });
+
+            tg.SecondaryButton.setText("QR")
+                .show()
+                .onClick(function () {
+                    tg.showScanQrPopup({ text: "Scan a QR code to continue" });
+                });
+            tg.onEvent("qrTextReceived", function ({ data }) {
+                tg.sendData(data);
+                alert("QR code scanned: " + data);
+            });
+
+            tg.SettingsButton.show();
+            tg.SettingsButton.onClick(function () {
+                alert("Configure?");
+            });
+
+            tg.BackButton.show();
+            tg.BackButton.onClick(function () {
+                alert("Back button clicked!");
+                tg.close();
+            });
+        </script>
+    </body>
+</html>

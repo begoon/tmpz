@@ -1,0 +1,18 @@
+{
+    "unstable": ["cron"],
+    "imports": {
+        "@openai/openai": "jsr:@openai/openai@^4.71.1",
+        "@std/dotenv": "jsr:@std/dotenv@^0.225.2",
+        "@std/http": "jsr:@std/http@^1.0.17",
+        "@std/streams": "jsr:@std/streams@^1.0.8",
+        "consola": "npm:consola@^3.2.3"
+    },
+    "tasks": {
+        "bot": "deno run -A --env --watch main.ts",
+        "tunnel": "deno run -A --env --watch main.ts --tunnel",
+        "dev": "deno run -A --env --watch main.ts --dev",
+        "webhook:install": "deno run -A --env main.ts --webhook:install",
+        "webhook:delete": "deno run -A --env main.ts --webhook:delete",
+        "webhook:info": "deno run -A --env main.ts --webhook:info"
+    }
+}

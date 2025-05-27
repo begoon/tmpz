@@ -1,0 +1,9 @@
+{
+    "dependencies": {
+        "@types/node-telegram-bot-api": "^0.64.7",
+        "consola": "^3.2.3"
+    },
+    "devDependencies": {
+        "@types/node": "^22.9.0"
+    }
+}
