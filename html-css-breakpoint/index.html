@@ -1,0 +1,77 @@
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html {
+                font-family: sans-serif;
+            }
+
+            body {
+                font-size: 16px;
+            }
+
+            p::before {
+                content: "< 768";
+                font-weight: bold;
+                text-decoration: underline;
+                border: 1px solid black;
+                padding: 2px 4px;
+            }
+
+            @media (min-width: 768px) {
+                body {
+                    font-size: 1.25rem;
+                }
+                p::before {
+                    content: "768";
+                }
+            }
+
+            @media (min-width: 1024px) {
+                body {
+                    font-size: 1.5rem;
+                }
+                p::before {
+                    content: "> 1024";
+                    color: red;
+                }
+            }
+        </style>
+        <body>
+            <h1>Lorem ipsum dolor, sit amet consectetur adipisicing elit.</h1>
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate quasi asperiores magnam assumenda
+                excepturi vel corrupti molestias impedit, reprehenderit veritatis minus illo nisi? Quisquam expedita
+                voluptatem qui debitis ducimus nulla.
+            </p>
+            <output
+                id="window-size"
+                style="position: fixed; bottom: 0; right: 0; background-color: #f0f0f0; padding: 10px"
+            ></output>
+        </body>
+        <script>
+            function updateWindowSize() {
+                const output = document.getElementById("window-size");
+                output.textContent = `${window.innerWidth} x ${window.innerHeight}`;
+            }
+            window.addEventListener("resize", updateWindowSize);
+            window.addEventListener("load", updateWindowSize);
+            updateWindowSize();
+        </script>
+        <script type="module">
+            import van from "https://cdn.skypack.dev/vanjs-core";
+            const { button } = van.tags;
+
+            const count = van.state(0);
+            const Counter = () => button({ onclick: () => count.val++ }, () => `count: ${count.val}`);
+
+            van.add(document.body, Counter());
+        </script>
+    </head>
+</html>
