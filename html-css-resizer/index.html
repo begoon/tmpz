@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <style>
+            body {
+                margin: 0;
+                height: 100vh;
+                display: flex;
+            }
+            .resizable {
+                resize: horizontal;
+                overflow: auto;
+                width: 300px;
+                min-width: 100px;
+                max-width: 80%;
+                border-right: 2px solid #ccc;
+                padding: 10px;
+                box-sizing: border-box;
+                background: #f0f0f0;
+            }
+            .content {
+                flex-grow: 1;
+                padding: 10px;
+                background: #e0e0ff;
+                box-sizing: border-box;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="resizable">Resizable left pane</div>
+        <div class="content">Static right pane</div>
+    </body>
+</html>
