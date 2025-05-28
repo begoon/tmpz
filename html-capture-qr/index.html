@@ -1,0 +1,57 @@
+<html>
+    <head>
+        <meta charset="UTF-8" />
+    </head>
+    <body>
+        <video id="screen" autoplay style="display: none"></video>
+        <canvas id="canvas" style="display: none"></canvas>
+        <button onclick="captureAndScan()">Capture and Scan</button>
+
+        <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+        <script>
+            async function captureAndScan() {
+                if (!navigator.mediaDevices?.getDisplayMedia) {
+                    alert("Your browser does not support screen capture.");
+                    return;
+                }
+
+                try {
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    const video = document.getElementById("screen");
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
+                    video.srcObject = stream;
+
+                    video.onloadedmetadata = () => {
+                        video.play();
+
+                        setTimeout(() => {
+                            const width = video.videoWidth;
+                            const height = video.videoHeight;
+
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            ctx.drawImage(video, 0, 0, width, height);
+
+                            const imageData = ctx.getImageData(0, 0, width, height);
+                            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                            if (code) {
+                                alert("QR Code found: " + code.data);
+                                console.log("QR Code data:", code.data);
+                            } else {
+                                alert("No QR Code found on the screen.");
+                            }
+
+                            stream.getTracks().forEach((t) => t.stop());
+                        }, 1000);
+                    };
+                } catch (err) {
+                    console.error("Error capturing screen:", err);
+                    alert("Failed to capture screen: " + err.message);
+                }
+            }
+        </script>
+    </body>
+</html>
