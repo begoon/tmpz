@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+    </head>
+    <body>
+        <h1>Beacon API Sender</h1>
+        <button id="send">Send Beacon</button>
+        <button id="error">Send Error</button>
+        <script>
+            document.getElementById("send").addEventListener("click", () => {
+                const data = JSON.stringify({
+                    message: "beacon ping",
+                    timestamp: Date.now(),
+                });
+                navigator.sendBeacon("beacon", data);
+                console.log("beacon sent");
+            });
+            window.addEventListener("unload", () => {
+                navigator.sendBeacon("beacon", JSON.stringify({ status: "unload", timestamp: Date.now() }));
+            });
+            window.addEventListener("error", (event) => {
+                console.log(event);
+                navigator.sendBeacon(
+                    "beacon",
+                    JSON.stringify({
+                        error: {
+                            message: event.message,
+                            stack: event.error.stack,
+                            timestamp: Date.now(),
+                            cause: event.error.cause,
+                        },
+                    })
+                );
+            });
+            document.getElementById("error").addEventListener("click", () => {
+                throw new Error("synthetic error");
+            });
+        </script>
+    </body>
+</html>
