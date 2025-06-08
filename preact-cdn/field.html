@@ -2,18 +2,22 @@
 <html type="module">
     <head>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     </head>
     <style>
         body {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            overflow: hidden;
         }
         span {
             display: flex;
             justify-content: center;
             align-items: center;
             opacity: 0.8;
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            position: relative;
         }
         span:hover {
             color: white;
@@ -22,13 +26,33 @@
             outline-offset: 8px;
             outline: 2px solid white;
             border-radius: 10%;
-            z-index: 1000;
             transition: all 0.2s ease-in-out;
             opacity: 1;
+            transform: scale(1.5);
+            z-index: 1000;
+        }
+        output {
+            position: fixed;
+            bottom: 0;
+            right: 50%;
+            transform: translateX(50%);
+            padding: 0.5em;
+            z-index: 1000;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            background-color: white;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        output:hover {
+            color: white;
+            background-color: blue;
+            cursor: pointer;
         }
     </style>
     <body>
-        <output id="info" style="position: fixed; top: 0; right: 0; z-index: 1000; background-color: white">?</output>
+        <output id="info">?</output>
         <div id="field"></div>
 
         <script type="module">
