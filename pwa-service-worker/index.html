@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html type="module">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="manifest" href="manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="icon" href="icon-192.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-status-bar-style" content="black" />
+        <script>
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker
+                        .register("service-worker.js")
+                        .then((reg) => console.log("service worker registered:", reg.scope))
+                        .catch((err) => console.error("service worker registration failed:", err));
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div id="info">?</div>
+        <button id="button">uuid</button>
+
+        <script type="module">
+            const info = document.getElementById("info");
+
+            document.getElementById("button").addEventListener("click", async () => {
+                const data = (await (await fetch("/abc")).text()).trim();
+                info.innerText = data;
+            });
+        </script>
+    </body>
+</html>
