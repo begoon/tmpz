@@ -15,23 +15,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0.8;
-            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
-            position: relative;
         }
-        span:hover {
-            color: white;
-            text-shadow: 0 0 5px black;
-            cursor: pointer;
-            outline-offset: 8px;
-            outline: 2px solid white;
-            border-radius: 10%;
-            transition: all 0.2s ease-in-out;
-            opacity: 1;
-            transform: scale(1.5);
-            z-index: 1000;
+        span.alive {
+            background-color: green;
         }
-        output {
+        label {
             position: fixed;
             bottom: 0;
             right: 50%;
@@ -45,72 +33,172 @@
             font-family: monospace;
             font-size: 1.2em;
         }
-        output:hover {
-            color: white;
-            background-color: blue;
-            cursor: pointer;
-        }
     </style>
     <body>
-        <output id="info">?</output>
-        <div id="field"></div>
+        <label id="info">?</label>
+        <div id="canvas"></div>
 
         <script type="module">
-            import { h, render } from "https://esm.sh/preact@10.19.2";
-            import { signal, effect, computed } from "https://esm.sh/@preact/signals@1.2.1";
+            const blockWidth = 5;
+            const blockHeight = 6;
 
-            const field = document.getElementById("field");
-            const info = document.getElementById("info");
+            const canvas = document.getElementById("canvas");
+            const label = document.getElementById("info");
 
-            let windowWidth = signal(window.innerWidth);
-            let windowHeight = signal(window.innerHeight);
+            function size(field) {
+                if (!field) return { width: 0, height: 0 };
+                return {
+                    width: field[0].length,
+                    height: field.length,
+                };
+            }
 
-            const colors = ["red", "green", "blue", "yellow", "orange", "purple", "pink", "cyan", "magenta"];
+            function set(field, ...xy) {
+                const height = field.length;
+                const width = field[0].length;
+                for (const [x, y] of xy) {
+                    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                    field[y][x] = 1;
+                }
+                return field;
+            }
 
-            const blockWidth = 40;
-            const blockHeight = 45;
+            const G = [
+                [1, 1],
+                [0, 1],
+                [-1, 1],
+                [-1, 0],
+                [0, -1],
+            ];
+            function glider(field, x, y) {
+                const horizontal = Math.floor(Math.random() * 2) === 0;
+                if (horizontal) {
+                    set(field, [x + 1, y + 1], [x, y + 1], [x - 1, y + 1], [x - 1, y], [x, y - 1]);
+                } else {
+                    set(field, [x + 1, y + 1], [x + 1, y], [x + 1, y - 1], [x, y - 1], [x, y]);
+                }
+                return field;
+            }
 
-            const nx = computed(() => Math.round(windowWidth.value / blockWidth));
-            const ny = computed(() => Math.round(windowHeight.value / blockHeight));
+            function randomGliders(field) {
+                const height = field.length;
+                const width = field[0].length;
+                for (let i = 0; i < 100; i++) {
+                    const x = Math.floor(Math.random() * width);
+                    const y = Math.floor(Math.random() * height);
+                    glider(field, x, y);
+                }
+                return field;
+            }
+
+            function randomNoise(field) {
+                const height = field.length;
+                const width = field[0].length;
+                const points = [];
+                for (let i = 0; i < height * width * 0.05; i++) {
+                    const rx = Math.floor(Math.random() * width);
+                    const ry = Math.floor(Math.random() * height);
+                    points.push([rx, ry]);
+                }
+                set(field, ...points);
+                return field;
+            }
+
+            function reshapeField(width, height) {
+                return Array.from({ length: height }, () => Array(width).fill(0));
+            }
+
+            function createCells(field) {
+                const cells = Array.from(field, (value, y) => {
+                    return Array.from(value, (value, x) => document.createElement("span"));
+                });
+                const grid = document.createElement("div");
+                grid.style.display = "grid";
+                const { width, height } = size(field);
+                grid.style.gridTemplateColumns = `repeat(${width}, ${blockWidth}px)`;
+                grid.style.gridTemplateRows = `repeat(${height}, ${blockHeight}px)`;
+                grid.style.height = `100vh`;
+                grid.style.width = `100vw`;
+                grid.append(...cells.flat());
+                return { grid, cells };
+            }
+
+            function updateCells(cells, field) {
+                for (let y = 0; y < field.length; y++) {
+                    for (let x = 0; x < field[0].length; x++) {
+                        cells[y][x].className = field[y][x] ? "alive" : "";
+                    }
+                }
+            }
+
+            let cells = undefined;
+            let field = undefined;
 
             window.addEventListener("resize", resize);
             function resize() {
-                windowWidth.value = window.innerWidth;
-                windowHeight.value = window.innerHeight;
-                const text = `${windowWidth.value}x${windowHeight.value} | ${nx.value}x${ny.value}`;
-                info.innerText = text;
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
 
-                const cells = Array.from({ length: ny.value }, (_, y) =>
-                    Array.from({ length: nx.value }, (_, x) => {
-                        const text = `${x}:${y}`;
-                        const color = colors[(y + x) % colors.length];
-                        return h(
-                            "span",
-                            {
-                                style: `background-color: ${color};`,
-                                tabindex: 0,
-                                role: "button",
-                                onClick: () => console.log(`clicked ${x}:${y}`),
-                                onTouchStart: () => console.log(`touched ${x}:${y}`),
-                            },
-                            text
-                        );
-                    })
-                ).flat();
-                const cellsElement = h(
-                    "div",
-                    {
-                        style:
-                            `display: grid; ` +
-                            `grid-template-columns: repeat(${nx.value}, 1fr); ` +
-                            `grid-template-rows: repeat(${ny.value}, 1fr); ` +
-                            `height: 100vh; width: 100vw;`,
-                    },
-                    cells
-                );
-                render(cellsElement, field);
+                const width = Math.round(windowWidth / blockWidth);
+                const height = Math.round(windowHeight / blockHeight);
+
+                const shape = size(field);
+                if (width === shape.width && height === shape.height) {
+                    return;
+                }
+                label.innerText = `${width}x${windowHeight} | ${height}x${width}`;
+
+                field = reshapeField(width, height);
+                randomGliders(field);
+                randomNoise(field);
+                const scaffold = createCells(field);
+
+                cells = scaffold.cells;
+                canvas.replaceChildren(scaffold.grid);
             }
             resize();
+
+            setInterval(() => {
+                field = lifeGeneration(field);
+                updateCells(cells, field);
+                const randomGlider = Math.floor(Math.random() * 10) === 0;
+                if (randomGlider) {
+                    const { width, height } = size(field);
+                    const x = (Math.floor(Math.random() * width) % (width - 3)) + 2;
+                    const y = (Math.floor(Math.random() * height) % (height - 3)) + 2;
+                    glider(field, x, y);
+                }
+            }, 100);
+
+            function lifeGeneration(field) {
+                const height = field.length;
+                const width = field[0].length;
+                const newField = reshapeField(width, height);
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const alive = field[y][x];
+                        const neighbors = [
+                            [-1, -1],
+                            [-1, 0],
+                            [-1, 1],
+                            [0, -1],
+                            [0, 1],
+                            [1, -1],
+                            [1, 0],
+                            [1, 1],
+                        ].reduce((count, [dy, dx]) => {
+                            const ny = (y + dy + height) % height;
+                            const nx = (x + dx + width) % width;
+                            return count + (field[ny][nx] || 0);
+                        }, 0);
+
+                        if (alive && (neighbors < 2 || neighbors > 3)) newField[y][x] = 0;
+                        else if (!alive && neighbors === 3) newField[y][x] = 1;
+                        else newField[y][x] = alive;
+                    }
+                }
+                return newField;
+            }
         </script>
     </body>
 </html>
