@@ -12,50 +12,70 @@
             overflow: hidden;
         }
         span {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border: 1px solid #ccc;
+            border-left: 1px solid transparent;
+            border-top: 1px solid transparent;
         }
         span.alive {
             background-color: green;
         }
-        label {
+        #panel {
             position: fixed;
             bottom: 0;
             right: 50%;
             transform: translateX(50%);
-            padding: 0.5em;
-            z-index: 1000;
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
+            padding: 0.2em;
+            border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            background-color: white;
+            background-color: blue;
+            color: white;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        #generation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 0.2em;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+        #fps {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 0.2em;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
             font-family: monospace;
             font-size: 1.2em;
         }
     </style>
     <body>
-        <label id="info">?</label>
+        <div id="panel">
+            <output id="info">?</output>
+        </div>
+        <output id="generation">0</output>
+        <output id="fps">0</output>
+
         <div id="canvas"></div>
 
         <script type="module">
-            const blockWidth = 5;
-            const blockHeight = 6;
+            const BlockWidth = 5;
+            const BlockHeight = 6;
 
             const canvas = document.getElementById("canvas");
-            const label = document.getElementById("info");
+            const info = document.getElementById("info");
 
             function size(field) {
                 if (!field) return { width: 0, height: 0 };
-                return {
-                    width: field[0].length,
-                    height: field.length,
-                };
+                return { width: field[0].length, height: field.length };
             }
 
-            function set(field, ...xy) {
-                const height = field.length;
-                const width = field[0].length;
+            function place(field, ...xy) {
+                const { width, height } = size(field);
                 for (const [x, y] of xy) {
                     if (x < 0 || x >= width || y < 0 || y >= height) continue;
                     field[y][x] = 1;
@@ -71,37 +91,22 @@
                 [0, -1],
             ];
             function glider(field, x, y) {
-                const horizontal = Math.floor(Math.random() * 2) === 0;
-                if (horizontal) {
-                    set(field, [x + 1, y + 1], [x, y + 1], [x - 1, y + 1], [x - 1, y], [x, y - 1]);
-                } else {
-                    set(field, [x + 1, y + 1], [x + 1, y], [x + 1, y - 1], [x, y - 1], [x, y]);
-                }
+                const horizontal = R(2) === 0;
+                place(field, ...G.map(([dx, dy]) => (horizontal ? [x + dx, y + dy] : [x + dy, y + dx])));
                 return field;
             }
 
+            const R = (scaler = 1.0) => Math.floor(Math.random() * scaler);
+
             function randomGliders(field) {
-                const height = field.length;
-                const width = field[0].length;
-                for (let i = 0; i < 100; i++) {
-                    const x = Math.floor(Math.random() * width);
-                    const y = Math.floor(Math.random() * height);
-                    glider(field, x, y);
-                }
-                return field;
+                const { width, height } = size(field);
+                for (let i = 0; i < 100; i++) glider(field, R(width), R(height));
             }
 
             function randomNoise(field) {
-                const height = field.length;
-                const width = field[0].length;
-                const points = [];
-                for (let i = 0; i < height * width * 0.05; i++) {
-                    const rx = Math.floor(Math.random() * width);
-                    const ry = Math.floor(Math.random() * height);
-                    points.push([rx, ry]);
-                }
-                set(field, ...points);
-                return field;
+                const { width, height } = size(field);
+                const points = Array.from({ length: height * width * 0.05 }, () => [R(width), R(height)]);
+                place(field, ...points);
             }
 
             function reshapeField(width, height) {
@@ -109,14 +114,14 @@
             }
 
             function createCells(field) {
-                const cells = Array.from(field, (value, y) => {
-                    return Array.from(value, (value, x) => document.createElement("span"));
-                });
+                const cells = Array.from(field, (value, y) =>
+                    Array.from(value, (value, x) => document.createElement("span"))
+                );
                 const grid = document.createElement("div");
                 grid.style.display = "grid";
                 const { width, height } = size(field);
-                grid.style.gridTemplateColumns = `repeat(${width}, ${blockWidth}px)`;
-                grid.style.gridTemplateRows = `repeat(${height}, ${blockHeight}px)`;
+                grid.style.gridTemplateColumns = `repeat(${width}, ${BlockWidth}px)`;
+                grid.style.gridTemplateRows = `repeat(${height}, ${BlockHeight}px)`;
                 grid.style.height = `100vh`;
                 grid.style.width = `100vw`;
                 grid.append(...cells.flat());
@@ -133,20 +138,24 @@
 
             let cells = undefined;
             let field = undefined;
+            let generation = 0;
+
+            let fps = 0;
+            let lastTime = performance.now();
 
             window.addEventListener("resize", resize);
             function resize() {
                 const windowWidth = window.innerWidth;
                 const windowHeight = window.innerHeight;
 
-                const width = Math.round(windowWidth / blockWidth);
-                const height = Math.round(windowHeight / blockHeight);
+                const width = Math.round(windowWidth / BlockWidth);
+                const height = Math.round(windowHeight / BlockHeight);
 
                 const shape = size(field);
                 if (width === shape.width && height === shape.height) {
                     return;
                 }
-                label.innerText = `${width}x${windowHeight} | ${height}x${width}`;
+                info.innerText = `${windowWidth}x${windowHeight} | ${height}x${width}`;
 
                 field = reshapeField(width, height);
                 randomGliders(field);
@@ -160,33 +169,38 @@
 
             setInterval(() => {
                 field = lifeGeneration(field);
+                document.getElementById("generation").innerText = ++generation;
                 updateCells(cells, field);
-                const randomGlider = Math.floor(Math.random() * 10) === 0;
-                if (randomGlider) {
-                    const { width, height } = size(field);
-                    const x = (Math.floor(Math.random() * width) % (width - 3)) + 2;
-                    const y = (Math.floor(Math.random() * height) % (height - 3)) + 2;
-                    glider(field, x, y);
-                }
-            }, 100);
 
+                const now = performance.now();
+                fps = Math.round(1000 / (now - lastTime));
+                lastTime = now;
+                document.getElementById("fps").innerText = fps.toFixed(1);
+
+                if (R(10) !== 0) return;
+                const { width, height } = size(field);
+                const x = (R(width) % (width - 3)) + 2;
+                const y = (R(height) % (height - 3)) + 2;
+                glider(field, x, y);
+            }, 200);
+
+            const N = [
+                [-1, -1],
+                [-1, 0],
+                [-1, 1],
+                [0, -1],
+                [0, 1],
+                [1, -1],
+                [1, 0],
+                [1, 1],
+            ];
             function lifeGeneration(field) {
-                const height = field.length;
-                const width = field[0].length;
+                const { width, height } = size(field);
                 const newField = reshapeField(width, height);
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const alive = field[y][x];
-                        const neighbors = [
-                            [-1, -1],
-                            [-1, 0],
-                            [-1, 1],
-                            [0, -1],
-                            [0, 1],
-                            [1, -1],
-                            [1, 0],
-                            [1, 1],
-                        ].reduce((count, [dy, dx]) => {
+                        const neighbors = N.reduce((count, [dy, dx]) => {
                             const ny = (y + dy + height) % height;
                             const nx = (x + dx + width) % width;
                             return count + (field[ny][nx] || 0);
