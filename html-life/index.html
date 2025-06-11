@@ -66,6 +66,44 @@
             const BlockWidth = 5;
             const BlockHeight = 6;
 
+            const colors = [
+                "white",
+                "black",
+                "Gray",
+                "LightGray",
+                "Red",
+                "LightCoral",
+                "Orange",
+                "Gold",
+                "Yellow",
+                "LightYellow",
+                "Green",
+                "LightGreen",
+                "Lime",
+                "Cyan",
+                "LightCyan",
+                "Blue",
+                "LightBlue",
+                "Navy",
+                "Purple",
+                "Orchid",
+                "Pink",
+                "LightPink",
+                "Brown",
+                "Tan",
+                "Turquoise",
+                "LightSeaGreen",
+                "Teal",
+                "Magenta",
+                "DeepPink",
+            ];
+
+            const deadColor = 0;
+            const defaultColor = 1;
+            const newGliderColor = 2;
+
+            const randomColor = () => R(colors.length - 3) + 3;
+
             const canvas = document.getElementById("canvas");
             const info = document.getElementById("info");
 
@@ -74,11 +112,12 @@
                 return { width: field[0].length, height: field.length };
             }
 
-            function place(field, ...xy) {
+            function place(field, color, ...xy) {
                 const { width, height } = size(field);
+                color = typeof color === "function" ? color() : color;
                 for (const [x, y] of xy) {
                     if (x < 0 || x >= width || y < 0 || y >= height) continue;
-                    field[y][x] = 1;
+                    field[y][x] = color;
                 }
                 return field;
             }
@@ -90,9 +129,9 @@
                 [-1, 0],
                 [0, -1],
             ];
-            function glider(field, x, y) {
+            function glider(field, color, x, y) {
                 const horizontal = R(2) === 0;
-                place(field, ...G.map(([dx, dy]) => (horizontal ? [x + dx, y + dy] : [x + dy, y + dx])));
+                place(field, color, ...G.map(([dx, dy]) => (horizontal ? [x + dx, y + dy] : [x + dy, y + dx])));
                 return field;
             }
 
@@ -100,13 +139,14 @@
 
             function randomGliders(field) {
                 const { width, height } = size(field);
-                for (let i = 0; i < 100; i++) glider(field, R(width), R(height));
+                for (let i = 0; i < 100; i++) glider(field, randomColor(), R(width), R(height));
             }
 
             function randomNoise(field) {
                 const { width, height } = size(field);
                 const points = Array.from({ length: height * width * 0.05 }, () => [R(width), R(height)]);
-                place(field, ...points);
+                const color = randomColor;
+                place(field, color, ...points);
             }
 
             function reshapeField(width, height) {
@@ -131,7 +171,9 @@
             function updateCells(cells, field) {
                 for (let y = 0; y < field.length; y++) {
                     for (let x = 0; x < field[0].length; x++) {
-                        cells[y][x].className = field[y][x] ? "alive" : "";
+                        // cells[y][x].className = field[y][x] ? "alive" : "";
+                        const alive = field[y][x];
+                        cells[y][x].style.backgroundColor = colors[alive];
                     }
                 }
             }
@@ -181,7 +223,7 @@
                 const { width, height } = size(field);
                 const x = (R(width) % (width - 3)) + 2;
                 const y = (R(height) % (height - 3)) + 2;
-                glider(field, x, y);
+                glider(field, newGliderColor, x, y);
             }, 200);
 
             const N = [
@@ -200,15 +242,41 @@
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const alive = field[y][x];
+                        let neighborsColors = new Set();
                         const neighbors = N.reduce((count, [dy, dx]) => {
                             const ny = (y + dy + height) % height;
                             const nx = (x + dx + width) % width;
-                            return count + (field[ny][nx] || 0);
+                            const neighbor = field[ny][nx] || 0;
+                            if (neighbor) neighborsColors.add(neighbor);
+                            return count + (neighbor ? 1 : 0);
                         }, 0);
 
-                        if (alive && (neighbors < 2 || neighbors > 3)) newField[y][x] = 0;
-                        else if (!alive && neighbors === 3) newField[y][x] = 1;
-                        else newField[y][x] = alive;
+                        let newColor = deadColor;
+
+                        const differentNeighbors = neighborsColors.size > 1;
+                        const singleNeighborColor = Array.from(neighborsColors)[0] || deadColor;
+
+                        if (alive) {
+                            // if alive and has 2 or 3 neighbors, it stays alive
+                            if (neighbors >= 2 && neighbors <= 3)
+                                newColor =
+                                    differentNeighbors || singleNeighborColor != alive
+                                        ? // if neighbors have different colors or single neighbor color differs from alive color, set default color
+                                          defaultColor
+                                        : // otherwise, keep the same color
+                                          alive;
+                            // otherwise, it dies (default)
+                        } else {
+                            // if dead and has 3 neighbors, it becomes alive
+                            if (neighbors === 3)
+                                newColor = differentNeighbors
+                                    ? // if neighbors have different colors, set default color
+                                      defaultColor
+                                    : // otherwise, set to the color of the first (and the only) neighbor
+                                      singleNeighborColor;
+                            // otherwise, it stays dead (default)
+                        }
+                        newField[y][x] = newColor;
                     }
                 }
                 return newField;
