@@ -171,7 +171,6 @@
             function updateCells(cells, field) {
                 for (let y = 0; y < field.length; y++) {
                     for (let x = 0; x < field[0].length; x++) {
-                        // cells[y][x].className = field[y][x] ? "alive" : "";
                         const alive = field[y][x];
                         cells[y][x].style.backgroundColor = colors[alive];
                     }
@@ -184,6 +183,11 @@
 
             let fps = 0;
             let lastTime = performance.now();
+
+            let paused = false;
+            document.addEventListener("click", (e) => {
+                paused = !paused;
+            });
 
             window.addEventListener("resize", resize);
             function resize() {
@@ -206,10 +210,13 @@
 
                 cells = scaffold.cells;
                 canvas.replaceChildren(scaffold.grid);
+
+                generation = 0;
             }
             resize();
 
             setInterval(() => {
+                if (paused) return;
                 field = lifeGeneration(field);
                 document.getElementById("generation").innerText = ++generation;
                 updateCells(cells, field);
