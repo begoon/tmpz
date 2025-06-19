@@ -150,7 +150,7 @@ export function I8080(machine) {
     const F_NEG = 0x80;
 
     this.store_flags = function () {
-        var f = 0;
+        let f = 0;
         if (this.sf) f |= F_NEG;
         else f &= ~F_NEG;
         if (this.zf) f |= F_ZERO;
@@ -230,7 +230,7 @@ export function I8080(machine) {
     };
 
     this.next_pc_byte = function () {
-        var v = this.memory_read_byte(this.pc);
+        const v = this.memory_read_byte(this.pc);
         this.pc = (this.pc + 1) & 0xffff;
         return v;
     };
@@ -240,7 +240,7 @@ export function I8080(machine) {
     };
 
     this.inr = function (r) {
-        var v = this.reg(r);
+        let v = this.reg(r);
         v = (v + 1) & 0xff;
         this.set_reg(r, v);
         this.sf = (v & 0x80) != 0;
@@ -250,7 +250,7 @@ export function I8080(machine) {
     };
 
     this.dcr = function (r) {
-        var v = this.reg(r);
+        let v = this.reg(r);
         v = (v - 1) & 0xff;
         this.set_reg(r, v);
         this.sf = (v & 0x80) != 0;
@@ -260,9 +260,9 @@ export function I8080(machine) {
     };
 
     this.add_im8 = function (v, carry) {
-        var a = this.a();
-        var w16 = a + v + carry;
-        var index = ((a & 0x88) >> 1) | ((v & 0x88) >> 2) | ((w16 & 0x88) >> 3);
+        let a = this.a();
+        const w16 = a + v + carry;
+        const index = ((a & 0x88) >> 1) | ((v & 0x88) >> 2) | ((w16 & 0x88) >> 3);
         a = w16 & 0xff;
         this.sf = (a & 0x80) != 0;
         this.zf = a == 0;
@@ -277,9 +277,9 @@ export function I8080(machine) {
     };
 
     this.sub_im8 = function (v, carry) {
-        var a = this.a();
-        var w16 = (a - v - carry) & 0xffff;
-        var index = ((a & 0x88) >> 1) | ((v & 0x88) >> 2) | ((w16 & 0x88) >> 3);
+        let a = this.a();
+        const w16 = (a - v - carry) & 0xffff;
+        const index = ((a & 0x88) >> 1) | ((v & 0x88) >> 2) | ((w16 & 0x88) >> 3);
         a = w16 & 0xff;
         this.sf = (a & 0x80) != 0;
         this.zf = a == 0;
@@ -294,7 +294,7 @@ export function I8080(machine) {
     };
 
     this.cmp_im8 = function (v) {
-        var a = this.a(); // Store the accumulator before substraction.
+        const a = this.a(); // Store the accumulator before substraction.
         this.sub_im8(v, 0);
         this.set_a(a); // Ignore the accumulator value after substraction.
     };
@@ -304,7 +304,7 @@ export function I8080(machine) {
     };
 
     this.ana_im8 = function (v) {
-        var a = this.a();
+        let a = this.a();
         this.hf = ((a | v) & 0x08) != 0;
         a &= v;
         this.sf = (a & 0x80) != 0;
@@ -319,7 +319,7 @@ export function I8080(machine) {
     };
 
     this.xra_im8 = function (v) {
-        var a = this.a();
+        let a = this.a();
         a ^= v;
         this.sf = (a & 0x80) != 0;
         this.zf = a == 0;
@@ -334,7 +334,7 @@ export function I8080(machine) {
     };
 
     this.ora_im8 = function (v) {
-        var a = this.a();
+        let a = this.a();
         a |= v;
         this.sf = (a & 0x80) != 0;
         this.zf = a == 0;
@@ -350,7 +350,7 @@ export function I8080(machine) {
 
     // r - 0 (bc), 2 (de), 4 (hl), 6 (sp)
     this.dad = function (r) {
-        var hl = this.hl() + this.rp(r);
+        const hl = this.hl() + this.rp(r);
         this.cf = (hl & 0x10000) != 0;
         this.set_h(hl >> 8);
         this.set_l(hl & 0xff);
@@ -366,7 +366,7 @@ export function I8080(machine) {
     };
 
     this.pop = function () {
-        var v = this.memory_read_word(this.sp);
+        const v = this.memory_read_word(this.sp);
         this.sp = (this.sp + 2) & 0xffff;
         return v;
     };
@@ -382,8 +382,8 @@ export function I8080(machine) {
     };
 
     this.execute = function (opcode) {
-        var cpu_cycles = -1;
-        var r, w8, w16, direction, flags;
+        let cpu_cycles = -1;
+        let r, w8, w16, direction, flags;
 
         switch (opcode) {
             default:
@@ -429,7 +429,7 @@ export function I8080(machine) {
             case 0x23: /* inx h */
             case 0x33 /* inx sp */:
                 cpu_cycles = 5;
-                var r = opcode >> 3;
+                r = opcode >> 3;
                 this.set_rp(r, (this.rp(r) + 1) & 0xffff);
                 break;
 
@@ -497,7 +497,7 @@ export function I8080(machine) {
             case 0x0a: /* ldax b */
             case 0x1a /* ldax d */:
                 cpu_cycles = 7;
-                var r = (opcode & 0x10) >> 3;
+                r = (opcode & 0x10) >> 3;
                 this.set_a(this.memory_read_byte(this.rp(r)));
                 break;
 
@@ -508,7 +508,7 @@ export function I8080(machine) {
             case 0x2b: /* dcx h */
             case 0x3b /* dcx sp */:
                 cpu_cycles = 5;
-                var r = (opcode & 0x30) >> 3;
+                r = (opcode & 0x30) >> 3;
                 this.set_rp(r, (this.rp(r) - 1) & 0xffff);
                 break;
 
@@ -541,9 +541,9 @@ export function I8080(machine) {
 
             case 0x27 /* daa */:
                 cpu_cycles = 4;
-                var carry = this.cf;
-                var add = 0;
-                var a = this.a();
+                carry = this.cf;
+                add = 0;
+                a = this.a();
                 if (this.hf || (a & 0x0f) > 9) add = 0x06;
                 if (this.cf || a >> 4 > 9 || (a >> 4 >= 9 && (a & 0xf) > 9)) {
                     add |= 0x60;
@@ -556,7 +556,7 @@ export function I8080(machine) {
 
             case 0x2a /* ldhl addr */:
                 cpu_cycles = 16;
-                var w16 = this.next_pc_word();
+                w16 = this.next_pc_word();
                 this.regs[5] = this.memory_read_byte(w16);
                 this.regs[4] = this.memory_read_byte(w16 + 1);
                 break;
@@ -659,8 +659,8 @@ export function I8080(machine) {
             case 0x7d: /* mov a, l */
             case 0x7e: /* mov a, m */
             case 0x7f /* mov a, a */:
-                var src = opcode & 7;
-                var dst = (opcode >> 3) & 7;
+                src = opcode & 7;
+                dst = (opcode >> 3) & 7;
                 cpu_cycles = src == 6 || dst == 6 ? 7 : 5;
                 this.set_reg(dst, this.reg(src));
                 break;
