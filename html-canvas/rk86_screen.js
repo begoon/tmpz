@@ -16,10 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-export function Screen(font_image, ui, memory) {
-    this.ui = ui;
-    this.memory = memory;
-    this.memory.screen = this;
+export function Screen(machine) {
+    this.machine = machine;
 
     const update_rate = 25;
     const cursor_rate = 500;
@@ -48,7 +46,7 @@ export function Screen(font_image, ui, memory) {
     this.cache = [];
 
     this.font = new Image();
-    this.font.src = font_image; // -> "rk86_font.bmp";
+    this.font.src = this.machine.font; // -> "rk86_font.bmp";
 
     this.light_pen_x = 0;
     this.light_pen_y = 0;
@@ -93,7 +91,7 @@ export function Screen(font_image, ui, memory) {
     };
 
     this.init = function () {
-        this.ctx = this.ui.canvas.getContext("2d");
+        this.ctx = this.machine.ui.canvas.getContext("2d");
     };
 
     this.disable_smoothing = function () {
@@ -110,9 +108,8 @@ export function Screen(font_image, ui, memory) {
         console.log(`screen geometry: ${width} x ${height}`);
 
         const canvas_width = this.width * char_width * this.scale_x;
-        const canvas_height =
-            this.height * (char_height + char_height_gap) * this.scale_y;
-        this.ui.resize_canvas(canvas_width, canvas_height);
+        const canvas_height = this.height * (char_height + char_height_gap) * this.scale_y;
+        this.machine.ui.resize_canvas(canvas_width, canvas_height);
 
         this.disable_smoothing();
         this.ctx.fillRect(0, 0, canvas_width, canvas_height);
@@ -121,11 +118,7 @@ export function Screen(font_image, ui, memory) {
     this.set_video_memory = function (base) {
         this.video_memory_base = base;
         this.init_cache(this.video_memory_size);
-        console.log(
-            `video memory:`,
-            `$${this.video_memory_base.toString(16)}`,
-            `size: ${this.video_memory_size}`
-        );
+        console.log(`video memory:`, `${this.video_memory_base.toString(16)}`, `size: ${this.video_memory_size}`);
     };
 
     this.set_cursor = function (x, y) {
@@ -135,11 +128,12 @@ export function Screen(font_image, ui, memory) {
     };
 
     this.draw_screen = function () {
+        const memory = this.machine.memory;
         let i = this.video_memory_base;
         for (let y = 0; y < this.height; ++y) {
             for (let x = 0; x < this.width; ++x) {
                 const cache_i = i - this.video_memory_base;
-                const ch = this.memory.read(i);
+                const ch = memory.read(i);
                 if (this.cache[cache_i] != ch) {
                     this.draw_char(x, y, ch);
                     this.cache[cache_i] = ch;
@@ -155,24 +149,19 @@ export function Screen(font_image, ui, memory) {
     this.flip_cursor();
     this.draw_screen();
 
-    this.ui.canvas.onmousemove = (event) => {
-        const x = Math.floor(
-            (event.x + 1 - this.ui.canvas.offsetLeft) /
-                (char_width * this.scale_x)
-        );
-        const y = Math.floor(
-            (event.y + 1 - this.ui.canvas.offsetTop) /
-                ((char_height + char_height_gap) * this.scale_y)
-        );
+    this.machine.ui.canvas.onmousemove = (event) => {
+        const canvas = this.machine.ui.canvas;
+        const x = Math.floor((event.x + 1 - canvas.offsetLeft) / (char_width * this.scale_x));
+        const y = Math.floor((event.y + 1 - canvas.offsetTop) / ((char_height + char_height_gap) * this.scale_y));
         this.light_pen_x = x;
         this.light_pen_y = y;
     };
 
-    this.ui.canvas.onmouseup = (event) => {
+    this.machine.ui.canvas.onmouseup = (event) => {
         this.light_pen_active = 0;
     };
 
-    this.ui.canvas.onmousedown = (event) => {
+    this.machine.ui.canvas.onmousedown = (event) => {
         this.light_pen_active = 1;
     };
 }

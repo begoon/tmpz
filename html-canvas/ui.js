@@ -16,8 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-export function UI(memory) {
-    this.memory = memory;
+export function UI(machine) {
+    this.machine = machine;
 
     this.canvas = document.getElementById("canvas");
 
@@ -32,4 +32,50 @@ export function UI(memory) {
     };
 
     this.fullscreen = () => canvas.requestFullScreen();
+
+    this.reset = function () {
+        this.machine.memory.keyboard.reset();
+        this.machine.cpu.jump(0xf800);
+        console.log("Reset");
+    };
+
+    this.restart = function () {
+        this.machine.memory.zero_ram();
+        this.reset();
+    };
+
+    this.ruslat = document.getElementById("ruslat");
+    this.ruslat_state = false;
+
+    this.update_ruslat = (value) => {
+        if (value === this.ruslat_state) return;
+        this.ruslat_state = value;
+        this.ruslat.innerHTML = value ? "РУС" : "ЛАТ";
+    };
+
+    this.ruslat.addEventListener("click", () => {
+        // Конкретный адрес флага раскладки оригинального монитора 32КБ.
+        const ruslat_flag = 0x7606;
+        const state = this.machine.memory.read(ruslat_flag) ? 0x00 : 0xff;
+        this.machine.memory.write(ruslat_flag, state);
+        this.machine.update_ruslat(state);
+    });
+
+    this.sound = document.getElementById("sound");
+    this.sound.addEventListener("click", () => {
+        this.machine.runner.init_sound(sound.checked);
+        console.log("Sound " + (this.machine.runner.sound ? "enabled" : "disabled"));
+    });
+
+    this.ips = document.getElementById("ips");
+    this.tps = document.getElementById("tps");
+
+    this.update_perf = () => {
+        function update(element, value) {
+            element.innerHTML = Math.floor(value * 1000).toLocaleString();
+        }
+        update(ips, this.machine.runner.instructions_per_millisecond);
+        update(tps, this.machine.runner.ticks_per_millisecond);
+    };
+    setInterval(this.update_perf, 2000);
 }

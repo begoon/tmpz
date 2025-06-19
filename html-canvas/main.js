@@ -16,40 +16,97 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { I8080 } from "./i8080.js";
+import FileParser from "./rk86_file_parser.js";
 import { rk86_font_image } from "./rk86_font.js";
+import { Keyboard } from "./rk86_keyboard.js";
 import { Memory } from "./rk86_memory.js";
+import { Runner } from "./rk86_runner.js";
 import { Screen } from "./rk86_screen.js";
 import { UI } from "./ui.js";
 
-export function main() {
-    const memory = new Memory();
-
-    for (let i = 0; i < 78 * 30; i++)
-        memory.write_raw(i, Math.floor(Math.random() * 0x80));
-
-    let x = 0;
-    let y = 0;
-    let ch = undefined;
-    setInterval(() => {
-        if (ch !== undefined) memory.write_raw(y * 78 + x, ch);
-        x += 1;
-        if (x >= 78) (x = 0), (y += 1);
-        if (y >= 30) y = 0;
-        ch = memory.read_raw(y * 78 + x);
-        screen.set_cursor(x, y);
-        memory.write_raw(y * 78 + x, 0x20);
-        console.log(`Cursor at (${x}, ${y}), char: ${ch}`);
-    }, 100);
-
-    const ui = new UI(memory);
-
-    screen = new Screen(rk86_font_image(), ui, memory);
-    screen.set_geometry(78, 30);
-    screen.set_video_memory(0);
-
-    ui.canvas.addEventListener("click", () => {
-        ui.canvas.requestFullscreen();
-    });
+function IO() {
+    this.input = function (port) {
+        return 0;
+    };
+    this.output = function (port, w8) {};
+    this.interrupt = function (iff) {};
 }
 
-main();
+export async function main() {
+    const machine = {
+        font: rk86_font_image(),
+        file_parser: new FileParser(),
+        //
+        keyboard: new Keyboard(),
+        io: new IO(),
+    };
+    machine.memory = new Memory(machine);
+    machine.ui = new UI(machine);
+    machine.screen = new Screen(machine);
+    machine.cpu = new I8080(machine);
+    machine.runner = new Runner(machine);
+
+    async function load_file(name) {
+        const array = Array.from(new Uint8Array(await (await fetch("./files/" + name)).arrayBuffer()));
+        return machine.file_parser.parse_rk86_binary(name, array);
+    }
+
+    machine.memory.load_file(await load_file("mon32.bin"));
+    machine.memory.load_file(await load_file("DIVERSE.GAM"));
+    // machine.memory.load_file(await load_file("GFIRE.GAM"));
+
+    machine.runner.execute();
+
+    function reset() {
+        machine.keyboard.reset();
+        machine.cpu.jump(0xf800);
+    }
+
+    document.getElementById("reset").addEventListener("click", () => {
+        reset();
+        console.log("Reset");
+    });
+
+    document.getElementById("restart").addEventListener("click", () => {
+        machine.memory.zero_ram();
+        reset();
+        console.log("Restart");
+    });
+
+    document.getElementById("pause").addEventListener("click", () => {
+        machine.runner.paused = !machine.runner.paused;
+        document.getElementById("pause").textContent = machine.runner.paused ? "Resume" : "Pause";
+        document.getElementById("pause").classList.toggle("paused", machine.runner.paused);
+        console.log(machine.runner.paused ? "Paused" : "Resumed");
+    });
+
+    document.getElementById("fullscreen").addEventListener("click", () => {
+        machine.ui.canvas.requestFullscreen();
+    });
+
+    const header = document.getElementById("header");
+    const footer = document.getElementById("footer");
+    document.addEventListener("fullscreenchange", () => {
+        const fullscreen = document.fullscreenElement;
+        if (!fullscreen) {
+            console.log("exit fullscreen");
+            header.style.display = header.initial_display;
+            footer.style.display = footer.initial_display;
+        } else {
+            console.log("enter fullscreen");
+            header.initial_display = header.style.display;
+            header.style.display = "none";
+            footer.initial_display = footer.style.display;
+            footer.style.display = "none";
+        }
+    });
+
+    document.getElementById("ruslat").addEventListener("click", () => {
+        machine.ui.update_ruslat = !machine.ui.update_ruslat;
+        document.getElementById("ruslat").textContent = machine.ui.update_ruslat ? "RU" : "LAT";
+    });
+    machine.memory.update_ruslat = machine.ui.update_ruslat;
+}
+
+await main();

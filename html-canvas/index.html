@@ -27,12 +27,81 @@
                 margin: 0;
                 background-color: #000000;
                 color: #ffffff;
+                font-family: sans-serif;
             }
         </style>
     </head>
 
     <body>
-        <canvas id="canvas" style="width: 100vw; height: 100vh"></canvas>
+        <div
+            style="
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: start;
+                justify-content: center;
+            "
+        >
+            <style>
+                #header,
+                #footer {
+                    box-sizing: border-box;
+                    display: flex;
+                    width: 100%;
+                }
+            </style>
+            <div id="header">
+                <button id="reset">Reset</button>
+                <button id="restart">Restart</button>
+                <style>
+                    #pause.paused {
+                        background-color: red;
+                        color: white;
+                    }
+                </style>
+                <button id="pause">Pause</button>
+                <button id="fullscreen">Full screen</button>
+                <div style="margin-left: auto">
+                    <input id="sound" type="checkbox" /><span>Sound</span>
+                    <button id="ruslat">ЛАТ</button>
+                </div>
+            </div>
+            <canvas id="canvas" style="width: 100%; height: 100%"></canvas>
+            <div id="footer" style="display: flex; gap: 4px">
+                <style>
+                    span.dimmed {
+                        opacity: 0.6;
+                    }
+                </style>
+                <span class="dimmed">ИНСТР</span>
+                <span id="ips"></span>
+                <b style="width: 4px"></b>
+                <span class="dimmed">ТАКТ</span>
+                <span id="tps"></span>
+            </div>
+            <div
+                id="console"
+                style="
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
+                    width: 25%;
+                    height: 25%;
+                    overflow: auto;
+                    background-color: #000000;
+                    color: #ffffff;
+                    border: 1px solid greenyellow;
+                    font-family: monospace;
+                    opacity: 0.8;
+                    display: none;
+                "
+            >
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Obcaecati, repellat. Numquam, eaque ipsa!
+                Sapiente rem quaerat, laboriosam odit amet modi saepe eaque facere numquam delectus dolor quia similique
+                minima veritatis.
+            </div>
+        </div>
     </body>
     <script type="module" src="./main.js"></script>
 </html>
