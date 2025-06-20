@@ -53,8 +53,9 @@ export async function main() {
     }
 
     machine.memory.load_file(await load_file("mon32.bin"));
-    machine.memory.load_file(await load_file("DIVERSE.GAM"));
+    // machine.memory.load_file(await load_file("DIVERSE.GAM"));
     // machine.memory.load_file(await load_file("GFIRE.GAM"));
+    machine.memory.load_file(await load_file("RESCUE.GAM"));
 
     machine.runner.execute();
 
@@ -91,14 +92,12 @@ export async function main() {
         const fullscreen = document.fullscreenElement;
         if (!fullscreen) {
             console.log("exit fullscreen");
-            header.style.display = header.initial_display;
-            footer.style.display = footer.initial_display;
+            header.classList.remove("hidden");
+            footer.classList.remove("hidden");
         } else {
             console.log("enter fullscreen");
-            header.initial_display = header.style.display;
-            header.style.display = "none";
-            footer.initial_display = footer.style.display;
-            footer.style.display = "none";
+            header.classList.add("hidden");
+            footer.classList.add("hidden");
         }
     });
 

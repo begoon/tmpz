@@ -1,0 +1,7 @@
+test: test-js test-i8080
+
+test-js:
+  bun run ava
+
+test-i8080:
+  bun run i8080_test.js

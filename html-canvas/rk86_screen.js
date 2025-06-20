@@ -30,8 +30,8 @@ export function Screen(machine) {
     const cursor_height = 1;
     const cursor_offset_white = 27;
 
-    this.scale_x = 2;
-    this.scale_y = 2;
+    this.scale_x = 1;
+    this.scale_y = 1;
 
     this.width = 78;
     this.height = 30;
