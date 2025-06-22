@@ -86,14 +86,14 @@ export function Runner(machine) {
                 }
                 batch_instructions += 1;
             }
-            const now = +new Date();
+            const now = performance.now();
             const elapsed = now - this.previous_batch_time;
             this.previous_batch_time = now;
 
             this.instructions_per_millisecond = batch_instructions / elapsed;
             this.ticks_per_millisecond = batch_ticks / elapsed;
         }
-        this.execute_timer = window.setTimeout(() => this.execute(), 10);
+        this.execute_timer = setTimeout(() => this.execute(), 10);
     };
 
     this.pause = function () {

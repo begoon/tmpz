@@ -16,8 +16,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-export function Memory(machine) {
-    this.machine = machine;
+export function Memory(keyboard) {
+    this.keyboard = keyboard;
+    this.screen = undefined; // to set later by attach_screen()
 
     this.init = function () {
         this.buf = [];
@@ -27,6 +28,8 @@ export function Memory(machine) {
     this.zero_ram = function () {
         for (let i = 0; i < 0x8000; ++i) this.buf[i] = 0;
     };
+
+    this.attach_screen = (screen) => (this.screen = screen);
 
     // 800x ports in Radio-86RK schematics
     // 8000: A0-A7 - output, keyboard scanlines
@@ -119,10 +122,10 @@ export function Memory(machine) {
         this.last_access_address = addr;
         this.last_access_operation = "read";
 
-        if (addr == 0x8002) return this.machine.keyboard.modifiers;
+        if (addr == 0x8002) return this.keyboard.modifiers;
 
         if (addr == 0x8001) {
-            const keyboard_state = this.machine.keyboard.state;
+            const keyboard_state = this.keyboard.state;
             let ch = 0xff;
             const kbd_scanline = ~this.buf[0x8000];
             for (let i = 0; i < 8; i++) if ((1 << i) & kbd_scanline) ch &= keyboard_state[i];
@@ -130,17 +133,17 @@ export function Memory(machine) {
         }
 
         if (addr == 0xc001) {
-            return 0x20 | (this.machine.screen.light_pen_active ? 0x10 : 0x00);
+            return 0x20 | (this.screen.light_pen_active ? 0x10 : 0x00);
         }
 
         if (addr == 0xc000) {
             if (this.vg75_c001_60_cmd == 1) {
                 this.vg75_c001_60_cmd = 2;
-                return this.machine.screen.light_pen_x;
+                return this.screen.light_pen_x;
             }
             if (this.vg75_c001_60_cmd == 2) {
                 this.vg75_c001_60_cmd = 0;
-                return this.machine.screen.light_pen_y;
+                return this.screen.light_pen_y;
             }
             return 0x00;
         }
@@ -168,11 +171,11 @@ export function Memory(machine) {
         if (peripheral_reg == 0x8003) {
             if (byte & 0x80) {
                 const mode = byte & 0x7f;
-                // console.log('VV55: write(8003, %02X) mode set %08b'.format(byte, mode));
+                // console.log('ВВ55: write(8003, %02X) mode set %08b'.format(byte, mode));
             } else {
                 const bit = (byte >> 1) & 0x03;
                 const value = byte & 0x01;
-                // console.log('VV55: write(8003, %02X): bit set/reset, bit=%d, value=%d'.format(byte, bit, value));
+                // console.log('ВВ55: write(8003, %02X): bit set/reset, bit=%d, value=%d'.format(byte, bit, value));
                 // RUS/LAT can be updated here if bit == 3.
                 // const rus_last = bit == 3 ? value : <no change>
                 if (bit === 3) this.set_ruslat(value);
@@ -181,33 +184,33 @@ export function Memory(machine) {
         }
 
         if (peripheral_reg == 0xc001 && byte == 0x27) {
-            // console.log('VG75: write(C001, 27) start display [001SSSBB]=%08b'.format(byte));
+            // console.log('ВГ75: write(C001, 27) start display [001SSSBB]=%08b'.format(byte));
             return;
         }
 
         if (peripheral_reg == 0xc001 && byte == 0xe0) {
-            // console.log('VG75: write(C001, E0) preset counter');
+            // console.log('ВГ75: write(C001, E0) preset counter');
             return;
         }
 
         // The cursor control sequence.
         if (peripheral_reg == 0xc001 && byte == 0x80) {
-            // console.log('VG75: write(C001, 80) set cursor');
+            // console.log('ВГ75: write(C001, 80) set cursor');
             this.vg75_c001_80_cmd = 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_80_cmd == 1) {
-            // console.log('VG75: write(C001, %02X) cursor x'.format(byte));
+            // console.log('ВГ75: write(C001, %02X) cursor x'.format(byte));
             this.vg75_c001_80_cmd += 1;
             this.cursor_x_buf = byte + 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_80_cmd == 2) {
-            // console.log('VG75: write(C001, %02X) cursor y'.format(byte));
+            // console.log('ВГ75: write(C001, %02X) cursor y'.format(byte));
             this.cursor_y_buf = byte + 1;
-            this.machine.screen.set_cursor(this.cursor_x_buf - 1, this.cursor_y_buf - 1);
+            this.screen.set_cursor(this.cursor_x_buf - 1, this.cursor_y_buf - 1);
             this.video_screen_cursor_x = this.cursor_x_buf;
             this.video_screen_cursor_y = this.cursor_y_buf;
             this.vg75_c001_80_cmd = 0;
@@ -216,7 +219,7 @@ export function Memory(machine) {
 
         // The light pen position sequence.
         if (peripheral_reg == 0xc001 && byte == 0x60) {
-            if (this.machine.screen.light_pen_active) this.vg75_c001_60_cmd = 1;
+            if (this.screen.light_pen_active) this.vg75_c001_60_cmd = 1;
             return;
         }
 
@@ -228,35 +231,35 @@ export function Memory(machine) {
 
         // The screen format command sequence.
         if (peripheral_reg == 0xc001 && byte == 0) {
-            // console.log('VG75: write(C001, 00) reset'.format(byte));
+            // console.log('ВГ75: write(C001, 00) reset'.format(byte));
             this.vg75_c001_00_cmd = 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_00_cmd == 1) {
-            // console.log('VG75: write(C001, %02X) [SHHHHHHH]=%08b'.format(byte, byte));
+            // console.log('ВГ75: write(C001, %02X) [SHHHHHHH]=%08b'.format(byte, byte));
             this.video_screen_size_x_buf = (byte & 0x7f) + 1;
             this.vg75_c001_00_cmd += 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_00_cmd == 2) {
-            // console.log('VG75: write(C001, %02X) [VVRRRRRR]=%08b'.format(byte, byte));
+            // console.log('ВГ75: write(C001, %02X) [VVRRRRRR]=%08b'.format(byte, byte));
             this.video_screen_size_y_buf = (byte & 0x3f) + 1;
             this.vg75_c001_00_cmd += 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_00_cmd == 3) {
-            // console.log('VG75: write(C001, %02X) [UUUULLLL]=%08b'.format(byte, byte));
+            // console.log('ВГ75: write(C001, %02X) [UUUULLLL]=%08b'.format(byte, byte));
             this.vg75_c001_00_cmd += 1;
             return;
         }
 
         if (peripheral_reg == 0xc000 && this.vg75_c001_00_cmd == 4) {
-            // console.log('VG75: write(C001, %02X) [MZCCZZZZ]=%08b'.format(byte, byte));
+            // console.log('ВГ75: write(C001, %02X) [MZCCZZZZ]=%08b'.format(byte, byte));
             this.vg75_c001_00_cmd = 0;
-            // console.log('VG75: screen size loaded: x=%d, y=%d'.format(
+            // console.log('ВГ75: screen size loaded: x=%d, y=%d'.format(
             //   this.video_screen_size_x_buf,
             //   this.video_screen_size_y_buf
             // ));
@@ -265,7 +268,7 @@ export function Memory(machine) {
                 this.video_screen_size_x = this.video_screen_size_x_buf;
                 this.video_screen_size_y = this.video_screen_size_y_buf;
                 // Re-configure video.
-                this.machine.screen.set_geometry(this.video_screen_size_x, this.video_screen_size_y);
+                this.screen.set_geometry(this.video_screen_size_x, this.video_screen_size_y);
             }
             return;
         }
@@ -309,7 +312,7 @@ export function Memory(machine) {
             // Save ("apply") the video area parameters.
             this.video_memory_base = this.video_memory_base_buf;
             this.video_memory_size = this.video_memory_size_buf;
-            this.machine.screen.set_video_memory(this.video_memory_base, this.video_memory_size);
+            this.screen.set_video_memory(this.video_memory_base, this.video_memory_size);
             return;
         }
 

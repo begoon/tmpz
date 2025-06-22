@@ -1,21 +1,3 @@
-// Part of Radio-86RK in JavaScript based on I8080/JS
-//
-// Copyright (C) 2012 Alexander Demin <alexander@demin.ws>
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2, or (at your option)
-// any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
 export function UI(machine) {
     this.machine = machine;
 
@@ -50,21 +32,32 @@ export function UI(machine) {
     this.update_ruslat = (value) => {
         if (value === this.ruslat_state) return;
         this.ruslat_state = value;
-        this.ruslat.innerHTML = value ? "РУС" : "ЛАТ";
+        this.ruslat.textContent = value ? "РУС" : "ЛАТ";
     };
 
-    this.ruslat.addEventListener("click", () => {
+    document.getElementById("ruslat-toggle").addEventListener("click", () => {
         // Конкретный адрес флага раскладки оригинального монитора 32КБ.
         const ruslat_flag = 0x7606;
         const state = this.machine.memory.read(ruslat_flag) ? 0x00 : 0xff;
         this.machine.memory.write(ruslat_flag, state);
-        this.machine.update_ruslat(state);
+        this.update_ruslat(state);
     });
 
     this.sound = document.getElementById("sound");
+    this.sound_enabled = false;
+
     this.sound.addEventListener("click", () => {
-        this.machine.runner.init_sound(sound.checked);
-        console.log("Sound " + (this.machine.runner.sound ? "enabled" : "disabled"));
+        this.sound_enabled = !this.sound_enabled;
+        this.machine.runner.init_sound(this.sound_enabled);
+        console.log("sound " + (this.sound_enabled ? "enabled" : "disabled"));
+
+        const icon_toggle = document.getElementById("sound-icon-toggle");
+        icon_toggle.src = this.sound_enabled ? icon_toggle.dataset.on : icon_toggle.dataset.muted;
+
+        const icon = document.getElementById("sound-icon");
+        icon.textContent = icon.dataset[this.sound_enabled ? "on" : "off"];
+        icon.classList.add("visible");
+        setTimeout(() => icon.classList.remove("visible"), 2000);
     });
 
     this.ips = document.getElementById("ips");
@@ -78,4 +71,13 @@ export function UI(machine) {
         update(tps, this.machine.runner.ticks_per_millisecond);
     };
     setInterval(this.update_perf, 2000);
+
+    this.update_video_memory_base = (base) => {
+        document.getElementById("video-base").textContent = base.toString(16).toUpperCase();
+    };
+
+    this.update_screen_geometry = (width, height) => {
+        document.getElementById("video-width").textContent = width.toString();
+        document.getElementById("video-height").textContent = height.toString();
+    };
 }

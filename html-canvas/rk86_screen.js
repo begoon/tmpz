@@ -52,11 +52,11 @@ export function Screen(machine) {
     this.light_pen_y = 0;
     this.light_pen_active = 0;
 
-    this.init_cache = function (sz) {
+    this.init_cache = (sz) => {
         for (let i = 0; i < sz; ++i) this.cache[i] = true;
     };
 
-    this.draw_char = function (x, y, ch) {
+    this.draw_char = (x, y, ch) => {
         this.ctx.drawImage(
             this.font,
             2,
@@ -70,7 +70,7 @@ export function Screen(machine) {
         );
     };
 
-    this.draw_cursor = function (x, y, visible) {
+    this.draw_cursor = (x, y, visible) => {
         this.ctx.drawImage(
             this.font,
             2,
@@ -84,17 +84,17 @@ export function Screen(machine) {
         );
     };
 
-    this.flip_cursor = function () {
+    this.flip_cursor = () => {
         this.draw_cursor(this.cursor_x, this.cursor_y, this.cursor_state);
         this.cursor_state = !this.cursor_state;
-        window.setTimeout(() => this.flip_cursor(), cursor_rate);
+        setTimeout(() => this.flip_cursor(), cursor_rate);
     };
 
-    this.init = function () {
+    this.init = () => {
         this.ctx = this.machine.ui.canvas.getContext("2d");
     };
 
-    this.disable_smoothing = function () {
+    this.disable_smoothing = () => {
         this.ctx.mozImageSmoothingEnabled = false;
         this.ctx.webkitImageSmoothingEnabled = false;
         this.ctx.imageSmoothingEnabled = false;
@@ -105,6 +105,7 @@ export function Screen(machine) {
         this.height = height;
         this.video_memory_size = width * height;
 
+        this.machine.ui.update_screen_geometry(this.width, this.height);
         console.log(`screen geometry: ${width} x ${height}`);
 
         const canvas_width = this.width * char_width * this.scale_x;
@@ -118,6 +119,8 @@ export function Screen(machine) {
     this.set_video_memory = function (base) {
         this.video_memory_base = base;
         this.init_cache(this.video_memory_size);
+
+        this.machine.ui.update_video_memory_base(this.video_memory_base);
         console.log(`video memory:`, `${this.video_memory_base.toString(16)}`, `size: ${this.video_memory_size}`);
     };
 
@@ -127,7 +130,7 @@ export function Screen(machine) {
         this.cursor_y = y;
     };
 
-    this.draw_screen = function () {
+    this.draw_screen = () => {
         const memory = this.machine.memory;
         let i = this.video_memory_base;
         for (let y = 0; y < this.height; ++y) {
@@ -141,7 +144,7 @@ export function Screen(machine) {
                 i += 1;
             }
         }
-        window.setTimeout(() => this.draw_screen(), update_rate);
+        setTimeout(() => this.draw_screen(), update_rate);
     };
 
     this.init();

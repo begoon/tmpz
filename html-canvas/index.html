@@ -1,33 +1,16 @@
-<!--
-/*
- * Radio-86RK in JavaScript based on I8080/JS
- *
- * Copyright (C) 2009, 2012 Alexander Demin <alexander@demin.ws>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- */
--->
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+        <meta charset="UTF-8" />
         <style>
             body {
                 margin: 0;
                 background-color: #000000;
                 color: #ffffff;
                 font-family: sans-serif;
+            }
+            button {
+                font-family: monospace;
             }
         </style>
     </head>
@@ -41,6 +24,7 @@
                 flex-direction: column;
                 align-items: start;
                 justify-content: center;
+                overflow: hidden;
             "
         >
             <style>
@@ -49,40 +33,119 @@
                     box-sizing: border-box;
                     display: flex;
                     width: 100%;
+                    padding: 8px;
+                    flex-shrink: 0; /* don't shrink header/footer */
+                    font-size: 0.75rem;
                 }
                 #header.hidden,
                 #footer.hidden {
                     visibility: hidden;
                 }
+                .icon {
+                    width: 2em;
+                    height: 2em;
+                    vertical-align: middle;
+                }
+                button.icon {
+                    all: unset;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2px 2px;
+                    border: none;
+                    cursor: pointer; /* makes it clear it's clickable */
+                }
             </style>
             <div id="header">
-                <button id="reset">Reset</button>
-                <button id="restart">Restart</button>
-                <style>
-                    #pause.paused {
-                        background-color: red;
-                        color: white;
-                    }
-                </style>
-                <button id="pause">Pause</button>
-                <button id="fullscreen">Full screen</button>
-                <div style="margin-left: auto">
-                    <input id="sound" type="checkbox" /><span>Sound</span>
-                    <button id="ruslat">ЛАТ</button>
+                <button id="reset" class="icon">
+                    <img class="icon" src="i/reset.svg" />
+                </button>
+                <button id="restart" class="icon">
+                    <img class="icon" src="i/power-off.svg" />
+                </button>
+                <button id="pause" class="icon">
+                    <img id="pause-icon" data-on="i/paused.svg" data-off="i/pause.svg" class="icon" src="i/pause.svg" />
+                </button>
+                <button id="fullscreen" class="icon">
+                    <img class="icon" src="i/fullscreen.svg" />
+                </button>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 4px">
+                    <select id="file_selector"></select>
+                    <button id="run" class="icon">
+                        <img class="icon" src="i/run.svg" />
+                    </button>
+                    <button id="load" class="icon">
+                        <img class="icon" src="i/load.svg" />
+                    </button>
+                    <button id="sound" class="icon">
+                        <img
+                            id="sound-icon-toggle"
+                            data-muted="i/sound-muted.svg"
+                            data-on="i/sound.svg"
+                            class="icon"
+                            src="i/sound-muted.svg"
+                        />
+                    </button>
+                    <style>
+                        #sound-icon {
+                            position: fixed;
+                            left: 50%;
+                            top: 50%;
+                            transform: translateX(-50%) translateY(-50%);
+                            font-size: 10em;
+                            opacity: 0;
+                            transition: opacity 0.5s ease;
+                            pointer-events: none; /* prevent interaction */
+                        }
+                        #sound-icon.visible {
+                            opacity: 1;
+                        }
+                    </style>
+                    <span id="sound-icon" data-on="🔉" data-off="🔇">🔉</span>
+                    <button id="ruslat-toggle">
+                        <span id="ruslat" style="font-family: monospace">ЛАТ</span>
+                    </button>
                 </div>
             </div>
-            <canvas id="canvas" style="width: 100%; height: 100%"></canvas>
-            <div id="footer" style="display: flex; gap: 4px">
+            <style>
+                #canvas {
+                    flex: 1;
+                    min-height: 0; /* allow it to shrink inside flex container */
+                    width: 100%;
+                    display: block;
+                }
+            </style>
+            <canvas id="canvas"></canvas>
+            <div id="footer" style="display: flex; gap: 10px">
                 <style>
-                    span.dimmed {
+                    .dimmed {
                         opacity: 0.6;
                     }
+                    .gauge {
+                        display: flex;
+                        width: fit-content;
+                        height: fit-content;
+                        gap: 4px;
+                    }
                 </style>
-                <span class="dimmed">ИНСТР</span>
-                <span id="ips"></span>
-                <b style="width: 4px"></b>
-                <span class="dimmed">ТАКТ</span>
-                <span id="tps"></span>
+                <div class="gauge">
+                    <span class="dimmed">ИНСТР</span>
+                    <span id="ips"></span>
+                </div>
+                <div class="gauge">
+                    <span class="dimmed">ТАКТ</span>
+                    <span id="tps"></span>
+                </div>
+                <div class="gauge">
+                    <span class="dimmed">ЭКРАН</span>
+                    <span id="video-base"></span>
+                </div>
+                <div class="gauge">
+                    <span class="dimmed">РАЗМЕР</span>
+                    <span id="video-width"></span>
+                    <span class="dimmed">x</span>
+                    <span id="video-height"></span>
+                </div>
             </div>
             <div
                 id="console"
