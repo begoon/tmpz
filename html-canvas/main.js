@@ -5,6 +5,7 @@ import { Keyboard } from "./rk86_keyboard.js";
 import { Memory } from "./rk86_memory.js";
 import { Runner } from "./rk86_runner.js";
 import { Screen } from "./rk86_screen.js";
+import { Tape } from "./rk86_tape.js";
 import { tape_catalog } from "./tape_catalog.js";
 import { UI } from "./ui.js";
 
@@ -30,9 +31,13 @@ export async function main() {
     machine.memory = new Memory(keyboard);
     machine.ui = new UI(machine);
     machine.screen = new Screen(machine);
+
     machine.memory.attach_screen(machine.screen);
     machine.cpu = new I8080(machine);
     machine.runner = new Runner(machine);
+
+    const tape = new Tape(machine.runner);
+    machine.memory.tape_write_bit = tape.write_bit;
 
     async function load_file(name) {
         const array = Array.from(new Uint8Array(await (await fetch("./files/" + name)).arrayBuffer()));
@@ -94,16 +99,22 @@ export async function main() {
     }
 
     document.getElementById("load").addEventListener("click", async () => {
-        const file_selector = document.getElementById("file_selector");
         const filename = file_selector.options[file_selector.selectedIndex].value;
         console.log(`loading file: ${filename}`);
         const file = await load_file(filename);
         console.log(`loaded file: ${filename}`);
         machine.memory.load_file(file);
+        alert(
+            `` +
+                `Загружен файл "${filename}"\n` +
+                `Адрес: 0x${file.start.toString(16).padStart(4, "0")}` +
+                `-` +
+                `0x${file.end.toString(16).padStart(4, "0")}\n` +
+                `Запуск: G${file.entry.toString(16)}`
+        );
     });
 
     document.getElementById("run").addEventListener("click", async () => {
-        const file_selector = document.getElementById("file_selector");
         const filename = file_selector.options[file_selector.selectedIndex].value;
         console.log(`loading file: ${filename}`);
         const file = await load_file(filename);

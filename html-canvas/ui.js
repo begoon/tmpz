@@ -16,7 +16,7 @@ export function UI(machine) {
     this.fullscreen = () => canvas.requestFullScreen();
 
     this.reset = function () {
-        this.machine.memory.keyboard.reset();
+        this.machine.keyboard.reset();
         this.machine.cpu.jump(0xf800);
         console.log("Reset");
     };
@@ -79,5 +79,40 @@ export function UI(machine) {
     this.update_screen_geometry = (width, height) => {
         document.getElementById("video-width").textContent = width.toString();
         document.getElementById("video-height").textContent = height.toString();
+    };
+
+    this.meta_press_count = 0;
+    document.onkeydown = (event) => {
+        console.log("onkeydown", this.meta_press_count, "code", event.code, "key", event.key);
+        if (this.meta_press_count > 0) {
+            if (event.code === "KeyB") {
+                document.getElementById("sound").click();
+                console.log("Sound toggle");
+            } else if (event.code === "KeyK") {
+                document.getElementById("file_selector").click();
+            }
+            return;
+        }
+
+        if (event.key === "Meta") {
+            this.meta_press_count += 1;
+            return;
+        }
+
+        machine.keyboard.onkeydown(event.code);
+        return false;
+    };
+
+    document.onkeyup = (event) => {
+        console.log("onkeyup", this.meta_press_count, "code", event.code, "key", event.key);
+
+        if (event.key === "Meta") {
+            if (this.meta_press_count > 0) this.meta_press_count -= 1;
+            return;
+        }
+        if (this.meta_press_count > 0) return;
+
+        machine.keyboard.onkeyup(event.code);
+        return false;
     };
 }
