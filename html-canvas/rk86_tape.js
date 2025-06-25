@@ -4,6 +4,7 @@ export function Tape(runner) {
     this.bit_count = 0;
     this.current_byte = 0;
     this.written_bytes = [];
+    this.written_bytes_from_e6 = 0;
     this.output_block_count = 0;
 
     this.save = (bytes) => {
@@ -33,6 +34,7 @@ export function Tape(runner) {
             this.save(bytes);
         }
         this.written_bytes = [];
+        this.written_bytes_from_e6 = 0;
     };
 
     this.write_bit = (bit) => {
@@ -46,20 +48,28 @@ export function Tape(runner) {
             this.current_byte = 0;
             this.bit_count = 0;
             this.written_bytes = [];
+            this.written_bytes_from_e6 = 0;
         }
         if (!this.bit_started) {
             this.bit_started = true;
+            if (this.update_bit_indicator) this.update_bit_indicator(true);
         } else {
             this.bit_started = false;
             this.current_byte |= (bit ? 0x80 : 0x00) >> this.bit_count;
+            if (this.update_bit_indicator) this.update_bit_indicator(false);
             if (this.bit_count < 7) {
                 this.bit_count += 1;
             } else {
                 this.written_bytes.push(this.current_byte);
-                if (this.output_timer) {
-                    clearTimeout(this.output_timer);
+
+                if (this.current_byte === 0xe6 || this.written_bytes_from_e6 > 0) {
+                    this.written_bytes_from_e6 += 1;
                 }
+                if (this.update_written_bytes) this.update_written_bytes(this.written_bytes_from_e6);
+
+                if (this.output_timer) clearTimeout(this.output_timer);
                 this.output_timer = setTimeout(this.flush, 1000);
+
                 this.current_byte = 0;
                 this.bit_count = 0;
             }

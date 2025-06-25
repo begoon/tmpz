@@ -116,12 +116,23 @@ export function Screen(machine) {
         this.ctx.fillRect(0, 0, canvas_width, canvas_height);
     };
 
+    this.last_video_memory_base = -1;
+    this.last_video_memory_size = -1;
+
     this.set_video_memory = function (base) {
         this.video_memory_base = base;
         this.init_cache(this.video_memory_size);
 
         this.machine.ui.update_video_memory_base(this.video_memory_base);
-        console.log(`video memory:`, `${this.video_memory_base.toString(16)}`, `size: ${this.video_memory_size}`);
+
+        if (
+            this.last_video_memory_base !== this.video_memory_base ||
+            this.last_video_memory_size !== this.video_memory_size
+        ) {
+            console.log(`video memory:`, `${this.video_memory_base.toString(16)}`, `size: ${this.video_memory_size}`);
+            this.last_video_memory_base = this.video_memory_base;
+            this.last_video_memory_size = this.video_memory_size;
+        }
     };
 
     this.set_cursor = function (x, y) {

@@ -57,26 +57,29 @@
                 }
             </style>
             <div id="header">
-                <button id="reset" class="icon">
+                <button id="reset" class="icon" data-text="Сигнал RESET">
                     <img class="icon" src="i/reset.svg" />
                 </button>
-                <button id="restart" class="icon">
+                <button id="restart" class="icon" data-text="Перезапустить эмулятор">
                     <img class="icon" src="i/power-off.svg" />
                 </button>
-                <button id="pause" class="icon">
+                <button id="pause" class="icon" data-text="Приостановить процессор">
                     <img id="pause-icon" data-on="i/paused.svg" data-off="i/pause.svg" class="icon" src="i/pause.svg" />
                 </button>
-                <button id="fullscreen" class="icon">
+                <button id="fullscreen" class="icon" data-text="Полноэкранный режим">
                     <img class="icon" src="i/fullscreen.svg" />
                 </button>
                 <div style="margin-left: auto; display: flex; align-items: center; gap: 4px">
-                    <button id="screenshot" class="icon">
+                    <button id="tape" class="icon" data-text="Запись на ленту">
+                        <img class="icon" id="tape_bit_indicator" src="" style="visibility: hidden" />
+                    </button>
+                    <button id="screenshot" class="icon" data-text="Снимок экрана">
                         <img class="icon" src="i/screenshot.svg" />
                     </button>
-                    <button id="memory" class="icon">
+                    <button id="memory" class="icon" data-text="Сохранить память в файл">
                         <img class="icon" src="i/memory.svg" />
                     </button>
-                    <button id="snapshot" class="icon">
+                    <button id="snapshot" class="icon" data-text="Сохранить полное состояния">
                         <img class="icon" src="i/snapshot.svg" />
                     </button>
                     <select id="file_selector"></select>
@@ -93,6 +96,7 @@
                             data-on="i/sound.svg"
                             class="icon"
                             src="i/sound-muted.svg"
+                            data-text="Включить/выключить звук"
                         />
                     </button>
                     <style>
@@ -115,7 +119,40 @@
                         <span id="ruslat" style="font-family: monospace">ЛАТ</span>
                     </button>
                 </div>
+                <script>
+                    document.querySelectorAll("button.icon").forEach((button) => {
+                        button.addEventListener("mouseover", () => {
+                            const hint = document.getElementById("hint");
+                            hint.style.opacity = 1;
+                            hint.textContent = button.dataset.text;
+                        });
+                        button.addEventListener("mouseout", () => {
+                            const hint = document.getElementById("hint");
+                            hint.style.opacity = 0;
+                            hint.textContent = "";
+                        });
+                    });
+                </script>
             </div>
+            <div
+                id="hint"
+                style="
+                    position: fixed;
+                    right: 0;
+                    bottom: 0;
+                    transition: opacity 0.3s ease;
+                    opacity: 0;
+
+                    font-size: 3em;
+                    background-color: white;
+                    color: black;
+                    text-wrap: nowrap;
+
+                    padding: 8px 10px;
+                    border-radius: 4px;
+                    z-index: 1000; /* ensure it appears above other elements */
+                "
+            ></div>
             <style>
                 #canvas {
                     flex: 1;
@@ -154,6 +191,10 @@
                     <span id="video-width"></span>
                     <span class="dimmed">x</span>
                     <span id="video-height"></span>
+                </div>
+                <div class="gauge">
+                    <span class="dimmed">ЛЕНТА</span>
+                    <span id="tape_written_bytes">0000</span>
                 </div>
             </div>
             <div

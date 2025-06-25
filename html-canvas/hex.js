@@ -1,3 +1,8 @@
+/**
+ *
+ * @param {number} value
+ * @returns {string}
+ */
 export function toHex8(value) {
     return ("00" + (value & 0xff).toString(16).toUpperCase()).slice(-2);
 }

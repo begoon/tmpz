@@ -39,6 +39,22 @@ export async function main() {
     const tape = new Tape(machine.runner);
     machine.memory.tape_write_bit = tape.write_bit;
 
+    const tape_bit_indicator = document.getElementById("tape_bit_indicator");
+    tape.update_bit_indicator = (bit) => {
+        tape_bit_indicator.style.visibility = bit ? "visible" : "hidden";
+    };
+
+    const tape_written_bytes = document.getElementById("tape_written_bytes");
+    tape.update_written_bytes = (count) => {
+        tape_written_bytes.textContent = count.toString().padStart(4, "0");
+        if (count === 1) tape_bit_indicator.src = "i/tape-data.svg";
+        else if (count === 0) tape_bit_indicator.src = "i/tape-preamble.svg";
+    };
+
+    tape.hide_bit_indicator = () => {
+        tape_bit_indicator.style.visibility = "hidden";
+    };
+
     async function load_file(name) {
         const array = Array.from(new Uint8Array(await (await fetch("./files/" + name)).arrayBuffer()));
         console.log(`loading file: ${name}, size: ${array.length} bytes`);

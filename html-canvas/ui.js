@@ -83,11 +83,9 @@ export function UI(machine) {
 
     this.meta_press_count = 0;
     document.onkeydown = (event) => {
-        console.log("onkeydown", this.meta_press_count, "code", event.code, "key", event.key);
         if (this.meta_press_count > 0) {
             if (event.code === "KeyB") {
                 document.getElementById("sound").click();
-                console.log("Sound toggle");
             } else if (event.code === "KeyK") {
                 document.getElementById("file_selector").click();
             }
@@ -104,8 +102,6 @@ export function UI(machine) {
     };
 
     document.onkeyup = (event) => {
-        console.log("onkeyup", this.meta_press_count, "code", event.code, "key", event.key);
-
         if (event.key === "Meta") {
             if (this.meta_press_count > 0) this.meta_press_count -= 1;
             return;
