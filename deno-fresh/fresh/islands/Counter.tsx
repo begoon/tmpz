@@ -6,6 +6,7 @@ interface CounterProps {
 }
 
 export default function Counter(props: CounterProps) {
+  console.log("Counter component rendered", {browser: typeof window !== "undefined"});
   return (
     <div class="flex gap-8 py-6">
       <Button onClick={() => props.count.value -= 1}>-1</Button>

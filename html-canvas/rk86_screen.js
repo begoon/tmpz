@@ -1,106 +1,108 @@
-// Part of Radio-86RK in JavaScript based on I8080/JS
-//
-// Copyright (C) 2012 Alexander Demin <alexander@demin.ws>
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2, or (at your option)
-// any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+export class Screen {
+    static update_rate = 25;
 
-export function Screen(machine) {
-    this.machine = machine;
+    constructor(machine) {
+        this.machine = machine;
 
-    const update_rate = 25;
-    const cursor_rate = 500;
+        this.cursor_rate = 500;
 
-    const char_width = 6;
-    const char_height = 8;
-    const char_height_gap = 2;
+        this.char_width = 6;
+        this.char_height = 8;
+        this.char_height_gap = 2;
 
-    const cursor_width = char_width;
-    const cursor_height = 1;
-    const cursor_offset_white = 27;
+        this.cursor_width = this.char_width;
+        this.cursor_height = 1;
+        this.cursor_offset_white = 27;
 
-    this.scale_x = 1;
-    this.scale_y = 1;
+        this.scale_x = 1;
+        this.scale_y = 1;
 
-    this.width = 78;
-    this.height = 30;
+        this.width = 78;
+        this.height = 30;
 
-    this.cursor_state = true;
-    this.cursor_x = 0;
-    this.cursor_y = 0;
+        this.cursor_state = true;
+        this.cursor_x = 0;
+        this.cursor_y = 0;
 
-    this.video_memory_base = 0;
-    this.video_memory_size = 0;
+        this.video_memory_base = 0;
+        this.video_memory_size = 0;
 
-    this.cache = [];
+        this.cache = [];
 
-    this.font = new Image();
-    this.font.src = this.machine.font; // -> "rk86_font.bmp";
+        this.font = new Image();
+        this.font.src = this.machine.font;
 
-    this.light_pen_x = 0;
-    this.light_pen_y = 0;
-    this.light_pen_active = 0;
+        this.light_pen_x = 0;
+        this.light_pen_y = 0;
+        this.light_pen_active = 0;
 
-    this.init_cache = (sz) => {
-        for (let i = 0; i < sz; ++i) this.cache[i] = true;
-    };
+        this.last_video_memory_base = -1;
+        this.last_video_memory_size = -1;
 
-    this.draw_char = (x, y, ch) => {
+        this.init();
+        this.flip_cursor();
+        this.draw_screen();
+
+        this.machine.ui.canvas.onmousemove = this.handle_mousemove.bind(this);
+        this.machine.ui.canvas.onmouseup = () => {
+            this.light_pen_active = 0;
+        };
+        this.machine.ui.canvas.onmousedown = () => {
+            this.light_pen_active = 1;
+        };
+    }
+
+    init_cache(sz) {
+        for (let i = 0; i < sz; ++i) {
+            this.cache[i] = true;
+        }
+    }
+
+    draw_char(x, y, ch) {
         this.ctx.drawImage(
             this.font,
             2,
-            char_height * ch,
-            char_width,
-            char_height,
-            x * char_width * this.scale_x,
-            y * (char_height + char_height_gap) * this.scale_y,
-            char_width * this.scale_x,
-            char_height * this.scale_y
+            this.char_height * ch,
+            this.char_width,
+            this.char_height,
+            x * this.char_width * this.scale_x,
+            y * (this.char_height + this.char_height_gap) * this.scale_y,
+            this.char_width * this.scale_x,
+            this.char_height * this.scale_y
         );
-    };
+    }
 
-    this.draw_cursor = (x, y, visible) => {
+    draw_cursor(x, y, visible) {
         this.ctx.drawImage(
             this.font,
             2,
-            cursor_offset_white + (visible ? 0 : 1),
-            char_width,
+            this.cursor_offset_white + (visible ? 0 : 1),
+            this.char_width,
             1,
-            x * char_width * this.scale_x,
-            (y * (char_height + char_height_gap) + char_height) * this.scale_y,
-            char_width * this.scale_x,
+            x * this.char_width * this.scale_x,
+            (y * (this.char_height + this.char_height_gap) + this.char_height) * this.scale_y,
+            this.char_width * this.scale_x,
             1 * this.scale_y
         );
-    };
+    }
 
-    this.flip_cursor = () => {
+    flip_cursor() {
         this.draw_cursor(this.cursor_x, this.cursor_y, this.cursor_state);
         this.cursor_state = !this.cursor_state;
-        setTimeout(() => this.flip_cursor(), cursor_rate);
-    };
+        setTimeout(() => this.flip_cursor(), this.cursor_rate);
+    }
 
-    this.init = () => {
+    init() {
         this.ctx = this.machine.ui.canvas.getContext("2d");
-    };
+    }
 
-    this.disable_smoothing = () => {
+    disable_smoothing() {
         this.ctx.mozImageSmoothingEnabled = false;
         this.ctx.webkitImageSmoothingEnabled = false;
         this.ctx.imageSmoothingEnabled = false;
-    };
+    }
 
-    this.set_geometry = function (width, height) {
+    set_geometry(width, height) {
         this.width = width;
         this.height = height;
         this.video_memory_size = width * height;
@@ -108,18 +110,15 @@ export function Screen(machine) {
         this.machine.ui.update_screen_geometry(this.width, this.height);
         console.log(`screen geometry: ${width} x ${height}`);
 
-        const canvas_width = this.width * char_width * this.scale_x;
-        const canvas_height = this.height * (char_height + char_height_gap) * this.scale_y;
+        const canvas_width = this.width * this.char_width * this.scale_x;
+        const canvas_height = this.height * (this.char_height + this.char_height_gap) * this.scale_y;
         this.machine.ui.resize_canvas(canvas_width, canvas_height);
 
         this.disable_smoothing();
         this.ctx.fillRect(0, 0, canvas_width, canvas_height);
-    };
+    }
 
-    this.last_video_memory_base = -1;
-    this.last_video_memory_size = -1;
-
-    this.set_video_memory = function (base) {
+    set_video_memory(base) {
         this.video_memory_base = base;
         this.init_cache(this.video_memory_size);
 
@@ -133,49 +132,38 @@ export function Screen(machine) {
             this.last_video_memory_base = this.video_memory_base;
             this.last_video_memory_size = this.video_memory_size;
         }
-    };
+    }
 
-    this.set_cursor = function (x, y) {
+    set_cursor(x, y) {
         this.draw_cursor(this.cursor_x, this.cursor_y, false);
         this.cursor_x = x;
         this.cursor_y = y;
-    };
+    }
 
-    this.draw_screen = () => {
+    draw_screen() {
         const memory = this.machine.memory;
         let i = this.video_memory_base;
         for (let y = 0; y < this.height; ++y) {
             for (let x = 0; x < this.width; ++x) {
                 const cache_i = i - this.video_memory_base;
                 const ch = memory.read(i);
-                if (this.cache[cache_i] != ch) {
+                if (this.cache[cache_i] !== ch) {
                     this.draw_char(x, y, ch);
                     this.cache[cache_i] = ch;
                 }
                 i += 1;
             }
         }
-        setTimeout(() => this.draw_screen(), update_rate);
-    };
+        setTimeout(() => this.draw_screen(), Screen.update_rate);
+    }
 
-    this.init();
-
-    this.flip_cursor();
-    this.draw_screen();
-
-    this.machine.ui.canvas.onmousemove = (event) => {
+    handle_mousemove(event) {
         const canvas = this.machine.ui.canvas;
-        const x = Math.floor((event.x + 1 - canvas.offsetLeft) / (char_width * this.scale_x));
-        const y = Math.floor((event.y + 1 - canvas.offsetTop) / ((char_height + char_height_gap) * this.scale_y));
+        const x = Math.floor((event.x + 1 - canvas.offsetLeft) / (this.char_width * this.scale_x));
+        const y = Math.floor(
+            (event.y + 1 - canvas.offsetTop) / ((this.char_height + this.char_height_gap) * this.scale_y)
+        );
         this.light_pen_x = x;
         this.light_pen_y = y;
-    };
-
-    this.machine.ui.canvas.onmouseup = (event) => {
-        this.light_pen_active = 0;
-    };
-
-    this.machine.ui.canvas.onmousedown = (event) => {
-        this.light_pen_active = 1;
-    };
+    }
 }

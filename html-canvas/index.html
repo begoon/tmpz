@@ -71,7 +71,7 @@
                 </button>
                 <div style="margin-left: auto; display: flex; align-items: center; gap: 4px">
                     <button id="tape" class="icon" data-text="Запись на ленту">
-                        <img class="icon" id="tape_bit_indicator" src="" style="visibility: hidden" />
+                        <img class="icon" id="tape_activity_indicator" src="" style="visibility: hidden" />
                     </button>
                     <button id="screenshot" class="icon" data-text="Снимок экрана">
                         <img class="icon" src="i/screenshot.svg" />
@@ -194,6 +194,12 @@
                 </div>
                 <div class="gauge">
                     <span class="dimmed">ЛЕНТА</span>
+                    <style>
+                        .tape_active {
+                            color: white;
+                            background-color: green;
+                        }
+                    </style>
                     <span id="tape_written_bytes">0000</span>
                 </div>
             </div>
@@ -203,20 +209,48 @@
                     position: absolute;
                     bottom: 0;
                     right: 0;
-                    width: 25%;
-                    height: 25%;
+                    width: fit-content;
+                    height: fit-content;
                     overflow: auto;
                     background-color: #000000;
                     color: #ffffff;
                     border: 1px solid greenyellow;
                     font-family: monospace;
                     opacity: 0.8;
-                    display: none;
+                    /* display: none; */
                 "
             >
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Obcaecati, repellat. Numquam, eaque ipsa!
-                Sapiente rem quaerat, laboriosam odit amet modi saepe eaque facere numquam delectus dolor quia similique
-                minima veritatis.
+                <style>
+                    span.disasm_code_offset {
+                        color: green;
+                        cursor: hand;
+                    }
+                    span.disasm_data_offset {
+                        color: blue;
+                        cursor: hand;
+                    }
+                </style>
+                <button onclick="window.i8080disasm.form_code_shift(false, -1)">&lt;&lt;</button>
+                <button onclick="i8080disasm.form_code_shift(true, -1)">&lt;</button>
+                Addr:
+                <input id="disasm_code_address" style="width: 3em" value="0000" onkeypress="alert(this)" /> lines:
+                <input id="disasm_code_nb_lines" style="width: 2em" value="22" />
+                <button onclick="i8080disasm.form_go_code()">Go</button>
+                <button onclick="i8080disasm.form_code_shift(true, 1)">&gt;</button>
+                <button onclick="i8080disasm.form_code_shift(false, 1)">&gt;&gt;</button>
+                <hr />
+                <code id="disasm_code"></code>
+                <hr />
+
+                <button onclick="i8080disasm.go_data_shift(false, -1)">&lt;&lt;</button>
+                <button onclick="i8080disasm.go_data_shift(true, -1)">&lt;</button>
+                Addr: <input id="disasm_data_address" style="width: 3em" value="0000" /> lines:
+                <input id="disasm_data_nb_lines" style="width: 2em" value="8" />
+                <button onclick="i8080disasm.form_go_data()">Go</button>
+                <button onclick="i8080disasm.go_data_shift(true, 1)">&gt;</button>
+                <button onclick="i8080disasm.go_data_shift(false, 1)">&gt;&gt;</button>
+                <hr />
+                <code id="disasm_data"></code>
             </div>
         </div>
     </body>

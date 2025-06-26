@@ -22,6 +22,16 @@ export function Tape(runner) {
         }
     };
 
+    this.write_ended = () => {
+        this.bit_started = false;
+        this.current_byte = 0;
+        this.bit_count = 0;
+        this.written_bytes = [];
+        this.written_bytes_from_e6 = 0;
+        this.update_activity_indicator(false);
+        this.hightlight_written_bytes(false);
+    };
+
     this.flush = () => {
         const sync_byte_index = this.written_bytes.findIndex((current_byte) => current_byte === 0xe6);
         if (sync_byte_index === -1) {
@@ -33,8 +43,7 @@ export function Tape(runner) {
             this.log(bytes);
             this.save(bytes);
         }
-        this.written_bytes = [];
-        this.written_bytes_from_e6 = 0;
+        this.write_ended();
     };
 
     this.write_bit = (bit) => {
@@ -43,20 +52,14 @@ export function Tape(runner) {
         if (time > 10000) {
             // If there is no writes in ~5ms, reset the buffer, current current_byte
             // and bit counter.
-            console.log("reset tape buffer");
-            this.bit_started = false;
-            this.current_byte = 0;
-            this.bit_count = 0;
-            this.written_bytes = [];
-            this.written_bytes_from_e6 = 0;
+            console.log("reset tape buffer due to timeout");
+            this.write_ended();
         }
         if (!this.bit_started) {
             this.bit_started = true;
-            if (this.update_bit_indicator) this.update_bit_indicator(true);
         } else {
             this.bit_started = false;
             this.current_byte |= (bit ? 0x80 : 0x00) >> this.bit_count;
-            if (this.update_bit_indicator) this.update_bit_indicator(false);
             if (this.bit_count < 7) {
                 this.bit_count += 1;
             } else {
@@ -65,7 +68,8 @@ export function Tape(runner) {
                 if (this.current_byte === 0xe6 || this.written_bytes_from_e6 > 0) {
                     this.written_bytes_from_e6 += 1;
                 }
-                if (this.update_written_bytes) this.update_written_bytes(this.written_bytes_from_e6);
+                if (this.written_bytes.length === 1) this.update_activity_indicator(true);
+                this.update_written_bytes(this.written_bytes_from_e6);
 
                 if (this.output_timer) clearTimeout(this.output_timer);
                 this.output_timer = setTimeout(this.flush, 1000);

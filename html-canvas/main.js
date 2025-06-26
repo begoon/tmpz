@@ -1,4 +1,5 @@
 import { I8080 } from "./i8080.js";
+import { i8080disasm } from "./i8080disasm_panel.js";
 import FileParser from "./rk86_file_parser.js";
 import { rk86_font_image } from "./rk86_font.js";
 import { Keyboard } from "./rk86_keyboard.js";
@@ -39,20 +40,21 @@ export async function main() {
     const tape = new Tape(machine.runner);
     machine.memory.tape_write_bit = tape.write_bit;
 
-    const tape_bit_indicator = document.getElementById("tape_bit_indicator");
-    tape.update_bit_indicator = (bit) => {
-        tape_bit_indicator.style.visibility = bit ? "visible" : "hidden";
+    const tape_activity_indicator = document.getElementById("tape_activity_indicator");
+    tape.update_activity_indicator = (active) => {
+        tape_activity_indicator.style.visibility = active ? "visible" : "hidden";
     };
 
     const tape_written_bytes = document.getElementById("tape_written_bytes");
     tape.update_written_bytes = (count) => {
         tape_written_bytes.textContent = count.toString().padStart(4, "0");
-        if (count === 1) tape_bit_indicator.src = "i/tape-data.svg";
-        else if (count === 0) tape_bit_indicator.src = "i/tape-preamble.svg";
+        if (count === 1) tape.hightlight_written_bytes(true);
+        else if (count === 0) tape.hightlight_written_bytes(false);
     };
 
-    tape.hide_bit_indicator = () => {
-        tape_bit_indicator.style.visibility = "hidden";
+    tape.hightlight_written_bytes = (on) => {
+        tape_written_bytes.classList.toggle("tape_active", on);
+        tape_activity_indicator.src = on ? "i/tape-data.svg" : "i/tape-preamble.svg";
     };
 
     async function load_file(name) {
@@ -138,6 +140,9 @@ export async function main() {
         machine.memory.load_file(file);
         machine.cpu.jump(file.entry);
     });
+
+    i8080disasm.refresh(machine.memory);
+    window.i8080disasm = i8080disasm;
 }
 
 await main();
