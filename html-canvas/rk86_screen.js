@@ -1,5 +1,5 @@
 export class Screen {
-    static update_rate = 25;
+    static #update_rate = 25;
 
     constructor(machine) {
         this.machine = machine;

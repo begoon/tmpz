@@ -1,93 +1,91 @@
-import test from "ava";
-
+import { expect, test } from "bun:test";
 import { arrayToHexLine, arrayToHexMap, fromHex, hexMapToArray, toHex16, toHex8 } from "../hex.js";
 
-test("toHex8", (t) => {
-    t.is("00", toHex8(0));
-    t.is("FF", toHex8(0xff));
-    t.is("FF", toHex8(0xff));
-    t.is("E6", toHex8(0xe6));
-    t.is("BB", toHex8(0xaabb));
+test("toHex8", () => {
+    expect(toHex8(0)).toBe("00");
+    expect(toHex8(0xff)).toBe("FF");
+    expect(toHex8(0xff)).toBe("FF");
+    expect(toHex8(0xe6)).toBe("E6");
+    expect(toHex8(0xaabb)).toBe("BB");
 });
 
-test("toHex16", (t) => {
-    t.is("0000", toHex16(0));
-    t.is("FFFF", toHex16(0xffff));
-    t.is("C0DE", toHex16(0xc0de));
-    t.is("BEEF", toHex16(0xbeefbeef));
+test("toHex16", () => {
+    expect(toHex16(0)).toBe("0000");
+    expect(toHex16(0xffff)).toBe("FFFF");
+    expect(toHex16(0xc0de)).toBe("C0DE");
+    expect(toHex16(0xbeefbeef)).toBe("BEEF");
 });
 
-test("arrayToHexLine", (t) => {
-    t.is("00", arrayToHexLine([0]));
-    t.is("00 01 02 03", arrayToHexLine([0, 1, 2, 3]));
+test("arrayToHexLine", () => {
+    expect(arrayToHexLine([0])).toBe("00");
+    expect(arrayToHexLine([0, 1, 2, 3])).toBe("00 01 02 03");
 });
 
-test("arrayToHexMap", (t) => {
-    t.deepEqual({ ":0000": "00" }, arrayToHexMap([0]));
-    t.deepEqual({ ":0000": "00 01 02 03" }, arrayToHexMap([0, 1, 2, 3]));
-    t.deepEqual({ ":0000": "00 01 02 03", ":0004": "04 05 06 07" }, arrayToHexMap([0, 1, 2, 3, 4, 5, 6, 7], 4));
-    t.deepEqual(
-        { ":0000": "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F", ":0010": "10" },
-        arrayToHexMap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-    );
+test("arrayToHexMap", () => {
+    expect(arrayToHexMap([0])).toEqual({ ":0000": "00" });
+    expect(arrayToHexMap([0, 1, 2, 3])).toEqual({ ":0000": "00 01 02 03" });
+    expect(arrayToHexMap([0, 1, 2, 3, 4, 5, 6, 7], 4)).toEqual({
+        ":0000": "00 01 02 03",
+        ":0004": "04 05 06 07",
+    });
+    expect(arrayToHexMap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])).toEqual({
+        ":0000": "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F",
+        ":0010": "10",
+    });
 });
 
-test("arrayToHexMap content", (t) => {
+test("arrayToHexMap content", () => {
     const original = [];
     for (let i = 0; i < 0x10000; ++i) original[i] = (i * 3) & 0xff;
     const hex = arrayToHexMap(original);
-    t.is(Object.keys(hex).length, 4096);
+    expect(Object.keys(hex).length).toBe(4096);
 
     const restored = [];
     let i = 0;
     for (const [label, line] of Object.entries(hex)) {
-        // check the label prefix ':'
-        t.true(label.startsWith(":"), `${label}: ${line}`);
-        // cut the label
+        expect(label.startsWith(":")).toBe(true);
         const address = label.slice(1);
-        // check the label length 4
-        t.is(address.length, 4, `${label}: ${line}`);
-        // parse the label to int
+        expect(address.length).toBe(4);
         const address_i = parseInt(address, 16);
-        // check the label value
-        t.is(address_i, i, `${label}: ${line}`);
-        // extract the values from the line
-        const line_values = line.split(" ").map((value) => parseInt(value, 16));
-        // check the line values length 16
-        t.is(line_values.length, 16);
-        // put the line to the array from the labelled address
+        expect(address_i).toBe(i);
+
+        const line_values = line.split(" ").map((v) => parseInt(v, 16));
+        expect(line_values.length).toBe(16);
+
         for (let j = 0; j < line_values.length; j++) {
             restored[address_i + j] = line_values[j];
         }
+
         i += 16;
     }
 
-    t.is(restored.length, original.length);
-    for (let i = 0; i < original.length; i += 1) {
-        t.is(original[i], restored[i], `i: ${i}`);
+    expect(restored.length).toBe(original.length);
+    for (let i = 0; i < original.length; i++) {
+        expect(restored[i]).toBe(original[i]);
     }
 });
 
-test("hexMapToArray", (t) => {
+test("hexMapToArray", () => {
     const original = [];
     for (let i = 0; i < 0x10000; ++i) original[i] = i & 0xff;
     const hex = arrayToHexMap(original);
     const restored = hexMapToArray(hex);
-    t.is(restored.length, original.length);
-    for (let i = 0; i < original.length; i += 1) {
-        t.is(original[i], restored[i], `i: ${i}`);
+
+    expect(restored.length).toBe(original.length);
+    for (let i = 0; i < original.length; i++) {
+        expect(restored[i]).toBe(original[i]);
     }
 });
 
-test("fromHex", (t) => {
-    t.is(0, fromHex(0));
-    t.is(100, fromHex(100));
-    t.is(0, fromHex("0"));
-    t.is(10, fromHex("10"));
-    t.is(0x00, fromHex("0x00"));
-    t.is(0xff, fromHex("0xFF"));
-    t.is(0xe6, fromHex("0xE6"));
-    t.is(0x0000, fromHex("0x0000"));
-    t.is(0xffff, fromHex("0xFFFF"));
-    t.is(0xc0de, fromHex("0xC0DE"));
+test("fromHex", () => {
+    expect(fromHex(0)).toBe(0);
+    expect(fromHex(100)).toBe(100);
+    expect(fromHex("0")).toBe(0);
+    expect(fromHex("10")).toBe(10);
+    expect(fromHex("0x00")).toBe(0x00);
+    expect(fromHex("0xFF")).toBe(0xff);
+    expect(fromHex("0xE6")).toBe(0xe6);
+    expect(fromHex("0x0000")).toBe(0x0000);
+    expect(fromHex("0xFFFF")).toBe(0xffff);
+    expect(fromHex("0xC0DE")).toBe(0xc0de);
 });
