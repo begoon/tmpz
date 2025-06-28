@@ -73,6 +73,9 @@
                     <button id="tape" class="icon" data-text="Запись на ленту">
                         <img class="icon" id="tape_activity_indicator" src="" style="visibility: hidden" />
                     </button>
+                    <button id="disassembler_toggle" class="icon" data-text="Дизассемблер">
+                        <img class="icon" id="disassembler_icon" src="i/disassembler-off.svg" />
+                    </button>
                     <button id="screenshot" class="icon" data-text="Снимок экрана">
                         <img class="icon" src="i/screenshot.svg" />
                     </button>
@@ -204,7 +207,7 @@
                 </div>
             </div>
             <div
-                id="console"
+                id="disassembler_panel"
                 style="
                     position: absolute;
                     bottom: 0;
@@ -217,7 +220,7 @@
                     border: 1px solid greenyellow;
                     font-family: monospace;
                     opacity: 0.8;
-                    /* display: none; */
+                    display: none;
                 "
             >
                 <style>
@@ -233,9 +236,9 @@
                 <button onclick="window.i8080disasm.form_code_shift(false, -1)">&lt;&lt;</button>
                 <button onclick="i8080disasm.form_code_shift(true, -1)">&lt;</button>
                 Addr:
-                <input id="disasm_code_address" style="width: 3em" value="0000" onkeypress="alert(this)" /> lines:
+                <input id="disasm_code_address" style="width: 3em" value="0000" /> lines:
                 <input id="disasm_code_nb_lines" style="width: 2em" value="22" />
-                <button onclick="i8080disasm.form_go_code()">Go</button>
+                <button onclick="i8080disasm.form_go_code()">@</button>
                 <button onclick="i8080disasm.form_code_shift(true, 1)">&gt;</button>
                 <button onclick="i8080disasm.form_code_shift(false, 1)">&gt;&gt;</button>
                 <hr />
@@ -246,7 +249,7 @@
                 <button onclick="i8080disasm.go_data_shift(true, -1)">&lt;</button>
                 Addr: <input id="disasm_data_address" style="width: 3em" value="0000" /> lines:
                 <input id="disasm_data_nb_lines" style="width: 2em" value="8" />
-                <button onclick="i8080disasm.form_go_data()">Go</button>
+                <button onclick="i8080disasm.form_go_data()">@</button>
                 <button onclick="i8080disasm.go_data_shift(true, 1)">&gt;</button>
                 <button onclick="i8080disasm.go_data_shift(false, 1)">&gt;&gt;</button>
                 <hr />
