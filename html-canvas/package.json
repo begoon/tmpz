@@ -1,6 +1,5 @@
 {
     "dependencies": {
-        "@std/http": "npm:@jsr/std__http",
         "@types/bun": "^1.2.17"
     },
     "type": "module"
