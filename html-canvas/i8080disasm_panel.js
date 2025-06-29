@@ -1550,7 +1550,7 @@ i8080disasm.gui_disasm = function (addr, lines) {
         line += "<span style='color: " + cmd_color + "'>" + descr.cmd + "</span>";
         line += "&nbsp;".repeat(5 - descr.cmd.length);
 
-        var offset_fmt = '<span class="disasm_%s_offset" onclick="i8080disasm.click_go_%s(\'%s\')">%s</span>';
+        var offset_fmt = '<span class="disasm_%s_offset" onclick="window.i8080disasm.click_go_%s(\'%s\')">%s</span>';
 
         if (descr.arg1) {
             var arg1_action = descr.code ? "code" : descr.data1 ? "data" : "idle";
@@ -1586,8 +1586,8 @@ i8080disasm.dump = function (addr, lines) {
     document.getElementById("disasm_data").innerHTML = dump;
 };
 
-i8080disasm.form_go_code = function () {
-    var addr = parseInt("0x" + document.getElementById("disasm_code_address").value);
+i8080disasm.form_go_code = function (addr) {
+    addr = addr || parseInt("0x" + document.getElementById("disasm_code_address").value);
     var nb_lines = parseInt(document.getElementById("disasm_code_nb_lines").value);
     this.gui_disasm(addr, nb_lines);
 };

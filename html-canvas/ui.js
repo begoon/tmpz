@@ -9,7 +9,6 @@ export class UI {
         }
 
         this.ruslat = document.getElementById("ruslat");
-        console.log("ruslat", this.ruslat);
         this.ruslat_state = false;
 
         this.sound = document.getElementById("sound");
@@ -20,10 +19,14 @@ export class UI {
 
         this.meta_press_count = 0;
 
+        this.command_mode = false;
+
         this.configureEventListeners();
 
-        setInterval(() => this.update_perf(), 2000);
+        // setInterval(() => this.update_perf(), 2000);
     }
+
+    start_update_perf = () => setInterval(() => this.update_perf(), 2000);
 
     resize_canvas(width, height) {
         this.canvas.width = width;
@@ -68,7 +71,16 @@ export class UI {
         document.getElementById("video-height").textContent = height.toString();
     }
 
+    toggle_disassembler() {
+        this.disassembler_visible = !this.disassembler_visible;
+        this.disassembler_panel.style.display = this.disassembler_visible ? "block" : "none";
+        this.disassembler_icon.src = "i/disassembler-" + (this.disassembler_visible ? "on" : "off") + ".svg";
+        this.machine.ui.i8080disasm.refresh(this.machine.memory);
+    }
+
     configureEventListeners() {
+        const machine = this.machine;
+
         document.getElementById("ruslat-toggle").addEventListener("click", () => {
             const ruslat_flag = 0x7606;
             const state = this.machine.memory.read(ruslat_flag) ? 0x00 : 0xff;
@@ -93,10 +105,9 @@ export class UI {
         this.disassembler_panel = document.getElementById("disassembler_panel");
         this.disassembler_icon = document.getElementById("disassembler_icon");
         this.disassembler_visible = false;
+
         document.getElementById("disassembler_toggle").addEventListener("click", () => {
-            this.disassembler_visible = !this.disassembler_visible;
-            this.disassembler_panel.style.display = this.disassembler_visible ? "block" : "none";
-            this.disassembler_icon.src = "i/disassembler-" + (this.disassembler_visible ? "on" : "off") + ".svg";
+            this.toggle_disassembler();
         });
 
         this.disassemblerOffsetX = 0;
@@ -111,8 +122,20 @@ export class UI {
 
         disassembler_panel.addEventListener("mousemove", (e) => {
             if (this.disassemberIsDragging) {
-                this.disassembler_panel.style.left = `${e.clientX - this.disassemblerOffsetX}px`;
-                this.disassembler_panel.style.top = `${e.clientY - this.disassemblerOffsetY}px`;
+                const left = e.clientX - this.disassemblerOffsetX;
+                const top = e.clientY - this.disassemblerOffsetY;
+
+                const width = document.documentElement.clientWidth;
+                const height = document.documentElement.clientHeight;
+
+                if (left < 0 || left + this.disassembler_panel.offsetWidth > width - 1) {
+                    return;
+                }
+                if (top < 0 || top + this.disassembler_panel.offsetHeight > height - 1) {
+                    return;
+                }
+                this.disassembler_panel.style.left = left + "px";
+                this.disassembler_panel.style.top = top + "px";
             }
         });
 
@@ -121,15 +144,29 @@ export class UI {
         });
 
         document.onkeydown = (event) => {
-            if (this.disassembler_visible) {
-                const event = new KeyboardEvent("keydown", event);
-                this.disassembler_panel.dispatchEvent(event);
+            if (this.command_mode) {
+                switch (event.code) {
+                    case "KeyD":
+                        this.toggle_disassembler();
+                        this.disassembler_panel.focus();
+                        break;
+                    case "KeyS":
+                        this.sound.click();
+                        break;
+                    case "KeyR":
+                        this.restart();
+                        break;
+                    case "KeyF":
+                        this.fullscreen();
+                        break;
+                }
+                this.command_mode = false;
+                return;
             }
+
             if (this.meta_press_count > 0) {
-                if (event.code === "KeyB") {
-                    document.getElementById("sound").click();
-                } else if (event.code === "KeyK") {
-                    document.getElementById("file_selector").click();
+                if (event.code === "KeyK") {
+                    this.command_mode = true;
                 }
                 return;
             }
@@ -144,10 +181,6 @@ export class UI {
         };
 
         document.onkeyup = (event) => {
-            if (this.disassembler_visible) {
-                const event = new KeyboardEvent("keyup", event);
-                this.disassembler_panel.dispatchEvent(event);
-            }
             if (event.key === "Meta") {
                 if (this.meta_press_count > 0) this.meta_press_count -= 1;
                 return;
@@ -157,5 +190,90 @@ export class UI {
             this.machine.keyboard.onkeyup(event.code);
             return false;
         };
+
+        this.disassembler_panel.addEventListener("keyup", (event) => {
+            if (event.key === "Escape") {
+                this.disassembler_panel.blur();
+                this.toggle_disassembler();
+            }
+            if (event.key === "Enter") {
+                this.machine.ui.i8080disasm.form_go_code();
+            }
+            event.stopPropagation();
+        });
+
+        this.disassembler_panel.addEventListener("keydown", (event) => {
+            event.stopPropagation();
+        });
+
+        document.getElementById("fullscreen").addEventListener("click", () => {
+            this.machine.ui.canvas.requestFullscreen();
+        });
+
+        const pause = document.getElementById("pause");
+        pause.addEventListener("click", () => {
+            machine.runner.paused = !machine.runner.paused;
+            const icon = document.getElementById("pause-icon");
+            icon.src = machine.runner.paused ? icon.dataset.on : icon.dataset.off;
+            this.machine.ui.i8080disasm.form_go_code(machine.cpu.pc);
+        });
+
+        // disassembler
+
+        document.getElementById("disasm_form_code_shift_back_page").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_code_shift(false, -1);
+        });
+        document.getElementById("disasm_form_code_shift_back_one").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_code_shift(true, -1);
+        });
+        document.getElementById("disasm_form_go_code").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_go_code();
+        });
+        document.getElementById("disasm_form_code_shift_forward_one").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_code_shift(true, 1);
+        });
+        document.getElementById("disasm_form_code_shift_forward_page").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_code_shift(false, 1);
+        });
+
+        document.getElementById("disasm_form_data_shift_back_one").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(false, -1);
+        });
+        document.getElementById("disasm_form_data_shift_back_page").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(true, -1);
+        });
+        document.getElementById("disasm_form_go_data").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_go_data();
+        });
+        document.getElementById("disasm_form_data_shift_forward_page").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(true, 1);
+        });
+        document.getElementById("disasm_form_data_shift_forward_one").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(false, 1);
+        });
+        document.getElementById("disasm_form_go_data").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.form_go_data();
+        });
+        document.getElementById("disasm_form_data_shift_forward_one").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(false, 1);
+        });
+        document.getElementById("disasm_form_data_shift_forward_page").addEventListener("click", () => {
+            this.machine.ui.i8080disasm.go_data_shift(true, 1);
+        });
     }
+
+    update_activity_indicator = (active) => {
+        document.getElementById("tape_activity_indicator").style.visibility = active ? "visible" : "hidden";
+    };
+
+    update_written_bytes = (count) => {
+        document.getElementById("tape_written_bytes").textContent = count.toString().padStart(4, "0");
+        if (count === 1) this.hightlight_written_bytes(true);
+        else if (count === 0) this.hightlight_written_bytes(false);
+    };
+
+    hightlight_written_bytes = (on) => {
+        document.getElementById("tape_written_bytes").classList.toggle("tape_active", on);
+        document.getElementById("tape_activity_indicator").src = on ? "i/tape-data.svg" : "i/tape-preamble.svg";
+    };
 }

@@ -1,3 +1,4 @@
+import { Bus } from "./bus.js";
 import { I8080 } from "./i8080.js";
 import { i8080disasm } from "./i8080disasm_panel.js";
 import FileParser from "./rk86_file_parser.js";
@@ -19,43 +20,29 @@ function IO() {
 }
 
 export async function main() {
+    const bus = new Bus();
+
+    bus.on("sound", (enabled) => console.log("sound enabled:", enabled));
+
     const keyboard = new Keyboard();
     const io = new IO();
 
     const machine = {
+        bus,
         font: rk86_font_image(),
         file_parser: new FileParser(),
         //
         keyboard,
         io,
     };
-    machine.memory = new Memory(keyboard);
+    machine.memory = new Memory(machine);
+
     machine.ui = new UI(machine);
     machine.screen = new Screen(machine);
-
-    machine.memory.attach_screen(machine.screen);
     machine.cpu = new I8080(machine);
     machine.runner = new Runner(machine);
 
-    const tape = new Tape(machine.runner);
-    machine.memory.tape_write_bit = tape.write_bit;
-
-    const tape_activity_indicator = document.getElementById("tape_activity_indicator");
-    tape.update_activity_indicator = (active) => {
-        tape_activity_indicator.style.visibility = active ? "visible" : "hidden";
-    };
-
-    const tape_written_bytes = document.getElementById("tape_written_bytes");
-    tape.update_written_bytes = (count) => {
-        tape_written_bytes.textContent = count.toString().padStart(4, "0");
-        if (count === 1) tape.hightlight_written_bytes(true);
-        else if (count === 0) tape.hightlight_written_bytes(false);
-    };
-
-    tape.hightlight_written_bytes = (on) => {
-        tape_written_bytes.classList.toggle("tape_active", on);
-        tape_activity_indicator.src = on ? "i/tape-data.svg" : "i/tape-preamble.svg";
-    };
+    machine.tape = new Tape(machine);
 
     async function load_file(name) {
         const array = Array.from(new Uint8Array(await (await fetch("./files/" + name)).arrayBuffer()));
@@ -70,42 +57,35 @@ export async function main() {
 
     machine.runner.execute();
 
+    bus.on("reset", () => reset());
+
     function reset() {
         machine.keyboard.reset();
         machine.cpu.jump(0xf800);
     }
 
     document.getElementById("reset").addEventListener("click", () => {
-        reset();
+        bus.emit("reset");
     });
 
     document.getElementById("restart").addEventListener("click", () => {
         machine.memory.zero_ram();
-        reset();
-    });
-
-    const pause = document.getElementById("pause");
-    pause.addEventListener("click", () => {
-        machine.runner.paused = !machine.runner.paused;
-        const icon = document.getElementById("pause-icon");
-        console.log(icon);
-        icon.src = machine.runner.paused ? icon.dataset.on : icon.dataset.off;
-    });
-
-    document.getElementById("fullscreen").addEventListener("click", () => {
-        machine.ui.canvas.requestFullscreen();
+        bus.emit("reset");
     });
 
     const header = document.getElementById("header");
     const footer = document.getElementById("footer");
+    const disassember_panel = document.getElementById("disassembler_panel");
     document.addEventListener("fullscreenchange", () => {
         const fullscreen = document.fullscreenElement;
         if (!fullscreen) {
             header.classList.remove("hidden");
             footer.classList.remove("hidden");
+            disassember_panel.classList.remove("hidden");
         } else {
             header.classList.add("hidden");
             footer.classList.add("hidden");
+            disassember_panel.classList.add("hidden");
         }
     });
 
@@ -142,7 +122,10 @@ export async function main() {
     });
 
     i8080disasm.refresh(machine.memory);
+    machine.ui.i8080disasm = i8080disasm;
     window.i8080disasm = i8080disasm;
+
+    machine.ui.start_update_perf();
 }
 
 await main();
