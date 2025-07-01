@@ -1,6 +1,6 @@
 import { Bus } from "./bus.js";
 import { I8080 } from "./i8080.js";
-import { i8080disasm } from "./i8080disasm_panel.js";
+import I8080DisasmPanel from "./i8080disasm_panel.js";
 import FileParser from "./rk86_file_parser.js";
 import { rk86_font_image } from "./rk86_font.js";
 import { Keyboard } from "./rk86_keyboard.js";
@@ -121,9 +121,8 @@ export async function main() {
         machine.cpu.jump(file.entry);
     });
 
-    i8080disasm.refresh(machine.memory);
-    machine.ui.i8080disasm = i8080disasm;
-    window.i8080disasm = i8080disasm;
+    machine.ui.i8080disasm = new I8080DisasmPanel(machine.memory);
+    window.i8080disasm = machine.ui.i8080disasm;
 
     machine.ui.start_update_perf();
 }

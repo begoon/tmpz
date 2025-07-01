@@ -22,8 +22,6 @@ export class UI {
         this.command_mode = false;
 
         this.configureEventListeners();
-
-        // setInterval(() => this.update_perf(), 2000);
     }
 
     start_update_perf = () => setInterval(() => this.update_perf(), 2000);
@@ -75,7 +73,8 @@ export class UI {
         this.disassembler_visible = !this.disassembler_visible;
         this.disassembler_panel.style.display = this.disassembler_visible ? "block" : "none";
         this.disassembler_icon.src = "i/disassembler-" + (this.disassembler_visible ? "on" : "off") + ".svg";
-        this.machine.ui.i8080disasm.refresh(this.machine.memory);
+        this.machine.ui.i8080disasm.refresh();
+        this.machine.ui.i8080disasm.go_code(this.machine.cpu.pc);
     }
 
     configureEventListeners() {
@@ -161,12 +160,14 @@ export class UI {
                         break;
                 }
                 this.command_mode = false;
+                document.getElementById("shortcuts").classList.remove("visible");
                 return;
             }
 
             if (this.meta_press_count > 0) {
                 if (event.code === "KeyK") {
                     this.command_mode = true;
+                    document.getElementById("shortcuts").classList.add("visible");
                 }
                 return;
             }
@@ -215,7 +216,7 @@ export class UI {
             machine.runner.paused = !machine.runner.paused;
             const icon = document.getElementById("pause-icon");
             icon.src = machine.runner.paused ? icon.dataset.on : icon.dataset.off;
-            this.machine.ui.i8080disasm.form_go_code(machine.cpu.pc);
+            this.machine.ui.i8080disasm.go_code(machine.cpu.pc);
         });
 
         // disassembler
@@ -237,28 +238,19 @@ export class UI {
         });
 
         document.getElementById("disasm_form_data_shift_back_one").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(false, -1);
+            this.machine.ui.i8080disasm.go_data_shift(-1, { one: true });
         });
         document.getElementById("disasm_form_data_shift_back_page").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(true, -1);
+            this.machine.ui.i8080disasm.go_data_shift(-1);
         });
         document.getElementById("disasm_form_go_data").addEventListener("click", () => {
             this.machine.ui.i8080disasm.form_go_data();
         });
         document.getElementById("disasm_form_data_shift_forward_page").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(true, 1);
+            this.machine.ui.i8080disasm.go_data_shift(1);
         });
         document.getElementById("disasm_form_data_shift_forward_one").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(false, 1);
-        });
-        document.getElementById("disasm_form_go_data").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.form_go_data();
-        });
-        document.getElementById("disasm_form_data_shift_forward_one").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(false, 1);
-        });
-        document.getElementById("disasm_form_data_shift_forward_page").addEventListener("click", () => {
-            this.machine.ui.i8080disasm.go_data_shift(true, 1);
+            this.machine.ui.i8080disasm.go_data_shift(1, { one: true });
         });
     }
 

@@ -208,6 +208,56 @@
                 </div>
             </div>
             <div
+                id="shortcuts"
+                style="
+                    position: fixed;
+                    left: 50%;
+                    top: 50%;
+                    transform: translateX(-50%) translateY(-50%);
+                    width: fit-content;
+                    background-color: #333333;
+                    color: white;
+                    padding: 10px;
+                    font-size: 1.2em;
+                    text-align: center;
+                    z-index: 1000; /* ensure it appears above other elements */
+                "
+            >
+                <style>
+                    #shortcuts.visible {
+                        display: block;
+                    }
+                    #shortcuts {
+                        display: none;
+                    }
+                </style>
+                <div>
+                    <h1 style="font-weight: bold">cmd-k + ...</h1>
+                    <style>
+                        mark {
+                            background-color: #ffcc00;
+                            color: black;
+                            padding: 2px 4px;
+                            border-radius: 4px;
+                        }
+                    </style>
+                    <div id="shortcuts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px">
+                        <style>
+                            #shortcuts-grid div {
+                                padding: 4px;
+                                white-space: nowrap;
+                                text-align: left;
+                            }
+                        </style>
+                        <div><mark>k</mark> - консоль</div>
+                        <div><mark>d</mark> - дизассемблер</div>
+                        <div><mark>r</mark> - перезапустить эмулятор</div>
+                        <div><mark>s</mark> - звук</div>
+                        <div><mark>f</mark> - полноэкранный режим</div>
+                    </div>
+                </div>
+            </div>
+            <div
                 id="disassembler_panel"
                 tabindex="0"
                 style="
@@ -245,13 +295,13 @@
                 <code id="disasm_code"></code>
                 <hr />
 
-                <button id="disasm_form_data_shift_back_one">&lt;&lt;</button>
-                <button id="disasm_form_data_shift_back_page">&lt;</button>
+                <button id="disasm_form_data_shift_back_page">&lt;&lt;</button>
+                <button id="disasm_form_data_shift_back_one">&lt;</button>
                 <input id="disasm_data_address" style="width: 3em" value="0000" /> /
                 <input id="disasm_data_nb_lines" style="width: 2em" value="8" />
                 <button id="disasm_form_go_data">@</button>
-                <button id="disasm_form_data_shift_forward_page">&gt;</button>
-                <button id="disasm_form_data_shift_forward_one">&gt;&gt;</button>
+                <button id="disasm_form_data_shift_forward_one">&gt;</button>
+                <button id="disasm_form_data_shift_forward_page">&gt;&gt;</button>
                 <hr />
                 <code id="disasm_data"></code>
             </div>
