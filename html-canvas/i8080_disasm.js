@@ -1,3 +1,5 @@
+import { hex16, hex8 } from "./hex.js";
+
 export function i8080_opcode(opcode, byte2, byte3) {
     const imm8_ = byte2 & 0xff;
     const imm16_ = imm8_ | ((byte3 & 0xff) << 8);
@@ -264,16 +266,4 @@ export function i8080_opcode(opcode, byte2, byte3) {
         0xff: { cmd: "RST", length: 1, arg1: "7" },
     };
     return opcodes[opcode];
-}
-
-function hex(v) {
-    return v.toString(16).toUpperCase();
-}
-
-function hex8(v) {
-    return hex(v).padStart(2, "0");
-}
-
-function hex16(v) {
-    return hex(v).padStart(4, "0");
 }

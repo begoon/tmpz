@@ -1,6 +1,7 @@
 import { Bus } from "./bus.js";
 import { I8080 } from "./i8080.js";
 import I8080DisasmPanel from "./i8080disasm_panel.js";
+import { Console } from "./rk86_console.js";
 import FileParser from "./rk86_file_parser.js";
 import { rk86_font_image } from "./rk86_font.js";
 import { Keyboard } from "./rk86_keyboard.js";
@@ -125,6 +126,8 @@ export async function main() {
     window.i8080disasm = machine.ui.i8080disasm;
 
     machine.ui.start_update_perf();
+
+    const konsole = new Console(machine);
 }
 
 await main();
