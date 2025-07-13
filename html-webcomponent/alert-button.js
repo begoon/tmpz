@@ -24,15 +24,15 @@ class AlertButton extends HTMLElement {
     }
 
     connectedCallback() {
-        this.button.addEventListener("click", this._handleClick);
+        this.button.addEventListener("click", this.handleClick);
     }
 
     disconnectedCallback() {
-        this.button.removeEventListener("click", this._handleClick);
+        this.button.removeEventListener("click", this.handleClick);
     }
 
-    _handleClick = () => {
-        alert("Button clicked!");
+    handleClick = () => {
+        this.dispatchEvent(new CustomEvent("button-click", { bubbles: true, composed: true }));
     };
 }
 

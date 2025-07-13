@@ -26,6 +26,11 @@
         }
     </style>
     <body>
-        <alert-button>click me</alert-button>
+        <alert-button id="clicker">click me</alert-button>
+        <script>
+            document.getElementById("clicker").addEventListener("button-click", () => {
+                console.log("custom button clicked!");
+            });
+        </script>
     </body>
 </html>
