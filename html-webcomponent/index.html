@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="module" src="alert-button.js"></script>
+    </head>
+    <style>
+        alert-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        alert-button:hover {
+            background-color: #0056b3;
+        }
+        alert-button:active {
+            background-color: #004085;
+        }
+    </style>
+    <body>
+        <alert-button>click me</alert-button>
+    </body>
+</html>
