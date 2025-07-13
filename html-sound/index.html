@@ -1,0 +1,50 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body>
+        <script>
+            let audioCtx, gainNode;
+
+            function init() {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+
+                const constant = audioCtx.createConstantSource();
+                constant.offset.setValueAtTime(1, audioCtx.currentTime); // Always "1"
+                constant.connect(gainNode).connect(audioCtx.destination);
+                constant.start();
+            }
+
+            function set1() {
+                gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+            }
+
+            function set0() {
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            }
+
+            let timer;
+
+            function play() {
+                let toggle = false;
+                timer = setInterval(() => {
+                    if (toggle) set1();
+                    else set0();
+                    toggle = !toggle;
+                }, 0);
+            }
+
+            function stop() {
+                clearInterval(timer);
+                set0();
+            }
+        </script>
+        <button onclick="init()">Init</button>
+        <button onclick="play()">Start 1-bit Audio</button>
+        <button onclick="stop()">Stop 1-bit Audio</button>
+        <button onclick="set0()">Set 0</button>
+        <button onclick="set1()">Set 1</button>
+    </body>
+</html>
