@@ -40,7 +40,7 @@ function getByte(data, i) {
     return [byte, i];
 }
 
-function decodeFrames(frames) {
+function decodeData(frames) {
     const data = Array.from(frames, (x) => x & 0xff);
     let i = 0;
 
@@ -53,6 +53,7 @@ function decodeFrames(frames) {
     console.log(`sync byte (E6) found at offset ${(advance - 1).toString(16).padStart(8, "0")}`);
     i = advance;
 
+    const result = [];
     let offset = 0;
     while (true) {
         if ((offset & 0x0f) === 0) {
@@ -62,20 +63,62 @@ function decodeFrames(frames) {
         if (byte === null) break;
         i = advance;
 
+        result.push(byte);
+
         if ((offset & 0x07) === 0x07) process.stdout.write(" ");
         if ((offset & 0x0f) === 0x0f) process.stdout.write("\n");
         offset++;
     }
     console.log();
+    return result;
+}
+
+const hex = (v) =>
+    v
+        .toString(16)
+        .padStart(v > 255 ? 4 : 2, "0")
+        .toUpperCase();
+
+function rk86_check_sum(v) {
+    let sum = 0;
+    let j = 0;
+    while (j < v.length - 1) {
+        const c = v[j];
+        sum = (sum + c + (c << 8)) & 0xffff;
+        j += 1;
+    }
+    const sum_h = sum & 0xff00;
+    const sum_l = sum & 0xff;
+    sum = sum_h | ((sum_l + v[j]) & 0xff);
+    return sum;
 }
 
 async function main() {
-    const data = fs.readFileSync("in.wav");
-    const arrayBuffer = new Uint8Array(data).buffer;
+    const input = fs.readFileSync("in.wav");
+    const arrayBuffer = new Uint8Array(input).buffer;
     const wav = new WaveParser(arrayBuffer);
     console.log({ ...wav, samples: undefined });
-    const samples = wav.samples[0].map((x) => x * 256);
-    decodeFrames(samples);
+    const data = wav.samples[0].map((x) => x * 256);
+    const decoded = decodeData(data);
+
+    const start = decoded[1] | (decoded[0] << 8);
+    const end = decoded[3] | (decoded[2] << 8);
+    const size = end - start + 1;
+    console.log(`${hex(start)}-${hex(end)}`, hex(size));
+
+    const trailer_0000 = decoded[4 + size] | (decoded[4 + size + 1] << 8);
+    const trailer_e6 = decoded[4 + size + 2];
+    console.log(hex(trailer_0000), hex(trailer_e6));
+    if (trailer_0000 !== 0x0000) throw new Error(`trailer_0000=${hex(trailer_0000)} != 0000`);
+    if (trailer_e6 !== 0xe6) throw new Error(`trailer_e6=${hex(trailer_e6)} != E6`);
+
+    const checksum = decoded[4 + size + 2 + 2] | (decoded[4 + size + 2 + 1] << 8);
+    console.log(`checksum=${hex(checksum)}`);
+    const actual_checksum = rk86_check_sum(decoded.slice(4, 4 + size));
+
+    if (actual_checksum !== checksum) {
+        throw new Error(`actual_checksum=${hex(actual_checksum)} != checksum=${hex(checksum)}`);
+    }
 }
 
 await main();

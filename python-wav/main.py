@@ -41,7 +41,7 @@ def get_byte(data, i):
     return [byte, i]
 
 
-def decode_frames(frames):
+def decode_data(frames):
     data = list(frames)
 
     i = 0
@@ -52,6 +52,8 @@ def decode_frames(frames):
         return
     print(f"sync byte (E6) found at offset {i - 1:08X}")
 
+    result = []
+
     offset = 0
     while True:
         if offset & 0x0F == 0:
@@ -59,6 +61,7 @@ def decode_frames(frames):
         byte, i = get_byte(data, i)
         if byte is None:
             break
+        result.append(byte)
         if (offset & 0x07) == 0x07:
             print(" ", end="")
         if (offset & 0x0F) == 0x0F:
@@ -66,14 +69,45 @@ def decode_frames(frames):
         offset += 1
     print()
 
+    return result
+
+
+def rk86_check_sum(v):
+    sum_ = 0
+    j = 0
+    while j < len(v) - 1:
+        c = v[j]
+        sum_ = (sum_ + c + (c << 8)) & 0xFFFF
+        j += 1
+    sum_h = sum_ & 0xFF00
+    sum_l = sum_ & 0xFF
+    sum_ = sum_h | ((sum_l + v[j]) & 0xFF)
+    return sum_
+
 
 def main():
     with wave.open("in.wav", "rb") as f:
         print(f.getparams())
-        frames = f.readframes(f.getnframes())
-        print(f"read {len(frames)} frames")
+        data = f.readframes(f.getnframes())
+        print(f"read {len(data)} frames")
 
-        decode_frames(frames)
+        decoded = decode_data(data)
+
+        start = decoded[1] | (decoded[0] << 8)
+        end = decoded[3] | (decoded[2] << 8)
+        size = end - start + 1
+        print(f"{start:04X}-{end:04X} {size:04X}")
+        trailer_0000 = decoded[4 + size] | (decoded[4 + size + 1] << 8)
+        trailer_e6 = decoded[4 + size + 2]
+        print(f"{trailer_0000:04X} {trailer_e6:02X}")
+        assert trailer_0000 == 0x0000, f"{trailer_0000=:04X} != 0000"
+        assert trailer_e6 == 0xE6, f"{trailer_e6=:02X} != E6"
+        checksum = decoded[4 + size + 2 + 2] | (decoded[4 + size + 2 + 1] << 8)
+        print(f"{checksum=:04X}")
+        actual_checksum = rk86_check_sum(decoded[4 : 4 + size])
+        assert (
+            actual_checksum == checksum
+        ), f"{actual_checksum=:04X} != {checksum=:04X}"
 
 
 if __name__ == "__main__":
