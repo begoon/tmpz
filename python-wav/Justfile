@@ -5,3 +5,7 @@ test:
 
     diff output-python.txt output-bun.txt || true
     diff output-python.txt output-node.txt || true
+
+clean:
+    rm -rf .venv
+    rm -rf node_modules
