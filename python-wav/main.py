@@ -8,40 +8,40 @@ print(f"{SAMPLES_PER_BIT=}")
 threshold = 100
 
 
-def get_bit(data, i):
+def get_bit(data: list[int], i: int) -> tuple[int | None, int]:
     v = data[i]
     while i < len(data) and data[i] == v:
         i += 1
     if i >= len(data):
-        return [None, i]
+        return None, i
     bit = 1 if data[i] >= threshold else 0
-    return [bit, i + int(SAMPLES_PER_BIT * 0.75)]
+    return bit, i + int(SAMPLES_PER_BIT * 0.75)
 
 
-def seek_sync_byte(data, i):
+def seek_sync_byte(data: list[int], i: int) -> tuple[int | None, int]:
     byte = 0
     while True:
         byte <<= 1
         bit, i = get_bit(data, i)
         if bit is None:
-            return [None, i]
+            return None, i
         byte = (byte | bit) & 0xFF
         if byte == 0xE6:
-            return [byte, i]
+            return byte, i
 
 
-def get_byte(data, i):
+def get_byte(data: list[int], i: int) -> tuple[int | None, int]:
     byte = 0
     for j in reversed(range(8)):
         bit, i = get_bit(data, i)
         if bit is None:
-            return [None, i]
+            return None, i
         byte |= bit << j
     print(f"{byte:02X} ", end="")
-    return [byte, i]
+    return byte, i
 
 
-def decode_data(frames):
+def decode_data(frames: bytes) -> list[int] | None:
     data = list(frames)
 
     i = 0
@@ -72,7 +72,7 @@ def decode_data(frames):
     return result
 
 
-def rk86_check_sum(v):
+def rk86_check_sum(v: list[int]) -> int:
     sum_ = 0
     j = 0
     while j < len(v) - 1:
@@ -85,13 +85,14 @@ def rk86_check_sum(v):
     return sum_
 
 
-def main():
+def main() -> None:
     with wave.open("in.wav", "rb") as f:
         print(f.getparams())
         data = f.readframes(f.getnframes())
         print(f"read {len(data)} frames")
 
-        decoded = decode_data(data)
+        decoded: list[int] | None = decode_data(data)
+        assert decoded is not None, "decoded data is None"
 
         start = decoded[1] | (decoded[0] << 8)
         end = decoded[3] | (decoded[2] << 8)
