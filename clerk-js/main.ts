@@ -33,6 +33,11 @@ serve({
             console.dir(data, { depth: Infinity });
             const user = await clerkClient.users.getUser(data.sub);
             console.dir(user, { depth: Infinity });
+            const session = await clerkClient.sessions.getSession(data.sid);
+            console.dir(session, { depth: Infinity });
+            const timeLeft = session.expireAt - Date.now();
+            // in hours
+            console.log(`session expires in ${(timeLeft / (1000 * 60 * 60)).toFixed(2)} hours`);
         }
 
         const filename = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
