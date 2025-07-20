@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <div id="clerk"></div>
+        <script type="module">
+            import { Clerk } from "https://esm.sh/@clerk/clerk-js";
+            const clerk = new Clerk("PUBLIC_CLERK_PUBLISHABLE_KEY");
+            await clerk.load();
+            console.log(clerk.user);
+
+            if (clerk.user) {
+                clerk.mountUserButton(document.getElementById("clerk"));
+                const signOutButton = document.createElement("button");
+                signOutButton.textContent = "Sign Out";
+                signOutButton.onclick = async () => await clerk.signOut();
+                document.getElementById("clerk").appendChild(signOutButton);
+            } else {
+                clerk.mountSignIn(document.getElementById("clerk"));
+            }
+        </script>
+    </body>
+</html>
