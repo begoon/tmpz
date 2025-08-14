@@ -2,17 +2,21 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
+
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "zig-comptime",
+    const exe_mod = b.createModule(.{
         .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
+    const exe = b.addExecutable(.{
+        .name = "zig_comptime",
+        .root_module = exe_mod,
+    });
+
     b.installArtifact(exe);
-    b.reference_trace = 256;
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
