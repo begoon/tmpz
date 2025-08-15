@@ -318,7 +318,7 @@ class StringLiteral(Expr):
 
 
 @dataclass
-class BoolLit(Expr):
+class BoolLiteral(Expr):
     value: bool
 
 
@@ -574,11 +574,11 @@ class Parser:
             # not lexed; handle via IDENT? We'll allow keywords via bool-like
             # identifiers
             self.i += 1
-            return BoolLit(token.type == "TRUE")
+            return BoolLiteral(token.type == "TRUE")
         # Allow classic Pascal booleans as identifiers 'true'/'false'
         if token.type == "IDENT" and token.value.lower() in ("true", "false"):
             self.i += 1
-            return BoolLit(token.value.lower() == "true")
+            return BoolLiteral(token.value.lower() == "true")
         raise ParseError(
             f"unexpected token {token.type}('{token.value}') at "
             f"{token.line}:{token.col} in factor"
@@ -593,7 +593,8 @@ def indent(s: str, n: int) -> str:
 def dump(node, level=0) -> str:
     if isinstance(node, Program):
         return indent(
-            f"Program {node.name}\n{dump(node.block, level+1)}", level
+            f"Program {node.name}\n{dump(node.block, level+1)}",
+            level,
         )
     if isinstance(node, Block):
         parts = ["Block:"]
@@ -649,13 +650,13 @@ def dump(node, level=0) -> str:
         return str(node.value)
     if isinstance(node, StringLiteral):
         return repr(node.value)
-    if isinstance(node, BoolLit):
+    if isinstance(node, BoolLiteral):
         return "true" if node.value else "false"
     return repr(node)
 
 
-def parse_pascal(src: str) -> Program:
-    lexer = Lexer(src)
+def parse_pascal(code: str) -> Program:
+    lexer = Lexer(code)
     tokens = lexer.tokens()
     return Parser(tokens).program()
 
