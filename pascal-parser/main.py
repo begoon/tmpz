@@ -248,26 +248,26 @@ class Statement:
 @dataclass
 class Assign(Statement):
     name: str
-    expr: "Expr"
+    expr: "Expression"
 
 
 @dataclass
 class If(Statement):
-    cond: "Expr"
+    cond: "Expression"
     then_branch: Statement
     else_branch: Optional[Statement]
 
 
 @dataclass
 class While(Statement):
-    cond: "Expr"
+    cond: "Expression"
     body: Statement
 
 
 @dataclass
 class Call(Statement):
     name: str
-    args: List["Expr"]
+    args: List["Expression"]
 
 
 @dataclass
@@ -280,45 +280,45 @@ class Empty(Statement):
     pass
 
 
-class Expr:
+class Expression:
     pass
 
 
 @dataclass
-class BinaryOperation(Expr):
+class BinaryOperation(Expression):
     operation: str
-    left: Expr
-    right: Expr
+    left: Expression
+    right: Expression
 
 
 @dataclass
-class UnaryOperation(Expr):
+class UnaryOperation(Expression):
     operation: str
-    expr: Expr
+    expr: Expression
 
 
 @dataclass
-class Variable(Expr):
+class Variable(Expression):
     name: str
 
 
 @dataclass
-class IntegerLiteral(Expr):
+class IntegerLiteral(Expression):
     value: int
 
 
 @dataclass
-class RealLiteral(Expr):
+class RealLiteral(Expression):
     value: float
 
 
 @dataclass
-class StringLiteral(Expr):
+class StringLiteral(Expression):
     value: str
 
 
 @dataclass
-class BoolLiteral(Expr):
+class BoolLiteral(Expression):
     value: bool
 
 
@@ -473,14 +473,14 @@ class Parser:
 
     def procedure_statement(self) -> Call:
         name = self.eat("IDENT").value
-        args: List[Expr] = []
+        args: List[Expression] = []
         if self.accept("("):
             if self.current().type != ")":
                 args = self.arg_list()
             self.eat(")")
         return Call(name, args)
 
-    def arg_list(self) -> List[Expr]:
+    def arg_list(self) -> List[Expression]:
         args = [self.expression()]
         while self.accept(","):
             args.append(self.expression())
@@ -505,7 +505,7 @@ class Parser:
 
     # Expression grammar (precedence & associativity)
     # expression -> simple_expression (relop simple_expression)?
-    def expression(self) -> Expr:
+    def expression(self) -> Expression:
         left = self.simple_expression()
         token = self.current()
         if token.type in ("=", "<>", "<", "<=", ">", ">="):
@@ -517,7 +517,7 @@ class Parser:
 
     # simple_expression -> term (addop term)*
     # addop -> '+' | '-' | 'or'
-    def simple_expression(self) -> Expr:
+    def simple_expression(self) -> Expression:
         node = self.term()
         while self.current().type in ("+", "-", "OR"):
             operation = self.current().type
@@ -528,7 +528,7 @@ class Parser:
 
     # term -> factor (mulop factor)*
     # mulop -> '*' | '/' | 'div' | 'mod' | 'and'
-    def term(self) -> Expr:
+    def term(self) -> Expression:
         node = self.factor()
         while self.current().type in ("*", "/", "DIV", "MOD", "AND"):
             op = self.current().type
@@ -539,7 +539,7 @@ class Parser:
 
     # factor -> IDENT | number | string | 'not' factor | '(' expression ')'
     # | 'true' | 'false'
-    def factor(self) -> Expr:
+    def factor(self) -> Expression:
         token = self.current()
         if token.type == "IDENT":
             self.i += 1
