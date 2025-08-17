@@ -599,7 +599,7 @@ def dump(node, level=0) -> str:
     if isinstance(node, Block):
         parts = ["Block:"]
         if node.variable_declarations:
-            parts.append("Vars:")
+            parts.append("Variables:")
             for v in node.variable_declarations:
                 parts.append(f"  {', '.join(v.names)}: {v.type_name}")
         if node.subprograms:
@@ -608,8 +608,8 @@ def dump(node, level=0) -> str:
                 params = ", ".join(f"{n}:{t}" for n, t in p.params)
                 parts.append(
                     indent(
-                        f"proc {p.name}({params})\n"
-                        f"{dump(p.block, level+2)}",
+                        f"procedure {p.name}({params})\n"
+                        f"{dump(p.block, level)}",
                         1,
                     )
                 )
