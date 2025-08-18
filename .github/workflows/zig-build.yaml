@@ -1,0 +1,18 @@
+name: zig-build
+on:
+    push:
+        branches: ["main"]
+        paths: ["zig-build/**"]
+    workflow_dispatch:
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: mlugg/setup-zig@v1
+              with:
+                  version: 0.14
+            - run: >
+                  cd zig-build && 
+                  zig build test && 
+                  zig build run
