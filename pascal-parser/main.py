@@ -661,7 +661,7 @@ def parse_pascal(code: str) -> Program:
     return Parser(tokens).program()
 
 
-if __name__ == "__main__":
+def parse() -> Program:
     code = r"""
     program demo;
     var
@@ -685,4 +685,8 @@ if __name__ == "__main__":
     end.
     """
     ast = parse_pascal(code)
-    print(dump(ast))
+    return ast
+
+
+if __name__ == "__main__":
+    print(dump(parse()))
