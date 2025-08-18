@@ -22,7 +22,7 @@ pub fn main() !void {
     try stdout.print("run `zig build test` to run the tests.\n", .{});
 
     try stdout.print("subtract(10, 5) = {d}\n", .{lib.subtract(10, @as(i32, 5))});
-    try stdout.print("subtract(10, 2) = {d}\n", .{lib.subtract(10, @as(u8, 2))});
+    try stdout.print("subtract(10, 3) = {d}\n", .{lib.subtract(10, @as(u8, 3))});
 
     try bw.flush(); // Don't forget to flush!
     std.debug.print("don't forget to flush!\n", .{});
