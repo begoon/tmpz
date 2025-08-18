@@ -2,7 +2,7 @@ name: pascal-parser
 on:
     push:
         branches: ["main"]
-        paths: ["pascal-parser"]
+        paths: ["pascal-parser/**"]
     workflow_dispatch:
 jobs:
     build:
@@ -12,5 +12,6 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version: "3.13"
-            - run: |
+            - run: >
+                  cd pascal-parser &&
                   python3 test_main.py
