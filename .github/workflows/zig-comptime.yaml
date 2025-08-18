@@ -1,0 +1,17 @@
+name: zig-comptime
+on:
+    push:
+        branches: ["main"]
+        paths: ["zig-competime/**"]
+    workflow_dispatch:
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: mlugg/setup-zig@v2
+              with:
+                  version: 0.14.0
+            - run: >
+                  cd zig-comptime && 
+                  make
