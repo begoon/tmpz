@@ -1,27 +1,33 @@
+import pathlib
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 KEYWORDS = {
-    "program",
-    "var",
-    "begin",
-    "end",
-    "integer",
-    "boolean",
-    "real",
-    "string",
-    "procedure",
-    "function",
-    "if",
-    "then",
-    "else",
-    "while",
-    "do",
-    "not",
-    "div",
-    "mod",
-    "and",
-    "or",
+    "PROGRAM",
+    "END",
+    "FUNCTION",
+    "RETURN",
+    "INTEGER",
+    "REAL",
+    "IF",
+    "THEN",
+    "ELSE",
+    "FI",
+    "WHILE",
+    "FOR",
+    "BY",
+    "DO",
+    "SELECT",
+    "CASE",
+    "DECLARE",
+    "SET",
+    "OUTPUT",
+    "INPUT",
+    "EXIT",
+    "FIX",
+    "FLOAT",
+    "TRUE",
+    "FALSE",
 }
 
 SYMBOLS = {
@@ -44,6 +50,7 @@ SYMBOLS = {
     "<=",
     ">",
     ">=",
+    "||",
 }
 
 
@@ -213,11 +220,11 @@ class Lexer:
 @dataclass
 class Program:
     name: str
-    block: "Block"
+    block: "Segments"
 
 
 @dataclass
-class Block:
+class Segments:
     variables: List["VariableDeclaration"]
     procedures: List["ProcedureDeclaration"]
     statements: "Statements"
@@ -233,7 +240,7 @@ class VariableDeclaration:
 class ProcedureDeclaration:
     name: str
     parameters: List[Tuple[str, str]]
-    block: Block
+    block: Segments
 
 
 @dataclass
@@ -358,21 +365,21 @@ class Parser:
     def program(self) -> Program:
         self.eat("PROGRAM")
         name = self.eat("IDENT").value
-        self.eat(";")
-        block = self.block()
+        self.eat(":")
+        block = self.segments()
         self.eat(".")
         self.eat("EOF")
         return Program(name, block)
 
-    # block -> variables_declarations procedures_declarations compound_statement
-    def block(self) -> Block:
+    # segments -> variables_declarations procedures_declarations compound_statement
+    def segments(self) -> Segments:
         variables_declarations = self.variables_section()
         procedures_declarations = self.procedures_declarations()
-        compound_statement = self.compound_statement()
-        return Block(
+        instructions = self.instructions()
+        return Segments(
             variables_declarations,
             procedures_declarations,
-            compound_statement,
+            instructions,
         )
 
     # variables_section -> ('var' variable_declaration+)?
@@ -411,7 +418,7 @@ class Parser:
                     parameters_list = self.parameters_list()
                 self.eat(")")
             self.eat(";")
-            block = self.block()
+            block = self.segments()
             out.append(ProcedureDeclaration(name, parameters_list, block))
             self.eat(";")
         return out
@@ -433,7 +440,7 @@ class Parser:
         return out
 
     # compound_statement -> 'begin' statement_list 'end'
-    def compound_statement(self) -> Statements:
+    def instructions(self) -> Statements:
         self.eat("BEGIN")
         statement_list = self.statement_list()
         self.eat("END")
@@ -456,7 +463,7 @@ class Parser:
     def statement(self) -> Statement:
         token = self.current()
         if token.type == "BEGIN":
-            return BlockStatement(self.compound_statement())
+            return BlockStatement(self.instructions())
         if token.type == "IF":
             return self.if_statement()
         if token.type == "WHILE":
@@ -600,7 +607,7 @@ def dump(node, level=0) -> str:
             f"Program {node.name}\n{dump(node.block, level+1)}",
             level,
         )
-    if isinstance(node, Block):
+    if isinstance(node, Segments):
         parts = ["Block:"]
         if node.variables:
             parts.append("Variables:")
@@ -659,36 +666,15 @@ def dump(node, level=0) -> str:
     return repr(node)
 
 
-def parse_pascal(code: str) -> Program:
+def parse_easy(code: str) -> Program:
     lexer = Lexer(code)
     tokens = lexer.tokens()
     return Parser(tokens).program()
 
 
 def parse() -> Program:
-    code = r"""
-    program demo;
-    var
-      x, y: integer;
-      msg: string;
-    procedure incx(a: integer);
-    begin
-      x := x + a;
-    end;
-
-    begin
-      x := 1;
-      y := 2 * (x + 3) div 2;
-      if y >= 4 then
-        begin
-          msg := 'hi';
-          incx(y);
-        end
-      else
-        while x < 10 do x := x + 1;
-    end.
-    """
-    ast = parse_pascal(code)
+    code = pathlib.Path("era.easy").read_text()
+    ast = parse_easy(code)
     return ast
 
 
