@@ -1,0 +1,10 @@
+[project]
+name = "custom-extension"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["setuptools>=80.9.0", "wheel>=0.45.1"]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
