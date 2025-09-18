@@ -1,0 +1,2 @@
+abc:
+    cc -std=c23 -o ./main main.c && main
