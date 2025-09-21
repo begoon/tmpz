@@ -1,0 +1,5 @@
+abc:
+  clang hw.ll -o hw && ./hw
+
+clean:
+  rm -f hw
