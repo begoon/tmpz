@@ -1,0 +1,7 @@
+abc: build run
+
+build:
+    cc gc_boilerplate.c -o gc_boilerplate $(pkg-config --cflags --libs bdw-gc)
+
+run:
+    GC_DUMP_REGULARLY=1 ./gc_boilerplate
