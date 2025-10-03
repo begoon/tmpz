@@ -1,0 +1,25 @@
+{
+    "terminal.integrated.env.osx": {
+        "PATH": "${HOME}/other/v:${PATH}"
+    },
+    "files.associations": {
+        "*.css": "tailwindcss",
+        "Makefile*": "makefile",
+        "me": "shellscript",
+        "__config": "c",
+        "__locale": "c",
+        "__verbose_abort": "c",
+        "bitset": "c",
+        "cstdlib": "c",
+        "format": "c",
+        "ios": "c",
+        "locale": "c",
+        "print": "c",
+        "stdexcept": "c",
+        "string": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "typeinfo": "c",
+        "version": "c"
+    },
+}
