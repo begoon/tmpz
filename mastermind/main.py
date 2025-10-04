@@ -22,10 +22,12 @@ def feedback(probe: str, candidate: str) -> tuple[int, int]:
 
 
 def consistent_with_history(
-    code: str,
+    candidate: str,
     history: list[tuple[str, tuple[int, int]]],
 ) -> bool:
-    return all(feedback(guess, code) == fb for guess, fb in history)
+    return all(
+        feedback(guess, candidate) == feedback for guess, feedback in history
+    )
 
 
 def minimax_pick(candidates: list[str], universe: list[str]) -> str:
@@ -95,9 +97,8 @@ def main():
         print(f"guess {step}: {guess}")
         feedback = None
         while feedback is None:
-            feedback = parse_feedback(
-                input("enter feedback '<in-place> <by-value>' (e.g., 2 1): ")
-            )
+            v = input("enter feedback '<in-place> <by-value>' (e.g., 2 1): ")
+            feedback = parse_feedback(v)
             if feedback is None:
                 print("(!) enter two integers like '2 1' (b+w ≤ 4).")
         b, w = feedback
