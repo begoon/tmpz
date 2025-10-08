@@ -1,0 +1,3 @@
+abc:
+	spim -file hw.asm
+
