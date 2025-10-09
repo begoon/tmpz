@@ -1,0 +1,1 @@
+const s = "const s = %;print(s[..10]) + u8(34).ascii_str() + s + u8(34).ascii_str() + s[11..])"; print(s[..10] + u8(34).ascii_str() + s + u8(34).ascii_str() + s[11..])

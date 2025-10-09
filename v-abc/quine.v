@@ -1,0 +1,1 @@
+const s = "const s = %;print(s[0..10]);print_character(34);print(s);print_character(34);print(s[11..])";print(s[0..10]);print_character(34);print(s);print_character(34);print(s[11..])

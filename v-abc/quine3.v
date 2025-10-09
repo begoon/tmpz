@@ -1,0 +1,1 @@
+const s = "const s = %;print(s[..10]) + rune(34).str() + s + rune(34).str() + s[11..])"; print(s[..10] + rune(34).str() + s + rune(34).str() + s[11..])
