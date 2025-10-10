@@ -28,7 +28,7 @@ fn main() {
 				if candidate == 0 {
 					continue // skipped eliminated candidates
 				}
-				cmp := compare(probe, candidate)
+				cmp := compare_1(probe, candidate)
 				valuation := cmp.in_place * 10 + cmp.by_value
 				buckets[valuation] += 1
 				if buckets[valuation] > worst_eval {
@@ -78,7 +78,7 @@ fn main() {
 			if candidate == 0 {
 				continue // already eliminated
 			}
-			cmp := compare(best_probe, candidate)
+			cmp := compare_1(best_probe, candidate)
 			if cmp.in_place != in_place || cmp.by_value != by_value {
 				candidates[i] = 0
 				eliminated++
@@ -117,7 +117,7 @@ fn create_universe() []int {
 }
 
 // compare a probe against a code, returning <in_place, by_value>
-fn compare(probe int, code int) Comparison {
+fn compare_1(probe int, code int) Comparison {
 	mut p1 := (probe / 1000) % 10
 	mut p2 := (probe / 100) % 10
 	mut p3 := (probe / 10) % 10
@@ -137,64 +137,118 @@ fn compare(probe int, code int) Comparison {
 	if p1 == c1 {
 		cmp.in_place++
 		c1 = -1
+		p1 = -2
 	}
 	if p2 == c2 {
 		cmp.in_place++
 		c2 = -1
+		p2 = -2
 	}
 	if p3 == c3 {
 		cmp.in_place++
 		c3 = -1
+		p3 = -2
 	}
 	if p4 == c4 {
 		cmp.in_place++
 		c4 = -1
+		p4 = -2
 	}
 
 	// by-value
 	if p1 == c2 {
 		cmp.by_value++
 		c2 = -1
+		p1 = -2
 	} else if p1 == c3 {
 		cmp.by_value++
 		c3 = -1
+		p1 = -2
 	} else if p1 == c4 {
 		cmp.by_value++
 		c4 = -1
+		p1 = -2
 	}
 
 	if p2 == c1 {
 		cmp.by_value++
 		c1 = -1
+		p2 = -2
 	} else if p2 == c3 {
 		cmp.by_value++
 		c3 = -1
+		p2 = -2
 	} else if p2 == c4 {
 		cmp.by_value++
 		c4 = -1
+		p2 = -2
 	}
 
 	if p3 == c1 {
 		cmp.by_value++
 		c1 = -1
+		p3 = -2
 	} else if p3 == c2 {
 		cmp.by_value++
 		c2 = -1
+		p3 = -2
 	} else if p3 == c4 {
 		cmp.by_value++
 		c4 = -1
+		p3 = -2
 	}
 
 	if p4 == c1 {
 		cmp.by_value++
 		c1 = -1
+		p4 = -2
 	} else if p4 == c2 {
 		cmp.by_value++
 		c2 = -1
+		p4 = -2
 	} else if p4 == c3 {
 		cmp.by_value++
 		c3 = -1
+		p4 = -2
 	}
 
 	return cmp
+}
+
+// compare a probe against a code, returning <in_place, by_value>
+fn compare_2(probe int, code int) Comparison {
+	// extract 4 digits (thousands → ones)
+	mut p := [probe / 1000 % 10, probe / 100 % 10, probe / 10 % 10, probe % 10]
+	mut c := [code / 1000 % 10, code / 100 % 10, code / 10 % 10, code % 10]
+
+	mut in_place := 0
+	mut by_value := 0
+
+	// count unmatched code digits
+	mut freq := map[int]int{}
+
+	// pass 1: exact matches; build freq for remaining code digits
+	for i, cv in c {
+		if p[i] == cv {
+			in_place++
+		} else {
+			freq[cv]++
+		}
+	}
+
+	// pass 2: value-only matches using remaining frequencies
+	for i, pv in p {
+		if pv == c[i] { // already counted as in_place
+			continue
+		}
+		if freq[pv] > 0 {
+			by_value++
+			freq[pv]--
+		}
+	}
+
+	return Comparison{
+		in_place: in_place
+		by_value: by_value
+	}
 }
