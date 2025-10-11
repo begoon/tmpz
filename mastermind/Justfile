@@ -1,0 +1,8 @@
+zig:
+    cd zig && zig test mastermind.zig && zig run mastermind.zig
+
+v:
+    cd v && v test . && v run mastermind.v
+
+python:
+    cd python && python3 mastermind.py
