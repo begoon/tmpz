@@ -1,0 +1,27 @@
+all: build run
+
+build:
+	#!/bin/bash
+	mkdir -p build
+	zig cc \
+	--target=wasm32-freestanding \
+	-O3 -flto -nostdlib \
+	-Wl,--no-entry \
+	-Wl,--export-memory \
+	-Wl,--export=native_function \
+	-Wl,--export=alloc \
+	-Wl,--export=__heap_base \
+	-Wl,--export=__data_end \
+	-o build/module.wasm \
+	main.c
+
+run:
+	bun index.js
+
+cli:
+	#!/bin/bash
+	zig cc cli.c -target wasm32-wasi -O2 -o build/cli.wasm
+	wasmtime build/cli.wasm
+
+clean:
+	rm -rf build
