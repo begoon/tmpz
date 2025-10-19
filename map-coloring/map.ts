@@ -1,5 +1,3 @@
-// us-map-coloring.js
-
 const raw = `
 49
 
@@ -153,46 +151,41 @@ const raw = `
 0
 `.trim();
 
-// ---------- Parse ----------
 const lines = raw.split(/\r?\n/).filter((l) => l.trim() !== "");
 const n = parseInt(lines[0], 10);
 if (isNaN(n) || n !== 49) {
-    throw new Error("Expected first non-empty line to be '49'.");
+    throw new Error("expected first non-empty line to be '49'");
 }
 
-// Helpers to extract "state_number number_of_connections" from line 1 and
-// all integers from line 2. We ignore everything after the second integer on line 1.
-function parseHeader(line) {
+function parseHeader(line: string) {
     const nums = (line.match(/\d+/g) || []).map(Number);
     if (nums.length < 2) throw new Error("Bad header line: " + line);
     return { id: nums[0], count: nums[1] };
 }
-function parseList(line) {
+
+function parseList(line: string) {
     return (line.match(/\d+/g) || []).map(Number);
 }
 
 let i = 1;
-const adj = Array.from({ length: n + 1 }, () => new Set());
+const adj: Set<number>[] = Array.from({ length: n + 1 }, () => new Set());
 
 while (i < lines.length) {
-    const line1 = lines[i++]; // e.g., "1 2    WASHINGTON"
+    const line1 = lines[i++];
     if (!line1) break;
     const head = parseHeader(line1);
-    if (head.id === 0) break; // safety
-    const line2 = lines[i++]; // e.g., "2 5"
+    if (head.id === 0) break;
+    const line2 = lines[i++];
     const neighbors = parseList(line2);
 
-    // Undirected edges
     neighbors.forEach((v) => {
         adj[head.id].add(v);
         adj[v].add(head.id);
     });
 
-    // Stop if we hit the trailing '0'
     if (lines[i] && lines[i].trim() === "0") break;
 }
 
-// ---------- Connectivity matrix ----------
 const matrix = [];
 for (let r = 1; r <= n; r++) {
     let row = "";
@@ -200,7 +193,7 @@ for (let r = 1; r <= n; r++) {
         if (r === c) row += " ";
         else row += adj[r].has(c) ? "*" : " ";
     }
-    if (row.length !== n) throw new Error("Row length mismatch");
+    if (row.length !== n) throw new Error("row length mismatch");
     matrix.push(row);
 }
 
@@ -208,32 +201,30 @@ for (let r = 1; r <= n; r++) {
 const degrees = Array.from({ length: n + 1 }, (_, v) => v)
     .slice(1)
     .map((v) => [v, adj[v].size])
-    .sort((a, b) => b[1] - a[1]) // desc by degree
+    .sort((a, b) => b[1] - a[1]) // descending by degree
     .map(([v]) => v);
 
-const colorOf = Array(n + 1).fill(0);
+const colorOf: number[] = Array(n + 1).fill(0);
 let maxColor = 0;
 
 for (const v of degrees) {
-    const used = new Set();
+    const used = new Set<number>();
     for (const u of adj[v]) {
         if (colorOf[u] > 0) used.add(colorOf[u]);
     }
-    // smallest positive color not used
-    let c = 1;
+    let c = 1; // smallest positive color not used
     while (used.has(c)) c++;
     colorOf[v] = c;
     if (c > maxColor) maxColor = c;
 }
 
 // group states by color (numbers only)
-const byColor = Array.from({ length: maxColor + 1 }, () => []);
+const byColor: number[][] = Array.from({ length: maxColor + 1 }, () => []);
 for (let v = 1; v <= n; v++) byColor[colorOf[v]].push(v);
 
-// ---------- Output ----------
-console.log("Connectivity matrix (49 x 49):");
+console.log("adjacency matrix:");
 for (const row of matrix) console.log(row);
-console.log("\nMax number of colors:", maxColor);
+console.log("\nmax number of colors:", maxColor);
 for (let c = 1; c <= maxColor; c++) {
-    console.log(`Color ${c}: ${byColor[c].sort((a, b) => a - b).join(" ")}`);
+    console.log(`color ${c}: ${byColor[c].sort((a, b) => a - b).join(" ")}`);
 }
