@@ -1,0 +1,679 @@
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"sort"
+	"strings"
+	"time"
+)
+
+const (
+	N        = 15
+	empty    = byte('.')
+	human    = byte('X')
+	computer = byte('O')
+)
+
+var directions = [][2]int{{1, 0}, {0, 1}, {1, 1}, {1, -1}}
+
+type Move struct {
+	R, C int
+}
+
+type Game struct {
+	Board [N][N]byte
+	Depth int
+	Turn  byte // whose turn now
+}
+
+func NewGame(depth int) *Game {
+	g := &Game{Depth: depth, Turn: human}
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			g.Board[r][c] = empty
+		}
+	}
+	return g
+}
+
+func in(r, c int) bool { return r >= 0 && r < N && c >= 0 && c < N }
+
+func (g *Game) place(m Move, p byte) bool {
+	if !in(m.R, m.C) || g.Board[m.R][m.C] != empty {
+		return false
+	}
+	g.Board[m.R][m.C] = p
+	return true
+}
+
+func (g *Game) unplace(m Move) { g.Board[m.R][m.C] = empty }
+
+func (g *Game) isFull() bool {
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] == empty {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (g *Game) checkWin(p byte) bool {
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] != p {
+				continue
+			}
+			for _, d := range directions {
+				count := 1
+				r2, c2 := r+d[0], c+d[1]
+				for in(r2, c2) && g.Board[r2][c2] == p {
+					count++
+					r2 += d[0]
+					c2 += d[1]
+				}
+				if count >= 5 {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// Pattern weights (tuned roughly)
+const (
+	winScore      = 1_000_000
+	openFour      = 100_000
+	closedFour    = 10_000
+	openThree     = 1_500
+	closedThree   = 300
+	openTwo       = 80
+	closedTwo     = 20
+	doubleThreatW = 120_000 // creating two+ winning threats next turn
+	doubleOTW     = 60_000  // creating two+ open-threes (..AAA..) at once
+)
+
+func (g *Game) evaluate() int {
+	// Positive favors computer, negative favors human
+	score := 0
+	// base contiguous-run heuristic
+	score += g.evaluateFor(computer)
+	score -= g.evaluateFor(human)
+	// enhanced pattern heuristic for "broken" shapes (gapped threes/fours)
+	score += g.patternEvalFor(computer)
+	score -= g.patternEvalFor(human)
+	// double-threat potential (very strong)
+	score += g.doubleThreatEvalFor(computer)
+	score -= g.doubleThreatEvalFor(human)
+	// double open-threes (..AAA..) creator
+	score += g.doubleOpenThreeEvalFor(computer)
+	score -= g.doubleOpenThreeEvalFor(human)
+	return score
+}
+
+func (g *Game) evaluateFor(p byte) int {
+	total := 0
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] != p {
+				continue
+			}
+			for _, d := range directions {
+				// Start of a sequence? ensure previous in this dir isn't same player to avoid double counting
+				pr, pc := r-d[0], c-d[1]
+				if in(pr, pc) && g.Board[pr][pc] == p {
+					continue
+				}
+				cnt := 0
+				r2, c2 := r, c
+				for in(r2, c2) && g.Board[r2][c2] == p {
+					cnt++
+					r2 += d[0]
+					c2 += d[1]
+				}
+				openEnds := 0
+				// check one end before start
+				if in(pr, pc) && g.Board[pr][pc] == empty {
+					openEnds++
+				}
+				// check one end after the last piece
+				if in(r2, c2) && g.Board[r2][c2] == empty {
+					openEnds++
+				}
+				total += scoreSequence(cnt, openEnds)
+			}
+		}
+	}
+	return total
+}
+
+func scoreSequence(cnt, openEnds int) int {
+	switch {
+	case cnt >= 5:
+		return winScore
+	case cnt == 4 && openEnds == 2:
+		return openFour
+	case cnt == 4 && openEnds == 1:
+		return closedFour
+	case cnt == 3 && openEnds == 2:
+		return openThree
+	case cnt == 3 && openEnds == 1:
+		return closedThree
+	case cnt == 2 && openEnds == 2:
+		return openTwo
+	case cnt == 2 && openEnds == 1:
+		return closedTwo
+	default:
+		return 0
+	}
+}
+
+// ===== Enhanced pattern scoring: broken (gapped) shapes =====
+
+type pattern struct {
+	pat    string
+	weight int
+}
+
+// linesFor builds all straight lines (rows, columns, diagonals) for a perspective p.
+// It encodes: p -> 'A', empty -> '.', opponent/border -> 'B', and pads each line with a
+// leading and trailing 'B' so pattern edges are easy to reason about.
+func (g *Game) linesFor(p byte) []string {
+	opp := human
+	if p == human {
+		opp = computer
+	}
+	enc := func(b byte) byte {
+		switch b {
+		case p:
+			return 'A'
+		case empty:
+			return '.'
+		default: // opponent
+			return 'B'
+		}
+	}
+	lines := make([]string, 0, N*4)
+	// rows
+	for r := 0; r < N; r++ {
+		buf := make([]byte, 0, N+2)
+		buf = append(buf, 'B')
+		for c := 0; c < N; c++ {
+			buf = append(buf, enc(g.Board[r][c]))
+		}
+		buf = append(buf, 'B')
+		lines = append(lines, string(buf))
+	}
+	// columns
+	for c := 0; c < N; c++ {
+		buf := make([]byte, 0, N+2)
+		buf = append(buf, 'B')
+		for r := 0; r < N; r++ {
+			buf = append(buf, enc(g.Board[r][c]))
+		}
+		buf = append(buf, 'B')
+		lines = append(lines, string(buf))
+	}
+	// diagonals (r-c constant)
+	for start := 0; start < N; start++ {
+		// top row -> down-right
+		r, c := 0, start
+		buf := []byte{'B'}
+		for in(r, c) {
+			buf = append(buf, enc(g.Board[r][c]))
+			r++
+			c++
+		}
+		buf = append(buf, 'B')
+		if len(buf) > 6 {
+			lines = append(lines, string(buf))
+		}
+	}
+	for start := 1; start < N; start++ {
+		// left col (excluding [0,0]) -> down-right
+		r, c := start, 0
+		buf := []byte{'B'}
+		for in(r, c) {
+			buf = append(buf, enc(g.Board[r][c]))
+			r++
+			c++
+		}
+		buf = append(buf, 'B')
+		if len(buf) > 6 {
+			lines = append(lines, string(buf))
+		}
+	}
+	// anti-diagonals (r+c constant)
+	for start := 0; start < N; start++ {
+		// top row -> down-left
+		r, c := 0, start
+		buf := []byte{'B'}
+		for in(r, c) {
+			buf = append(buf, enc(g.Board[r][c]))
+			r++
+			c--
+		}
+		buf = append(buf, 'B')
+		if len(buf) > 6 {
+			lines = append(lines, string(buf))
+		}
+	}
+	for start := 1; start < N; start++ {
+		// right col (excluding [0,N-1]) -> down-left
+		r, c := start, N-1
+		buf := []byte{'B'}
+		for in(r, c) {
+			buf = append(buf, enc(g.Board[r][c]))
+			r++
+			c--
+		}
+		buf = append(buf, 'B')
+		if len(buf) > 6 {
+			lines = append(lines, string(buf))
+		}
+	}
+	_ = opp // opp unused, but kept for clarity of perspective
+	return lines
+}
+
+func countAll(s, sub string) int {
+	if len(sub) == 0 {
+		return 0
+	}
+	count := 0
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			count++
+		}
+	}
+	return count
+}
+
+func (g *Game) patternEvalFor(p byte) int {
+	// Only add weights for gapped/broken shapes to avoid double-counting with contiguous evaluator.
+	// A = current player stones; . = empty; B = opponent/border.
+	patterns := []pattern{
+		// Broken (gapped) fours
+		{pat: ".AAA.A.", weight: 70000},
+		{pat: ".AA.AA.", weight: 80000},
+		{pat: "BAAA.A.", weight: 9000},
+		{pat: ".AAA.AB", weight: 9000},
+		{pat: "BAA.AA.", weight: 10000},
+		{pat: ".AA.AAB", weight: 10000},
+		// Broken threes (open)
+		{pat: ".AA.A.", weight: 1400},
+		{pat: ".A.AA.", weight: 1400},
+		// Broken threes (closed)
+		{pat: "BAA.A.", weight: 250},
+		{pat: ".A.AAB", weight: 250},
+		{pat: "B.AA.A.", weight: 250},
+		{pat: ".AA.AB", weight: 250},
+		// Small bonus for split-twos to help shape building
+		{pat: ".A.A.", weight: 60},
+	}
+	lines := g.linesFor(p)
+	score := 0
+	for _, ln := range lines {
+		for _, pat := range patterns {
+			score += countAll(ln, pat.pat) * pat.weight
+		}
+	}
+	return score
+}
+
+// ===== Double-threat detection =====
+// Heuristic: a move is a double-threat if, after playing it, there are at least two
+// distinct winning moves available for the same side (i.e., two or more immediate
+// finishes next turn). We scan a limited candidate set for efficiency.
+func (g *Game) doubleThreatEvalFor(p byte) int {
+	cands := g.candidates()
+	best := 0
+	for _, m := range cands {
+		if g.Board[m.R][m.C] != empty {
+			continue
+		}
+		g.place(m, p)
+		// If this move already wins, the regular evaluator handles it; skip here
+		if g.checkWin(p) {
+			g.unplace(m)
+			continue
+		}
+		wins := g.winningMoves(p)
+		if len(wins) > best {
+			best = len(wins)
+		}
+		g.unplace(m)
+		if best >= 3 {
+			break
+		}
+	}
+	if best >= 2 {
+		return doubleThreatW * (best - 1)
+	}
+	return 0
+}
+
+// ===== Double open-threes detection =====
+// Counts how many open-threes (".AAA.") exist for side p in the current board view.
+// openThreeCountsFor returns counts of strict and broken open-threes for side p.
+// strict: ".AAA."; broken: ".AA.A.", ".A.AA."
+func (g *Game) openThreeCountsFor(p byte) (strict, broken int) {
+	for _, ln := range g.linesFor(p) {
+		strict += countAll(ln, ".AAA.")
+		broken += countAll(ln, ".AA.A.")
+		broken += countAll(ln, ".A.AA.")
+	}
+	return
+}
+
+// Scores moves that create two or more open-threes at once.
+func (g *Game) doubleOpenThreeEvalFor(p byte) int {
+	cands := g.candidates()
+	bestTot, bestStrict := 0, 0
+	for _, m := range cands {
+		if g.Board[m.R][m.C] != empty {
+			continue
+		}
+		g.place(m, p)
+		if g.checkWin(p) {
+			g.unplace(m)
+			continue
+		}
+		s, b := g.openThreeCountsFor(p)
+		tot := s + b
+		if tot > bestTot || (tot == bestTot && s > bestStrict) {
+			bestTot, bestStrict = tot, s
+		}
+		g.unplace(m)
+		if bestTot >= 4 { // cap early for rare huge forks
+			break
+		}
+	}
+	if bestTot >= 2 {
+		w := doubleOTW * (bestTot - 1) // baseline
+		if bestStrict == 0 {
+			// all-broken double-threes are a bit weaker: scale down
+			w = (w * 7) / 10 // 70%
+		}
+		return w
+	}
+	return 0
+}
+
+// Generate candidate moves: all empty cells within distance 2 of any stone
+func (g *Game) candidates() []Move {
+	seen := make(map[int]bool)
+	moves := make([]Move, 0)
+	occupied := false
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] == empty {
+				continue
+			}
+			occupied = true
+			for dr := -2; dr <= 2; dr++ {
+				for dc := -2; dc <= 2; dc++ {
+					r2, c2 := r+dr, c+dc
+					if !in(r2, c2) || g.Board[r2][c2] != empty {
+						continue
+					}
+					key := r2*N + c2
+					if !seen[key] {
+						seen[key] = true
+						moves = append(moves, Move{r2, c2})
+					}
+				}
+			}
+		}
+	}
+	if !occupied {
+		// first move: center
+		return []Move{{N / 2, N / 2}}
+	}
+	// order by proximity to center and quick heuristic
+	center := Move{N / 2, N / 2}
+	sort.Slice(moves, func(i, j int) bool {
+		di := abs(moves[i].R-center.R) + abs(moves[i].C-center.C)
+		dj := abs(moves[j].R-center.R) + abs(moves[j].C-center.C)
+		return di < dj
+	})
+	return moves
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// winningMoves returns all moves for player p that immediately make five-in-a-row.
+func (g *Game) winningMoves(p byte) []Move {
+	moves := make([]Move, 0)
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] != empty {
+				continue
+			}
+			m := Move{r, c}
+			g.place(m, p)
+			won := g.checkWin(p)
+			g.unplace(m)
+			if won {
+				moves = append(moves, m)
+			}
+		}
+	}
+	return moves
+}
+
+func (g *Game) minimax(depth int, alpha, beta int, maximizing bool) (int, Move) {
+	if g.checkWin(computer) {
+		return winScore, Move{-1, -1}
+	}
+	if g.checkWin(human) {
+		return -winScore, Move{-1, -1}
+	}
+	if depth == 0 || g.isFull() {
+		return g.evaluate(), Move{-1, -1}
+	}
+
+	moves := g.candidates()
+	// Tactical forcing: play immediate win if available; otherwise, restrict to blocking opponent's immediate wins.
+	cur := computer
+	opp := human
+	if !maximizing {
+		cur, opp = human, computer
+	}
+	finishers := g.winningMoves(cur)
+	if len(finishers) > 0 {
+		// Win this turn.
+		return winScore - 1, finishers[0]
+	}
+	blockers := g.winningMoves(opp)
+	if len(blockers) > 0 {
+		// Only consider blocking moves to avoid instant loss.
+		moves = blockers
+	}
+	// simple move ordering with shallow eval after placing
+	type scored struct {
+		m Move
+		s int
+	}
+	ordered := make([]scored, 0, len(moves))
+	for _, m := range moves {
+		g.place(m, cur)
+		s := g.evaluate()
+		g.unplace(m)
+		ordered = append(ordered, scored{m, s})
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		if maximizing {
+			return ordered[i].s > ordered[j].s
+		}
+		return ordered[i].s < ordered[j].s
+	})
+
+	bestMove := Move{-1, -1}
+	if maximizing {
+		value := math.MinInt / 2
+		for _, sc := range ordered {
+			g.place(sc.m, computer)
+			score, _ := g.minimax(depth-1, alpha, beta, false)
+			g.unplace(sc.m)
+			if score > value {
+				value = score
+				bestMove = sc.m
+			}
+			if value > alpha {
+				alpha = value
+			}
+			if alpha >= beta {
+				break
+			}
+		}
+		return value, bestMove
+	}
+	// minimizing
+	value := math.MaxInt / 2
+	for _, sc := range ordered {
+		g.place(sc.m, human)
+		scVal, _ := g.minimax(depth-1, alpha, beta, true)
+		g.unplace(sc.m)
+		if scVal < value {
+			value = scVal
+			bestMove = sc.m
+		}
+		if value < beta {
+			beta = value
+		}
+		if alpha >= beta {
+			break
+		}
+	}
+	return value, bestMove
+}
+
+func printBoard(b [N][N]byte) {
+	// header A..O
+	fmt.Print("    ")
+	for c := 0; c < N; c++ {
+		fmt.Printf("%2s ", string('A'+c))
+	}
+	fmt.Println()
+	for r := 0; r < N; r++ {
+		fmt.Printf("%2d  ", r+1)
+		for c := 0; c < N; c++ {
+			ch := b[r][c]
+			if ch == empty {
+				ch = '.'
+			}
+			fmt.Printf(" %c ", ch)
+		}
+		fmt.Printf("  %2d\n", r+1)
+	}
+	fmt.Print("    ")
+	for c := 0; c < N; c++ {
+		fmt.Printf("%2s ", string('A'+c))
+	}
+	fmt.Println()
+}
+
+func parseMove(input string) (Move, bool) {
+	input = strings.TrimSpace(input)
+	input = strings.ReplaceAll(input, ",", " ")
+	fields := strings.Fields(input)
+	if len(fields) != 2 {
+		return Move{}, false
+	}
+	colS := strings.ToUpper(fields[0])
+	rowS := fields[1]
+	if len(colS) != 1 || colS[0] < 'A' || colS[0] >= 'A'+N {
+		return Move{}, false
+	}
+	var row int
+	_, err := fmt.Sscanf(rowS, "%d", &row)
+	if err != nil || row < 1 || row > N {
+		return Move{}, false
+	}
+	return Move{R: row - 1, C: int(colS[0] - 'A')}, true
+}
+
+func moveToString(m Move) string { return fmt.Sprintf("%c %d", 'A'+m.C, m.R+1) }
+
+func main() {
+	depth := flag.Int("depth", 2, "search depth for AI (2-4 is reasonable)")
+	seed := flag.Int64("seed", time.Now().UnixNano(), "random seed for tie-breaking")
+	flag.Parse()
+	rand.Seed(*seed)
+	if *depth < 1 {
+		*depth = 1
+	}
+	fmt.Printf("Gomoku (Five-in-a-Row) 15x15. You are %c, computer is %c. Enter moves like 'H 8' or 'A 5'.\n", human, computer)
+	fmt.Printf("Search depth: %d\n\n", *depth)
+
+	g := NewGame(*depth)
+	scan := bufio.NewScanner(os.Stdin)
+
+	for {
+		printBoard(g.Board)
+		if g.Turn == human {
+			fmt.Print("Your move (e.g., H 8) or 'q' to quit: ")
+			if !scan.Scan() {
+				return
+			}
+			line := strings.TrimSpace(scan.Text())
+			if line == "q" || line == "quit" || line == "exit" {
+				fmt.Println("Goodbye!")
+				return
+			}
+			m, ok := parseMove(line)
+			if !ok || !g.place(m, human) {
+				fmt.Println("Invalid move. Format: Letter Number (e.g., H 8). The cell must be empty.")
+				continue
+			}
+			if g.checkWin(human) {
+				printBoard(g.Board)
+				fmt.Println("You win! ✨")
+				return
+			}
+			if g.isFull() {
+				printBoard(g.Board)
+				fmt.Println("Draw.")
+				return
+			}
+			g.Turn = computer
+			continue
+		}
+
+		fmt.Println("Computer is thinking...")
+		// AI move
+		_, best := g.minimax(g.Depth, math.MinInt/2, math.MaxInt/2, true)
+		// If no best (shouldn't happen), pick random candidate
+		if best.R == -1 {
+			cands := g.candidates()
+			best = cands[rand.Intn(len(cands))]
+		}
+		g.place(best, computer)
+		fmt.Printf("Computer plays: %s\n", moveToString(best))
+
+		if g.checkWin(computer) {
+			printBoard(g.Board)
+			fmt.Println("Computer wins! 🤖")
+			return
+		}
+		if g.isFull() {
+			printBoard(g.Board)
+			fmt.Println("Draw.")
+			return
+		}
+		g.Turn = human
+	}
+}

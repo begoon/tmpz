@@ -1,0 +1,7 @@
+all: run
+
+run:
+    go run main.go
+
+sdl:
+    cp $HOMEBREW_CELLAR/sdl3/3.2.24/lib/libSDL3.dylib .
