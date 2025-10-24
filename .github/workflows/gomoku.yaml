@@ -1,0 +1,14 @@
+name: gomoku
+on:
+    push:
+        branches: ["main"]
+        paths: ["gomoku/**"]
+    workflow_dispatch:
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-go@v6
+            - run: >
+                  go test -bench . && go test .
