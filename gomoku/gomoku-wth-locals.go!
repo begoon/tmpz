@@ -28,7 +28,7 @@ type Move struct {
 	r, c int
 }
 
-func (m Move) isEmpty() bool {
+func (m Move) None() bool {
 	return m.r == -1 && m.c == -1
 }
 
@@ -68,7 +68,7 @@ func (g *Game) freePlaces(v []Move) {
 	v = v[:0]
 	for r := range N {
 		for c := range N {
-			if g.emptyAt(Move{r, c}) {
+			if g.at(Move{r, c}) == empty {
 				v = append(v, Move{r, c})
 			}
 		}
@@ -76,14 +76,18 @@ func (g *Game) freePlaces(v []Move) {
 }
 
 func (g *Game) isFull() bool {
-	for r := range N {
-		for c := range N {
-			if g.emptyAt(Move{r, c}) {
+	for r := 0; r < N; r++ {
+		for c := 0; c < N; c++ {
+			if g.Board[r][c] == empty {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+func (g *Game) isFull_(free []Move) bool {
+	return len(free) == 0
 }
 
 func (g *Game) checkWinFrom(m Move, player byte) bool {
@@ -110,7 +114,7 @@ func (g *Game) checkWinFrom(m Move, player byte) bool {
 	return false
 }
 
-// Pattern weights
+// Pattern weights (tuned roughly)
 const (
 	winScore            = 1_000_000
 	openFour            = 100_000
@@ -126,7 +130,6 @@ const (
 func (g *Game) evaluate() int {
 	// Positive favors computer, negative favors human.
 	score := 0
-
 	// base contiguous-run heuristic
 	score += g.evaluateFor(computer)
 	score -= g.evaluateFor(human)
@@ -136,6 +139,7 @@ func (g *Game) evaluate() int {
 	score -= g.patternEvalFor(human)
 
 	candidates := g.candidates()
+	_ = candidates
 
 	// double-threat potential (very strong)
 	score += g.doubleThreatEvalFor(computer, candidates)
@@ -362,6 +366,7 @@ func (g *Game) patternEvalFor(p byte) int {
 // distinct winning moves available for the same side (i.e., two or more immediate
 // finishes next turn). We scan a limited candidate set for efficiency.
 func (g *Game) doubleThreatEvalFor(p byte, candidates []Move) int {
+	// candidates := g.candidates()
 	best := 0
 	for _, m := range candidates {
 		// if g.at(m) != empty {
@@ -609,6 +614,9 @@ func (g *Game) winningMoves(p byte) []Move {
 }
 
 func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (int, Move) {
+	free := []Move{}
+	g.freePlaces(free)
+
 	if last.r != -1 {
 		// The side who just moved is the opposite of 'maximizing'
 		justPlayed := computer
@@ -744,6 +752,87 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 	return value, bestMove
 }
 
+// sum of contiguous-run scores on the 4 lines through m for player p.
+// If includeCenter is true, we treat m as if it is occupied by p (used AFTER placing).
+// func (g *Game) localContiguousScoreAt(m Move, p byte, includeCenter bool) int {
+// 	total := 0
+// 	for _, d := range directions {
+// 		// Count contiguous stones forward from m
+// 		f := 0
+// 		v := Move{m.r + d.r, m.c + d.c}
+// 		for in(v) && g.at(v) == p {
+// 			f++
+// 			v.r += d.r
+// 			v.c += d.c
+// 		}
+
+// 		// Count contiguous stones backward from m
+// 		b := 0
+// 		v = Move{m.r - d.r, m.c - d.c}
+// 		for in(v) && g.at(v) == p {
+// 			b++
+// 			v.r -= d.r
+// 			v.c -= d.c
+// 		}
+
+// 		// merged count depends on whether m is occupied by p
+// 		cnt := f + b
+// 		if includeCenter {
+// 			cnt++ // count m itself
+// 		}
+
+// 		// open ends around the merged run
+// 		openEnds := 0
+// 		if includeCenter {
+// 			// just outside the merged run including m
+// 			v = Move{r: m.r + (f+1)*d.r, c: m.c + (f+1)*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 			// r, c = m.R-(b+1)*d[0], m.C-(b+1)*d[1]
+// 			v = Move{r: m.r - (b+1)*d.r, c: m.c - (b+1)*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 		} else {
+// 			// m is empty; each side's open end is right next to m
+// 			v = Move{r: m.r + f*d.r, c: m.c + f*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 			v = Move{r: m.r - b*d.r, c: m.c - b*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 		}
+
+// 		total += scoreSequence(cnt, openEnds)
+// 	}
+// 	return total
+// }
+
+// Local delta around m for `player` (positive good for `player`).
+// func (g *Game) localDeltaEval(m Move, player byte) int {
+// 	opponent := human
+// 	if player == human {
+// 		opponent = computer
+// 	}
+
+// 	// BEFORE (m empty)
+// 	playerBefore := g.localContiguousScoreAt(m, player, false)
+// 	opponentBefore := g.localContiguousScoreAt(m, opponent, false)
+
+// 	// AFTER (place player at m)
+// 	g.place(m, player)
+// 	playerAfter := g.localContiguousScoreAt(m, player, true)
+
+// 	// opponent sees the center as blocked; don't include center for them
+// 	opponentAfter := g.localContiguousScoreAt(m, opponent, false)
+// 	g.unplace(m)
+
+// 	return (playerAfter - playerBefore) - (opponentAfter - opponentBefore)
+// }
+
 func run(g *Game) {
 	if !sdl.SetHint(sdl.HintRenderVSync, "1") {
 		panic(sdl.GetError())
@@ -841,6 +930,8 @@ func run(g *Game) {
 							gameOver = true
 							gameOverMsg = "You win! ✨"
 						}
+						free := []Move{}
+						g.freePlaces(free)
 						if !gameOver && g.isFull() {
 							gameOver = true
 							gameOverMsg = "Draw."
@@ -866,6 +957,8 @@ func run(g *Game) {
 								gameOver = true
 								gameOverMsg = "Computer wins! 🤖"
 							}
+							free := []Move{}
+							g.freePlaces(free)
 							if !gameOver && g.isFull() {
 								gameOver = true
 								gameOverMsg = "Draw."
