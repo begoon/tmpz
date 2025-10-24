@@ -51,7 +51,8 @@ func NewGame(depth int) *Game {
 func inRC(r, c int) bool { return r >= 0 && r < N && c >= 0 && c < N }
 func in(m Move) bool     { return inRC(m.r, m.c) }
 
-func (g *Game) at(m Move) byte { return g.Board[m.r][m.c] }
+func (g *Game) at(m Move) byte      { return g.Board[m.r][m.c] }
+func (g *Game) emptyAt(m Move) bool { return g.at(m) == empty }
 
 func (g *Game) place(m Move, p byte) bool {
 	if !in(m) || g.at(m) != empty {
@@ -62,6 +63,17 @@ func (g *Game) place(m Move, p byte) bool {
 }
 
 func (g *Game) unplace(m Move) { g.Board[m.r][m.c] = empty }
+
+func (g *Game) freePlaces(v []Move) {
+	v = v[:0]
+	for r := range N {
+		for c := range N {
+			if g.at(Move{r, c}) == empty {
+				v = append(v, Move{r, c})
+			}
+		}
+	}
+}
 
 func (g *Game) isFull() bool {
 	for r := 0; r < N; r++ {
@@ -74,46 +86,26 @@ func (g *Game) isFull() bool {
 	return true
 }
 
-func (g *Game) checkWin(p byte) bool {
-	for r := range N {
-		for c := range N {
-			if g.at(Move{r, c}) != p {
-				continue
-			}
-			for _, d := range directions {
-				count := 1
-				m := Move{r: r + d.r, c: c + d.c}
-				for in(m) && g.Board[m.r][m.c] == p {
-					count++
-					m.r += d.r
-					m.c += d.c
-				}
-				if count >= 5 {
-					return true
-				}
-			}
-		}
-	}
-	return false
+func (g *Game) isFull_(free []Move) bool {
+	return len(free) == 0
 }
 
-// Optimized local check: after placing m for player p, only lines through m can win.
 func (g *Game) checkWinFrom(m Move, player byte) bool {
-	for _, d := range directions {
+	for _, dir := range directions {
 		count := 1
 		// forward
-		v := Move{r: m.r + d.r, c: m.c + d.c}
+		v := Move{r: m.r + dir.r, c: m.c + dir.c}
 		for in(v) && g.at(v) == player {
 			count++
-			v.r += d.r
-			v.c += d.c
+			v.r += dir.r
+			v.c += dir.c
 		}
 		// backward
-		v = Move{r: m.r - d.r, c: m.c - d.c}
+		v = Move{r: m.r - dir.r, c: m.c - dir.c}
 		for in(v) && g.at(v) == player {
 			count++
-			v.r -= d.r
-			v.c -= d.c
+			v.r -= dir.r
+			v.c -= dir.c
 		}
 		if count >= 5 {
 			return true
@@ -146,13 +138,16 @@ func (g *Game) evaluate() int {
 	score += g.patternEvalFor(computer)
 	score -= g.patternEvalFor(human)
 
+	candidates := g.candidates()
+	_ = candidates
+
 	// double-threat potential (very strong)
-	score += g.doubleThreatEvalFor(computer)
-	score -= g.doubleThreatEvalFor(human)
+	score += g.doubleThreatEvalFor(computer, candidates)
+	score -= g.doubleThreatEvalFor(human, candidates)
 
 	// double open-threes (..AAA..) creator
-	score += g.doubleOpenThreeEvalFor(computer)
-	score -= g.doubleOpenThreeEvalFor(human)
+	score += g.doubleOpenThreeEvalFor(computer, candidates)
+	score -= g.doubleOpenThreeEvalFor(human, candidates)
 	return score
 }
 
@@ -214,8 +209,8 @@ func scoreSequence(cnt, openEnds int) int {
 }
 
 type pattern struct {
-	pat    string
-	weight int
+	pattern string
+	weight  int
 }
 
 // linesFor builds all straight lines (rows, columns, diagonals) for a perspective p.
@@ -321,13 +316,13 @@ func (g *Game) linesFor(p byte) []string {
 	return lines
 }
 
-func countAll(s, sub string) int {
-	if len(sub) == 0 {
+func countPatterns(s, pattern string) int {
+	if len(pattern) == 0 {
 		return 0
 	}
 	count := 0
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
+	for i := 0; i+len(pattern) <= len(s); i++ {
+		if s[i:i+len(pattern)] == pattern {
 			count++
 		}
 	}
@@ -339,28 +334,28 @@ func (g *Game) patternEvalFor(p byte) int {
 	// A = current player stones; . = empty; B = opponent/border.
 	patterns := []pattern{
 		// Broken (gapped) fours
-		{pat: ".AAA.A.", weight: 70000},
-		{pat: ".AA.AA.", weight: 80000},
-		{pat: "BAAA.A.", weight: 9000},
-		{pat: ".AAA.AB", weight: 9000},
-		{pat: "BAA.AA.", weight: 10000},
-		{pat: ".AA.AAB", weight: 10000},
+		{pattern: ".AAA.A.", weight: 70000},
+		{pattern: ".AA.AA.", weight: 80000},
+		{pattern: "BAAA.A.", weight: 9000},
+		{pattern: ".AAA.AB", weight: 9000},
+		{pattern: "BAA.AA.", weight: 10000},
+		{pattern: ".AA.AAB", weight: 10000},
 		// Broken threes (open)
-		{pat: ".AA.A.", weight: 1400},
-		{pat: ".A.AA.", weight: 1400},
+		{pattern: ".AA.A.", weight: 1400},
+		{pattern: ".A.AA.", weight: 1400},
 		// Broken threes (closed)
-		{pat: "BAA.A.", weight: 250},
-		{pat: ".A.AAB", weight: 250},
-		{pat: "B.AA.A.", weight: 250},
-		{pat: ".AA.AB", weight: 250},
+		{pattern: "BAA.A.", weight: 250},
+		{pattern: ".A.AAB", weight: 250},
+		{pattern: "B.AA.A.", weight: 250},
+		{pattern: ".AA.AB", weight: 250},
 		// Small bonus for split-twos to help shape building
-		{pat: ".A.A.", weight: 60},
+		{pattern: ".A.A.", weight: 60},
 	}
 	lines := g.linesFor(p)
 	score := 0
-	for _, ln := range lines {
-		for _, pat := range patterns {
-			score += countAll(ln, pat.pat) * pat.weight
+	for _, line := range lines {
+		for _, pattern := range patterns {
+			score += countPatterns(line, pattern.pattern) * pattern.weight
 		}
 	}
 	return score
@@ -370,13 +365,13 @@ func (g *Game) patternEvalFor(p byte) int {
 // Heuristic: a move is a double-threat if, after playing it, there are at least two
 // distinct winning moves available for the same side (i.e., two or more immediate
 // finishes next turn). We scan a limited candidate set for efficiency.
-func (g *Game) doubleThreatEvalFor(p byte) int {
-	cands := g.candidates()
+func (g *Game) doubleThreatEvalFor(p byte, candidates []Move) int {
+	// candidates := g.candidates()
 	best := 0
-	for _, m := range cands {
-		if g.at(m) != empty {
-			continue
-		}
+	for _, m := range candidates {
+		// if g.at(m) != empty {
+		// 	continue
+		// }
 		g.place(m, p)
 		// If this move already wins, the regular evaluator handles it; skip here
 		if g.checkWinFrom(m, p) {
@@ -398,26 +393,13 @@ func (g *Game) doubleThreatEvalFor(p byte) int {
 	return 0
 }
 
-// ===== Double open-threes detection =====
-// Counts how many open-threes (".AAA.") exist for side p in the current board view.
-// openThreeCountsFor returns counts of strict and broken open-threes for side p.
-// strict: ".AAA."; broken: ".AA.A.", ".A.AA."
-func (g *Game) openThreeCountsFor(p byte) (strict, broken int) {
-	for _, ln := range g.linesFor(p) {
-		strict += countAll(ln, ".AAA.")
-		broken += countAll(ln, ".AA.A.")
-		broken += countAll(ln, ".A.AA.")
-	}
-	return strict, broken
-}
-
-// Count strict/broken open-threes on just the 4 lines through m (for side p)
+// count strict/broken open-threes on just the 4 lines through m (for side p)
 func (g *Game) openThreeCountsAround(m Move, p byte) (strict, broken int) {
 	lines := g.linesThrough(m, p)
 	for _, ln := range lines {
-		strict += countAll(ln, ".AAA.")
-		broken += countAll(ln, ".AA.A.")
-		broken += countAll(ln, ".A.AA.")
+		strict += countPatterns(ln, ".AAA.")
+		broken += countPatterns(ln, ".AA.A.")
+		broken += countPatterns(ln, ".A.AA.")
 	}
 	return
 }
@@ -430,18 +412,15 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, p byte) int {
 	seen := make(map[int]struct{})
 
 	// Helper to add a cell if it’s empty.
-	addCell := func(v Move) {
+	rememeber := func(v Move) {
 		if in(v) && g.at(v) == empty {
 			seen[v.r*N+v.c] = struct{}{}
 		}
 	}
 
-	// Walk each of the 4 directions crossing m.
-	dirs := []direction{{0, 1}, {1, 0}, {1, 1}, {1, -1}}
-
-	for _, d := range dirs {
+	for _, d := range directions {
 		// find start of the line
-		m := Move{r: m.r, c: m.c}
+		m := Move{m.r, m.c}
 		for in(Move{m.r - d.r, m.c - d.c}) {
 			m.r -= d.r
 			m.c -= d.c
@@ -449,41 +428,41 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, p byte) int {
 		// traverse line, collect empty cells
 		for in(m) {
 			if g.at(m) == empty {
-				addCell(m)
+				rememeber(m)
 			}
 			m.r += d.r
 			m.c += d.c
 		}
 	}
 
-	// Test only those empty cells.
+	// test only those empty cells
 	wins := 0
-	for key := range seen {
-		r, c := key/N, key%N
-		mv := Move{r: r, c: c}
-		g.place(mv, p)
-		if g.checkWinFrom(mv, p) {
+	for rc := range seen {
+		r, c := rc/N, rc%N
+		m := Move{r: r, c: c}
+		g.place(m, p)
+		if g.checkWinFrom(m, p) {
 			wins++
 		}
-		g.unplace(mv)
+		g.unplace(m)
 	}
 	return wins
 }
 
 // Scores moves that create two or more open-threes at once.
-func (g *Game) doubleOpenThreeEvalFor(p byte) int {
-	cands := g.candidates()
+func (g *Game) doubleOpenThreeEvalFor(player byte, candidates []Move) int {
+	// candidates := g.candidates()
 	bestTot, bestStrict := 0, 0
-	for _, m := range cands {
-		if g.at(m) != empty {
-			continue
-		}
-		g.place(m, p)
-		if g.checkWinFrom(m, p) {
+	for _, m := range candidates {
+		// if g.emptyAt(m) {
+		// 	continue
+		// }
+		g.place(m, player)
+		if g.checkWinFrom(m, player) {
 			g.unplace(m)
 			continue
 		}
-		s, b := g.openThreeCountsAround(m, p)
+		s, b := g.openThreeCountsAround(m, player)
 		tot := s + b
 		if tot > bestTot || (tot == bestTot && s > bestStrict) {
 			bestTot, bestStrict = tot, s
@@ -505,11 +484,11 @@ func (g *Game) doubleOpenThreeEvalFor(p byte) int {
 }
 
 // Encodes for perspective p: p -> 'A', empty -> '.', opponent -> 'B'
-func (g *Game) encFor(p byte, b byte) byte {
-	if b == p {
+func (g *Game) encFor(player byte, pattern byte) byte {
+	if pattern == player {
 		return 'A'
 	}
-	if b == empty {
+	if pattern == empty {
 		return '.'
 	}
 	return 'B'
@@ -518,7 +497,7 @@ func (g *Game) encFor(p byte, b byte) byte {
 // Return the 4 padded lines (row, col, diag, anti) that pass through m,
 // encoded for perspective p, each padded with 'B' at both ends.
 func (g *Game) linesThrough(m Move, p byte) []string {
-	out := make([]string, 0, 4)
+	lines := make([]string, 0, 4)
 
 	build := func(dr, dc int) string {
 		// back to start
@@ -538,21 +517,21 @@ func (g *Game) linesThrough(m Move, p byte) []string {
 	}
 
 	// horizontal, vertical, diag ↘, anti-diag ↙
-	out = append(out, build(0, 1))
-	out = append(out, build(1, 0))
-	out = append(out, build(1, 1))
-	out = append(out, build(1, -1))
-	return out
+	lines = append(lines, build(0, 1))
+	lines = append(lines, build(1, 0))
+	lines = append(lines, build(1, 1))
+	lines = append(lines, build(1, -1))
+	return lines
 }
 
-// Generate candidate moves: all empty cells within distance 2 of any stone
+// generate candidate moves: all empty cells within distance 2 of any stone
 func (g *Game) candidates() []Move {
 	seen := make(map[int]bool)
 	moves := make([]Move, 0)
 	occupied := false
 	for r := range N {
 		for c := range N {
-			if g.at(Move{r, c}) == empty {
+			if g.emptyAt(Move{r, c}) {
 				continue
 			}
 			occupied = true
@@ -562,9 +541,9 @@ func (g *Game) candidates() []Move {
 					if !in(m) || g.at(m) != empty {
 						continue
 					}
-					key := m.r*N + m.c
-					if !seen[key] {
-						seen[key] = true
+					rc := m.r*N + m.c
+					if !seen[rc] {
+						seen[rc] = true
 						moves = append(moves, m)
 					}
 				}
@@ -600,7 +579,6 @@ func (g *Game) adjacentTo(r, c int, p byte) bool {
 			if dr == 0 && dc == 0 {
 				continue
 			}
-			// rr, cc := r+dr, c+dc
 			m := Move{r: r + dr, c: c + dc}
 			if in(m) && g.at(m) == p {
 				return true
@@ -616,7 +594,7 @@ func (g *Game) winningMoves(p byte) []Move {
 	moves := make([]Move, 0)
 	for r := range N {
 		for c := range N {
-			if g.at(Move{r, c}) != empty {
+			if !g.emptyAt(Move{r, c}) {
 				continue
 			}
 			// quick adjacency prefilter (sound: any winning square must touch a p-stone)
@@ -636,6 +614,9 @@ func (g *Game) winningMoves(p byte) []Move {
 }
 
 func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (int, Move) {
+	free := []Move{}
+	g.freePlaces(free)
+
 	if last.r != -1 {
 		// The side who just moved is the opposite of 'maximizing'
 		justPlayed := computer
@@ -655,53 +636,62 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 	}
 
 	moves := g.candidates()
-	// Tactical forcing: play immediate win if available; otherwise, restrict to blocking opponent's immediate wins.
-	cur := computer
-	opp := human
+
+	// Tactical forcing: play immediate win if available; otherwise,
+	// restrict to blocking opponent's immediate wins.
+	player := computer
+	opponent := human
 	if !maximizing {
-		cur, opp = human, computer
+		player, opponent = human, computer
 	}
-	finishers := g.winningMoves(cur)
+	finishers := g.winningMoves(player)
 	if len(finishers) > 0 {
 		// Win this turn.
 		return winScore - 1, finishers[0]
 	}
-	blockers := g.winningMoves(opp)
+	blockers := g.winningMoves(opponent)
 	if len(blockers) > 0 {
 		// Only consider blocking moves to avoid instant loss.
 		moves = blockers
 	}
-	// simple move ordering with shallow eval after placing
+
+	// ---
+
 	type scored struct {
-		m Move
-		s int
+		move  Move
+		score int
 	}
+
 	ordered := make([]scored, 0, len(moves))
+
 	for _, m := range moves {
-		g.place(m, cur)
-		s := g.evaluate() // includes contiguous runs, broken shapes, double threats, double open-threes
+		g.place(m, player)
+		score := g.evaluate()
 		g.unplace(m)
-		ordered = append(ordered, scored{m, s})
+		ordered = append(ordered, scored{m, score})
 	}
+
 	sort.Slice(ordered, func(i, j int) bool {
 		if maximizing {
-			return ordered[i].s > ordered[j].s
+			return ordered[i].score > ordered[j].score
 		}
-		return ordered[i].s < ordered[j].s
+		return ordered[i].score < ordered[j].score
 	})
+
+	// ---
 
 	bestMove := Move{-1, -1}
 	if maximizing {
 		value := math.MinInt / 2
-		for _, sc := range ordered {
-			g.place(sc.m, computer)
-			// If this move allows any immediate human win next ply, don't play it.
+		for _, scoredMove := range ordered {
+			g.place(scoredMove.move, computer)
+			// if this move allows any immediate human win next round, don't play it
 			if len(g.winningMoves(human)) > 0 {
 				score := -winScore + 1
-				g.unplace(sc.m)
+				g.unplace(scoredMove.move)
 				if score > value {
 					value = score
-					bestMove = sc.m
+					bestMove = scoredMove.move
 				}
 				if value > alpha {
 					alpha = value
@@ -711,11 +701,11 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 				}
 				continue
 			}
-			score, _ := g.minimax(depth-1, alpha, beta, false, sc.m)
-			g.unplace(sc.m)
+			score, _ := g.minimax(depth-1, alpha, beta, false, scoredMove.move)
+			g.unplace(scoredMove.move)
 			if score > value {
 				value = score
-				bestMove = sc.m
+				bestMove = scoredMove.move
 			}
 			if value > alpha {
 				alpha = value
@@ -728,15 +718,15 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 	}
 	// minimizing
 	value := math.MaxInt / 2
-	for _, sc := range ordered {
-		g.place(sc.m, human)
-		// If this move allows any immediate computer win next ply, don't play it.
+	for _, scoreMove := range ordered {
+		g.place(scoreMove.move, human)
+		// if this move allows any immediate computer win next round, don't play it
 		if len(g.winningMoves(computer)) > 0 {
-			scVal := winScore - 1
-			g.unplace(sc.m)
-			if scVal < value {
-				value = scVal
-				bestMove = sc.m
+			score := winScore - 1
+			g.unplace(scoreMove.move)
+			if score < value {
+				value = score
+				bestMove = scoreMove.move
 			}
 			if value < beta {
 				beta = value
@@ -746,11 +736,11 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 			}
 			continue
 		}
-		scVal, _ := g.minimax(depth-1, alpha, beta, true, sc.m)
-		g.unplace(sc.m)
-		if scVal < value {
-			value = scVal
-			bestMove = sc.m
+		score, _ := g.minimax(depth-1, alpha, beta, true, scoreMove.move)
+		g.unplace(scoreMove.move)
+		if score < value {
+			value = score
+			bestMove = scoreMove.move
 		}
 		if value < beta {
 			beta = value
@@ -764,85 +754,86 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, last Move) (
 
 // sum of contiguous-run scores on the 4 lines through m for player p.
 // If includeCenter is true, we treat m as if it is occupied by p (used AFTER placing).
-func (g *Game) localContigScoreAt(m Move, p byte, includeCenter bool) int {
-	total := 0
-	for _, d := range directions {
-		// Count contiguous stones forward from m
-		f := 0
-		v := Move{m.r + d.r, m.c + d.c}
-		for in(v) && g.at(v) == p {
-			f++
-			v.r += d.r
-			v.c += d.c
-		}
+// func (g *Game) localContiguousScoreAt(m Move, p byte, includeCenter bool) int {
+// 	total := 0
+// 	for _, d := range directions {
+// 		// Count contiguous stones forward from m
+// 		f := 0
+// 		v := Move{m.r + d.r, m.c + d.c}
+// 		for in(v) && g.at(v) == p {
+// 			f++
+// 			v.r += d.r
+// 			v.c += d.c
+// 		}
 
-		// Count contiguous stones backward from m
-		b := 0
-		v = Move{m.r - d.r, m.c - d.c}
-		for in(v) && g.at(v) == p {
-			b++
-			v.r -= d.r
-			v.c -= d.c
-		}
+// 		// Count contiguous stones backward from m
+// 		b := 0
+// 		v = Move{m.r - d.r, m.c - d.c}
+// 		for in(v) && g.at(v) == p {
+// 			b++
+// 			v.r -= d.r
+// 			v.c -= d.c
+// 		}
 
-		// merged count depends on whether m is occupied by p
-		cnt := f + b
-		if includeCenter {
-			cnt++ // count m itself
-		}
+// 		// merged count depends on whether m is occupied by p
+// 		cnt := f + b
+// 		if includeCenter {
+// 			cnt++ // count m itself
+// 		}
 
-		// open ends around the merged run
-		openEnds := 0
-		if includeCenter {
-			// just outside the merged run including m
-			v = Move{r: m.r + (f+1)*d.r, c: m.c + (f+1)*d.c}
-			if in(v) && g.at(v) == empty {
-				openEnds++
-			}
-			// r, c = m.R-(b+1)*d[0], m.C-(b+1)*d[1]
-			v = Move{r: m.r - (b+1)*d.r, c: m.c - (b+1)*d.c}
-			if in(v) && g.at(v) == empty {
-				openEnds++
-			}
-		} else {
-			// m is empty; each side's open end is right next to m
-			v = Move{r: m.r + f*d.r, c: m.c + f*d.c}
-			if in(v) && g.at(v) == empty {
-				openEnds++
-			}
-			v = Move{r: m.r - b*d.r, c: m.c - b*d.c}
-			if in(v) && g.at(v) == empty {
-				openEnds++
-			}
-		}
+// 		// open ends around the merged run
+// 		openEnds := 0
+// 		if includeCenter {
+// 			// just outside the merged run including m
+// 			v = Move{r: m.r + (f+1)*d.r, c: m.c + (f+1)*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 			// r, c = m.R-(b+1)*d[0], m.C-(b+1)*d[1]
+// 			v = Move{r: m.r - (b+1)*d.r, c: m.c - (b+1)*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 		} else {
+// 			// m is empty; each side's open end is right next to m
+// 			v = Move{r: m.r + f*d.r, c: m.c + f*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 			v = Move{r: m.r - b*d.r, c: m.c - b*d.c}
+// 			if in(v) && g.at(v) == empty {
+// 				openEnds++
+// 			}
+// 		}
 
-		total += scoreSequence(cnt, openEnds)
-	}
-	return total
-}
+// 		total += scoreSequence(cnt, openEnds)
+// 	}
+// 	return total
+// }
 
-// Local delta around m for `cur` (positive good for `cur`).
-func (g *Game) localDeltaEval(m Move, player byte) int {
-	opponent := human
-	if player == human {
-		opponent = computer
-	}
+// Local delta around m for `player` (positive good for `player`).
+// func (g *Game) localDeltaEval(m Move, player byte) int {
+// 	opponent := human
+// 	if player == human {
+// 		opponent = computer
+// 	}
 
-	// BEFORE (m empty)
-	curBefore := g.localContigScoreAt(m, player, false)
-	oppBefore := g.localContigScoreAt(m, opponent, false)
+// 	// BEFORE (m empty)
+// 	playerBefore := g.localContiguousScoreAt(m, player, false)
+// 	opponentBefore := g.localContiguousScoreAt(m, opponent, false)
 
-	// AFTER (place cur at m)
-	g.place(m, player)
-	curAfter := g.localContigScoreAt(m, player, true)
-	// opponent sees the center as blocked; don't include center for them
-	oppAfter := g.localContigScoreAt(m, opponent, false)
-	g.unplace(m)
+// 	// AFTER (place player at m)
+// 	g.place(m, player)
+// 	playerAfter := g.localContiguousScoreAt(m, player, true)
 
-	return (curAfter - curBefore) - (oppAfter - oppBefore)
-}
+// 	// opponent sees the center as blocked; don't include center for them
+// 	opponentAfter := g.localContiguousScoreAt(m, opponent, false)
+// 	g.unplace(m)
 
-func runSDL(g *Game) {
+// 	return (playerAfter - playerBefore) - (opponentAfter - opponentBefore)
+// }
+
+func run(g *Game) {
 	if !sdl.SetHint(sdl.HintRenderVSync, "1") {
 		panic(sdl.GetError())
 	}
@@ -873,10 +864,11 @@ func runSDL(g *Game) {
 	var lastMove Move = Move{-1, -1}
 
 	lastMove = Move{-1, -1}
+
 	for {
 		draw := func() {
 			// draw
-			sdl.SetRenderDrawColor(renderer, 240, 228, 200, 255) // board background
+			sdl.SetRenderDrawColor(renderer, 240, 228, 200, 255)
 			sdl.RenderClear(renderer)
 			var w, h int32
 			sdl.GetWindowSize(window, &w, &h)
@@ -906,7 +898,7 @@ func runSDL(g *Game) {
 				mx, my := int(event.Motion().X), int(event.Motion().Y)
 				var w, h int32
 				sdl.GetWindowSize(window, &w, &h)
-				m, ok := screenToCell(mx, my, int(w), int(h))
+				m, ok := mousePositionToMove(mx, my, int(w), int(h))
 				if ok {
 					if m == lastMove || g.at(m) != empty {
 						break
@@ -914,8 +906,8 @@ func runSDL(g *Game) {
 					lastMove = m
 					g.place(m, human)
 					eval := g.evaluate()
-					delta := g.localDeltaEval(m, human)
-					fmt.Printf("board eval: %d, local delta if placed here: %d\n", eval, delta)
+					// delta := g.localDeltaEval(m, human)
+					fmt.Printf("board evaluation: %d\n", eval)
 					g.unplace(m)
 					draw()
 				}
@@ -929,7 +921,7 @@ func runSDL(g *Game) {
 				mx, my := int(event.Button().X), int(event.Button().Y)
 				var w, h int32
 				sdl.GetWindowSize(window, &w, &h)
-				m, ok := screenToCell(mx, my, int(w), int(h))
+				m, ok := mousePositionToMove(mx, my, int(w), int(h))
 				if ok {
 					if g.place(m, human) {
 						draw()
@@ -938,6 +930,8 @@ func runSDL(g *Game) {
 							gameOver = true
 							gameOverMsg = "You win! ✨"
 						}
+						free := []Move{}
+						g.freePlaces(free)
 						if !gameOver && g.isFull() {
 							gameOver = true
 							gameOverMsg = "Draw."
@@ -963,6 +957,8 @@ func runSDL(g *Game) {
 								gameOver = true
 								gameOverMsg = "Computer wins! 🤖"
 							}
+							free := []Move{}
+							g.freePlaces(free)
 							if !gameOver && g.isFull() {
 								gameOver = true
 								gameOverMsg = "Draw."
@@ -1037,19 +1033,18 @@ func drawStones(r *sdl.Renderer, g *Game, lastMove Move) {
 }
 
 func printBoard(g *Game) {
-	for ri := range N {
-		for ci := range N {
-			ch := g.Board[ri][ci]
-			var sym string
-			switch ch {
+	for r := range N {
+		for c := range N {
+			var ch string
+			switch g.at(Move{r, c}) {
 			case computer:
-				sym = "O"
+				ch = "O"
 			case human:
-				sym = "X"
+				ch = "X"
 			default:
-				sym = "."
+				ch = "."
 			}
-			fmt.Print(sym, " ")
+			fmt.Print(ch, " ")
 		}
 		fmt.Println()
 	}
@@ -1070,12 +1065,9 @@ func drawCircle(r *sdl.Renderer, cx, cy, radius int) {
 	}
 }
 
-func screenToCell(mx, my, w, h int) (m Move, ok bool) {
+func mousePositionToMove(mx, my, w, h int) (m Move, ok bool) {
 	size := min(h, w)
-	margin := size / 20
-	if margin < 16 {
-		margin = 16
-	}
+	margin := max(size/20, 16)
 	board := size - 2*margin
 	cell := board / N
 	x0 := (w - board) / 2
@@ -1091,8 +1083,6 @@ func screenToCell(mx, my, w, h int) (m Move, ok bool) {
 	return m, true
 }
 
-// ===================== Main =====================
-
 func main() {
 	depth := flag.Int("depth", 2, "search depth for AI (2-4 is reasonable)")
 	flag.Parse()
@@ -1101,5 +1091,5 @@ func main() {
 	}
 
 	g := NewGame(*depth)
-	runSDL(g)
+	run(g)
 }
