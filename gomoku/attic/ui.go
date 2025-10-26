@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"time"
+
+	"gomoku/gomoku"
 
 	"github.com/jupiterrider/purego-sdl3/sdl"
 )
 
-func run(g *Game) {
+func run(g *gomoku.Game) {
 	if !sdl.SetHint(sdl.HintRenderVSync, "1") {
 		panic(sdl.GetError())
 	}
@@ -26,8 +27,9 @@ func run(g *Game) {
 	defer sdl.DestroyRenderer(renderer)
 	defer sdl.DestroyWindow(window)
 
+	turn := gomoku.Human
 	turnText := func() string {
-		if g.Turn == human {
+		if turn == gomoku.Human {
 			return "Your turn"
 		}
 		return "Computer thinking…"
@@ -35,25 +37,25 @@ func run(g *Game) {
 	sdl.SetWindowTitle(window, "Gomoku (SDL3) - "+turnText())
 
 	var gameOver bool
-	var gameOverMsg string
+	var gameOverMessage string
 
-	var lastMove Move = Move{-1, -1}
-
-	lastMove = Move{-1, -1}
+	var lastMove gomoku.Move = gomoku.NewMove()
 
 	for {
 		draw := func() {
-			// draw
 			sdl.SetRenderDrawColor(renderer, 240, 228, 200, 255)
 			sdl.RenderClear(renderer)
+
 			var w, h int32
 			sdl.GetWindowSize(window, &w, &h)
+
 			drawBoard(renderer, int(w), int(h))
 			drawStones(renderer, g, lastMove)
 			sdl.RenderPresent(renderer)
+
 			sdl.SetWindowTitle(window, "Gomoku (SDL3) - "+turnText())
 			if gameOver {
-				sdl.SetWindowTitle(window, gameOverMsg)
+				sdl.SetWindowTitle(window, gameOverMessage)
 			}
 		}
 		draw()
@@ -68,7 +70,7 @@ func run(g *Game) {
 					return
 				}
 			case sdl.EventMouseMotion:
-				if g.Turn != human {
+				if turn != gomoku.Human {
 					break
 				}
 				mx, my := int(event.Motion().X), int(event.Motion().Y)
@@ -76,22 +78,21 @@ func run(g *Game) {
 				sdl.GetWindowSize(window, &w, &h)
 				m, ok := mousePositionToMove(mx, my, int(w), int(h))
 				if ok {
-					if m == lastMove || g.at(m) != empty {
+					if m == lastMove || !g.EmptyAt(m) {
 						break
 					}
 					lastMove = m
-					g.place(m, human)
-					eval := g.evaluate()
-					// delta := g.localDeltaEval(m, human)
-					fmt.Printf("board evaluation: %d\n", eval)
-					g.unplace(m)
+					g.Place(m, gomoku.Human)
+					evaluation := g.Evaluate()
+					fmt.Printf("board evaluation: %d\n", evaluation)
+					g.Unplace(m)
 					draw()
 				}
 			case sdl.EventMouseButtonDown:
 				if gameOver {
 					break
 				}
-				if g.Turn != human {
+				if turn != gomoku.Human {
 					break
 				}
 				mx, my := int(event.Button().X), int(event.Button().Y)
@@ -99,43 +100,39 @@ func run(g *Game) {
 				sdl.GetWindowSize(window, &w, &h)
 				m, ok := mousePositionToMove(mx, my, int(w), int(h))
 				if ok {
-					if g.place(m, human) {
+					if g.Place(m, gomoku.Human) {
 						draw()
-						printBoard(g)
-						if g.checkWinFrom(m, human) {
+						gomoku.PrintBoard(g)
+						if g.CheckWinFrom(m, gomoku.Human) {
 							gameOver = true
-							gameOverMsg = "You win! ✨"
+							gameOverMessage = "You win! ✨"
 						}
-						if !gameOver && g.isFull() {
+						if !gameOver && g.IsFull() {
 							gameOver = true
-							gameOverMsg = "Draw."
+							gameOverMessage = "Draw."
 						}
 						if !gameOver {
-							g.Turn = computer
+							turn = gomoku.Computer
 							// compute AI move immediately
 							fmt.Println("computer is thinking...")
 							started := time.Now()
-							_, best := g.minimax(g.Depth, math.MinInt/2, math.MaxInt/2, true, Move{-1, -1})
+							_, best := g.Minimax(2)
 							elapsed := time.Since(started)
-							fmt.Printf("computer chose move (%d, %d) in %v\n", best.r, best.c, elapsed)
-							if best.r == -1 {
-								cands := g.candidates()
-								best = cands[rand.Intn(len(cands))]
-							}
-							g.place(best, computer)
+							fmt.Printf("computer chose move %s in %v\n", best, elapsed)
+							g.Place(best, gomoku.Computer)
 							lastMove = best
 							// draw()
-							printBoard(g)
+							gomoku.PrintBoard(g)
 							// check win
-							if g.checkWinFrom(best, computer) {
+							if g.CheckWinFrom(best, gomoku.Computer) {
 								gameOver = true
-								gameOverMsg = "Computer wins! 🤖"
+								gameOverMessage = "Computer wins! 🤖"
 							}
-							if !gameOver && g.isFull() {
+							if !gameOver && g.IsFull() {
 								gameOver = true
-								gameOverMsg = "Draw."
+								gameOverMessage = "Draw."
 							}
-							g.Turn = human
+							turn = gomoku.Human
 						}
 					}
 				}
@@ -149,45 +146,45 @@ func drawBoard(r *sdl.Renderer, w, h int) {
 	size := min(h, w)
 	margin := max(size/20, 16)
 	board := size - 2*margin
-	cell := board / N
+	cell := board / gomoku.N
 	// top-left origin
 	x0 := (w - board) / 2
 	y0 := (h - board) / 2
 
 	// Grid
 	sdl.SetRenderDrawColor(r, 60, 60, 60, 255)
-	for i := 0; i <= N; i++ {
+	for i := 0; i <= gomoku.N; i++ {
 		sdl.RenderLine(r, float32(x0), float32(y0+i*cell), float32(x0+board), float32(y0+i*cell))
 		sdl.RenderLine(r, float32(x0+i*cell), float32(y0), float32(x0+i*cell), float32(y0+board))
 	}
 }
 
-func drawStones(r *sdl.Renderer, g *Game, lastMove Move) {
+func drawStones(r *sdl.Renderer, g *gomoku.Game, move gomoku.Move) {
 	var w, h int32
 	sdl.GetRenderOutputSize(r, &w, &h)
 	size := min(int(h), int(w))
 	margin := max(size/20, 16)
 	board := size - 2*margin
-	cell := board / N
+	cell := board / gomoku.N
 	x0 := (int(w) - board) / 2
 	y0 := (int(h) - board) / 2
 
 	radius := max(cell/2-4, 6)
 
-	for ri := range N {
-		for ci := range N {
+	for ri := range gomoku.N {
+		for ci := range gomoku.N {
 			ch := g.Board[ri][ci]
-			if ch == empty {
+			if ch == gomoku.Empty {
 				continue
 			}
 			cx := x0 + ci*cell + cell/2
 			cy := y0 + ri*cell + cell/2
 			switch ch {
-			case computer:
+			case gomoku.Computer:
 				// O as circle outline
 				sdl.SetRenderDrawColor(r, 30, 120, 240, 255)
 				drawCircle(r, cx, cy, radius)
-			case human:
+			case gomoku.Human:
 				// X as two lines
 				sdl.SetRenderDrawColor(r, 220, 60, 60, 255)
 				pad := radius
@@ -195,32 +192,14 @@ func drawStones(r *sdl.Renderer, g *Game, lastMove Move) {
 				sdl.RenderLine(r, float32(cx+pad), float32(cy-pad), float32(cx-pad), float32(cy+pad))
 			}
 			// highlight last move
-			if ri == lastMove.r && ci == lastMove.c {
+			m := gomoku.MoveAt(ri, ci)
+			if m == move {
 				sdl.SetRenderDrawColor(r, 0, 200, 0, 255)
 				sdl.RenderLine(r, float32(cx-radius-2), float32(cy), float32(cx+radius+2), float32(cy))
 				sdl.RenderLine(r, float32(cx), float32(cy-radius-2), float32(cx), float32(cy+radius+2))
 			}
 		}
 	}
-}
-
-func printBoard(g *Game) {
-	for r := range N {
-		for c := range N {
-			var ch string
-			switch g.at(Move{r, c}) {
-			case computer:
-				ch = "O"
-			case human:
-				ch = "X"
-			default:
-				ch = "."
-			}
-			fmt.Print(ch, " ")
-		}
-		fmt.Println()
-	}
-	fmt.Println()
 }
 
 func drawCircle(r *sdl.Renderer, cx, cy, radius int) {
@@ -237,7 +216,8 @@ func drawCircle(r *sdl.Renderer, cx, cy, radius int) {
 	}
 }
 
-func mousePositionToMove(mx, my, w, h int) (m Move, ok bool) {
+func mousePositionToMove(mx, my, w, h int) (m gomoku.Move, ok bool) {
+	N := gomoku.N
 	size := min(h, w)
 	margin := max(size/20, 16)
 	board := size - 2*margin
@@ -247,9 +227,10 @@ func mousePositionToMove(mx, my, w, h int) (m Move, ok bool) {
 	if mx < x0 || my < y0 || mx >= x0+board || my >= y0+board {
 		return m, false
 	}
-	m.c = (mx - x0) / cell
-	m.r = (my - y0) / cell
-	if m.r < 0 || m.r >= N || m.c < 0 || m.c >= N {
+	// m.c = (mx - x0) / cell
+	// m.r = (my - y0) / cell
+	m = gomoku.MoveAt((my-y0)/cell, (mx-x0)/cell)
+	if m.Invalid() {
 		return m, false
 	}
 	return m, true

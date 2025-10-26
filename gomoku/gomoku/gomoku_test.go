@@ -1,16 +1,15 @@
-package main
+package gomoku
 
 import (
 	"fmt"
-	"math"
 	"testing"
 )
 
 func BenchmarkEvaluate(b *testing.B) {
-	g := NewGame(3)
+	g := NewGame()
 
 	for b.Loop() {
-		g.evaluate()
+		g.Evaluate()
 	}
 }
 
@@ -38,14 +37,14 @@ func placePosition(g *Game, position position) {
 			m := Move{offsetY + r, offsetX + c/2}
 			switch v {
 			case 'X':
-				g.place(m, human)
+				g.Place(m, Human)
 			case 'O':
-				g.place(m, computer)
+				g.Place(m, Computer)
 			}
 		}
 	}
 	m := Move{offsetY + position.move.r, offsetX + position.move.c}
-	g.place(m, human)
+	g.Place(m, Human)
 }
 
 var trivia = position{
@@ -59,16 +58,16 @@ var trivia = position{
 }
 
 func TestPlacePosition(t *testing.T) {
-	g := NewGame(3)
+	g := NewGame()
 	placePosition(g, trivia)
 }
 
 func BenchmarkMinimax(b *testing.B) {
-	g := NewGame(3)
+	g := NewGame()
 
 	placePosition(g, trivia)
 	for b.Loop() {
-		v, m := g.minimax(1, math.MinInt/2, math.MaxInt/2, true, trivia.move)
+		v, m := g.Minimax(1)
 		if v != 41980 {
 			b.Fatalf("expected 41980, got %d (move: %+v)", v, m)
 		}

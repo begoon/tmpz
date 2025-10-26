@@ -1,15 +1,17 @@
-package main
+package gomoku
 
 import (
+	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 )
 
 const (
 	N        = 15
-	empty    = byte('.')
-	human    = byte('X')
-	computer = byte('O')
+	Empty    = byte('.')
+	Human    = byte('X')
+	Computer = byte('O')
 )
 
 type direction struct {
@@ -22,46 +24,62 @@ type Move struct {
 	r, c int
 }
 
+func NewMove() Move {
+	return Move{r: -1, c: -1}
+}
+
+func (m Move) Unpack() (int, int) {
+	return m.r, m.c
+}
+
+func MoveAt(r, c int) Move {
+	return Move{r, c}
+}
+
 func (m Move) isEmpty() bool {
 	return m.r == -1 && m.c == -1
 }
 
-type Game struct {
-	Board [N][N]byte
-	Depth int
-	Turn  byte // whose turn now
+func (m Move) String() string {
+	return fmt.Sprintf("(%d, %d)", m.r, m.c)
 }
 
-func NewGame(depth int) *Game {
-	g := &Game{Depth: depth, Turn: human}
+type Game struct {
+	Board [N][N]byte
+}
+
+func NewGame() *Game {
+	g := &Game{}
 	for r := range N {
 		for c := range N {
-			g.Board[r][c] = empty
+			g.Board[r][c] = Empty
 		}
 	}
 	return g
 }
 
-func inRC(r, c int) bool { return r >= 0 && r < N && c >= 0 && c < N }
-func in(m Move) bool     { return inRC(m.r, m.c) }
+func in(r, c int) bool { return r >= 0 && r < N && c >= 0 && c < N }
+
+func In(m Move) bool         { return in(m.r, m.c) }
+func (m Move) Invalid() bool { return !In(m) }
 
 func (g *Game) at(m Move) byte      { return g.Board[m.r][m.c] }
-func (g *Game) emptyAt(m Move) bool { return g.at(m) == empty }
+func (g *Game) EmptyAt(m Move) bool { return g.at(m) == Empty }
 
-func (g *Game) place(m Move, p byte) bool {
-	if !in(m) || g.at(m) != empty {
+func (g *Game) Place(m Move, player byte) bool {
+	if !In(m) || g.at(m) != Empty {
 		return false
 	}
-	g.Board[m.r][m.c] = p
+	g.Board[m.r][m.c] = player
 	return true
 }
 
-func (g *Game) unplace(m Move) { g.Board[m.r][m.c] = empty }
+func (g *Game) Unplace(m Move) { g.Board[m.r][m.c] = Empty }
 
-func (g *Game) isFull() bool {
+func (g *Game) IsFull() bool {
 	for r := range N {
 		for c := range N {
-			if g.emptyAt(Move{r, c}) {
+			if g.EmptyAt(Move{r, c}) {
 				return false
 			}
 		}
@@ -69,19 +87,35 @@ func (g *Game) isFull() bool {
 	return true
 }
 
-func (g *Game) checkWinFrom(m Move, player byte) bool {
+func (g *Game) CheckWin() byte {
+	for r := range N {
+		for c := range N {
+			m := Move{r, c}
+			if g.EmptyAt(m) {
+				continue
+			}
+			player := g.at(m)
+			if g.CheckWinFrom(m, player) {
+				return player
+			}
+		}
+	}
+	return Empty
+}
+
+func (g *Game) CheckWinFrom(m Move, player byte) bool {
 	for _, dir := range directions {
 		count := 1
 		// forward
 		v := Move{r: m.r + dir.r, c: m.c + dir.c}
-		for in(v) && g.at(v) == player {
+		for In(v) && g.at(v) == player {
 			count++
 			v.r += dir.r
 			v.c += dir.c
 		}
 		// backward
 		v = Move{r: m.r - dir.r, c: m.c - dir.c}
-		for in(v) && g.at(v) == player {
+		for In(v) && g.at(v) == player {
 			count++
 			v.r -= dir.r
 			v.c -= dir.c
@@ -106,58 +140,58 @@ const (
 	doubleOpenThrees    = 60_000  // creating two+ open-threes (..AAA..) at once
 )
 
-func (g *Game) evaluate() int {
+func (g *Game) Evaluate() int {
 	// positive favors computer, negative favors human.
 	score := 0
 
 	// base contiguous-run heuristic
-	score += g.evaluateFor(computer)
-	score -= g.evaluateFor(human)
+	score += g.evaluateFor(Computer)
+	score -= g.evaluateFor(Human)
 
 	// enhanced pattern heuristic for "broken" shapes (gapped threes/fours)
-	score += g.patternEvalFor(computer)
-	score -= g.patternEvalFor(human)
+	score += g.patternEvaluateFor(Computer)
+	score -= g.patternEvaluateFor(Human)
 
 	candidates := g.candidates()
 
 	// double-threat potential (very strong)
-	score += g.doubleThreatEvalFor(computer, candidates)
-	score -= g.doubleThreatEvalFor(human, candidates)
+	score += g.doubleThreatEvaluateFor(Computer, candidates)
+	score -= g.doubleThreatEvaluateFor(Human, candidates)
 
 	// double open-threes (..AAA..) creator
-	score += g.doubleOpenThreeEvalFor(computer, candidates)
-	score -= g.doubleOpenThreeEvalFor(human, candidates)
+	score += g.doubleOpenThreeEvaluateFor(Computer, candidates)
+	score -= g.doubleOpenThreeEvaluateFor(Human, candidates)
 	return score
 }
 
-func (g *Game) evaluateFor(p byte) int {
+func (g *Game) evaluateFor(player byte) int {
 	score := 0
 	for r := range N {
 		for c := range N {
-			if g.at(Move{r, c}) != p {
+			if g.at(Move{r, c}) != player {
 				continue
 			}
-			for _, d := range directions {
-				// Start of a sequence? ensure previous in this dir isn't same
-				// player to avoid double counting.
-				m := Move{r: r - d.r, c: c - d.c}
-				if in(m) && g.at(m) == p {
+			for _, dir := range directions {
+				// start of a sequence? ensure previous in this direction
+				// isn't same player to avoid double counting
+				begin := Move{r - dir.r, c - dir.c}
+				if In(begin) && g.at(begin) == player {
 					continue
 				}
 				count := 0
-				m2 := Move{r: r, c: c}
-				for in(m2) && g.at(m2) == p {
+				end := Move{r: r, c: c}
+				for In(end) && g.at(end) == player {
 					count++
-					m2.r += d.r
-					m2.c += d.c
+					end.r += dir.r
+					end.c += dir.c
 				}
 				openEnds := 0
 				// check one end before start
-				if in(m) && g.at(m) == empty {
+				if In(begin) && g.at(begin) == Empty {
 					openEnds++
 				}
 				// check one end after the last piece
-				if in(m2) && g.at(m2) == empty {
+				if In(end) && g.at(end) == Empty {
 					openEnds++
 				}
 				score += scoreSequence(count, openEnds)
@@ -193,19 +227,21 @@ type weightedPattern struct {
 	weight  int
 }
 
-// linesFor builds all straight lines (rows, columns, diagonals) for a perspective p.
-// It encodes: p -> 'A', empty -> '.', opponent/border -> 'B', and pads each line with a
-// leading and trailing 'B' so pattern edges are easy to reason about.
+// linesFor builds all straight lines (rows, columns, diagonals) for
+// a perspective player
+
+// encode: player -> 'A', empty -> '.', opponent/border -> 'B', and pads each
+// line with a leading and trailing 'B' so pattern edges are easy to reason about
 func (g *Game) linesFor(player byte) []string {
-	opponent := human
-	if player == human {
-		opponent = computer
+	opponent := Human
+	if player == Human {
+		opponent = Computer
 	}
 	enc := func(b byte) byte {
 		switch b {
 		case player:
 			return 'A'
-		case empty:
+		case Empty:
 			return '.'
 		default: // opponent
 			return 'B'
@@ -238,7 +274,7 @@ func (g *Game) linesFor(player byte) []string {
 		// r, c := 0, start
 		m := Move{r: 0, c: start}
 		buf := []byte{'B'}
-		for in(m) {
+		for In(m) {
 			buf = append(buf, enc(g.at(m)))
 			m.r++
 			m.c++
@@ -252,7 +288,7 @@ func (g *Game) linesFor(player byte) []string {
 		// left col (excluding [0,0]) -> down-right
 		m := Move{r: start, c: 0}
 		buf := []byte{'B'}
-		for in(m) {
+		for In(m) {
 			buf = append(buf, enc(g.at(m)))
 			m.r++
 			m.c++
@@ -267,7 +303,7 @@ func (g *Game) linesFor(player byte) []string {
 		// top row -> down-left
 		m := Move{r: 0, c: start}
 		buf := []byte{'B'}
-		for in(m) {
+		for In(m) {
 			buf = append(buf, enc(g.at(m)))
 			m.r++
 			m.c--
@@ -282,7 +318,7 @@ func (g *Game) linesFor(player byte) []string {
 		// r, c := start, N-1
 		m := Move{r: start, c: N - 1}
 		buf := []byte{'B'}
-		for in(m) {
+		for In(m) {
 			buf = append(buf, enc(g.at(m)))
 			m.r++
 			m.c--
@@ -296,23 +332,24 @@ func (g *Game) linesFor(player byte) []string {
 	return lines
 }
 
-func countPatterns(s, pattern string) int {
+func countPatterns(line, pattern string) int {
 	if len(pattern) == 0 {
 		return 0
 	}
 	count := 0
-	for i := 0; i+len(pattern) <= len(s); i++ {
-		if s[i:i+len(pattern)] == pattern {
+	for i := 0; i+len(pattern) <= len(line); i++ {
+		if line[i:i+len(pattern)] == pattern {
 			count++
 		}
 	}
 	return count
 }
 
-func (g *Game) patternEvalFor(p byte) int {
-	// Only add weights for gapped/broken shapes to avoid double-counting
-	// with contiguous evaluator.
-	// A = current player stones, . = empty, B = opponent/border.
+func (g *Game) patternEvaluateFor(p byte) int {
+	// only add weights for gapped/broken shapes to avoid double-counting
+	// with contiguous evaluator
+
+	// A = current player stones, . = empty, B = opponent/border
 	patterns := []weightedPattern{
 		// broken (gapped) fours
 		{pattern: ".AAA.A.", weight: 70000},
@@ -347,23 +384,23 @@ func (g *Game) patternEvalFor(p byte) int {
 // Heuristic: a move is a double-threat if, after playing it, there are at least two
 // distinct winning moves available for the same side (i.e., two or more immediate
 // finishes next turn). We scan a limited candidate set for efficiency.
-func (g *Game) doubleThreatEvalFor(p byte, candidates []Move) int {
+func (g *Game) doubleThreatEvaluateFor(p byte, candidates []Move) int {
 	best := 0
 	for _, m := range candidates {
-		if g.at(m) != empty {
+		if g.at(m) != Empty {
 			continue
 		}
-		g.place(m, p)
+		g.Place(m, p)
 		// if this move already wins, the regular evaluator handles it, skip it
-		if g.checkWinFrom(m, p) {
-			g.unplace(m)
+		if g.CheckWinFrom(m, p) {
+			g.Unplace(m)
 			continue
 		}
 		wins := g.countLocalImmediateWinsFrom(m, p)
 		if wins > best {
 			best = wins
 		}
-		g.unplace(m)
+		g.Unplace(m)
 		if best >= 3 {
 			break
 		}
@@ -392,7 +429,7 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, player byte) int {
 
 	// Helper to add a cell if it’s empty.
 	rememeber := func(v Move) {
-		if in(v) && g.emptyAt(v) {
+		if In(v) && g.EmptyAt(v) {
 			seen[v.r*N+v.c] = struct{}{}
 		}
 	}
@@ -400,13 +437,13 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, player byte) int {
 	for _, d := range directions {
 		// find start of the line
 		m := Move{m.r, m.c}
-		for in(Move{m.r - d.r, m.c - d.c}) {
+		for In(Move{m.r - d.r, m.c - d.c}) {
 			m.r -= d.r
 			m.c -= d.c
 		}
 		// traverse line, collect empty cells
-		for in(m) {
-			if g.at(m) == empty {
+		for In(m) {
+			if g.at(m) == Empty {
 				rememeber(m)
 			}
 			m.r += d.r
@@ -419,25 +456,25 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, player byte) int {
 	for rc := range seen {
 		r, c := rc/N, rc%N
 		m := Move{r: r, c: c}
-		g.place(m, player)
-		if g.checkWinFrom(m, player) {
+		g.Place(m, player)
+		if g.CheckWinFrom(m, player) {
 			wins++
 		}
-		g.unplace(m)
+		g.Unplace(m)
 	}
 	return wins
 }
 
 // scores moves that create two or more open-threes at once.
-func (g *Game) doubleOpenThreeEvalFor(player byte, candidates []Move) int {
+func (g *Game) doubleOpenThreeEvaluateFor(player byte, candidates []Move) int {
 	bestTotal, bestStrict := 0, 0
 	for _, m := range candidates {
-		if !g.emptyAt(m) {
+		if !g.EmptyAt(m) {
 			continue
 		}
-		g.place(m, player)
-		if g.checkWinFrom(m, player) {
-			g.unplace(m)
+		g.Place(m, player)
+		if g.CheckWinFrom(m, player) {
+			g.Unplace(m)
 			continue
 		}
 		strict, broken := g.openThreeCountsAround(m, player)
@@ -445,7 +482,7 @@ func (g *Game) doubleOpenThreeEvalFor(player byte, candidates []Move) int {
 		if total > bestTotal || (total == bestTotal && strict > bestStrict) {
 			bestTotal, bestStrict = total, strict
 		}
-		g.unplace(m)
+		g.Unplace(m)
 		if bestTotal >= 4 { // cap early for rare huge forks
 			break
 		}
@@ -466,7 +503,7 @@ func (g *Game) encodeFor(player byte, pattern byte) byte {
 	if pattern == player {
 		return 'A'
 	}
-	if pattern == empty {
+	if pattern == Empty {
 		return '.'
 	}
 	return 'B'
@@ -480,12 +517,12 @@ func (g *Game) linesThrough(m Move, player byte) []string {
 	build := func(dr, dc int) string {
 		// back to start
 		v := Move{r: m.r, c: m.c}
-		for in(Move{r: v.r - dr, c: v.c - dc}) {
+		for In(Move{r: v.r - dr, c: v.c - dc}) {
 			v.r -= dr
 			v.c -= dc
 		}
 		buf := []byte{'B'}
-		for in(v) {
+		for In(v) {
 			buf = append(buf, g.encodeFor(player, g.at(v)))
 			v.r += dr
 			v.c += dc
@@ -509,14 +546,14 @@ func (g *Game) candidates() []Move {
 	occupied := false
 	for r := range N {
 		for c := range N {
-			if g.emptyAt(Move{r, c}) {
+			if g.EmptyAt(Move{r, c}) {
 				continue
 			}
 			occupied = true
 			for dr := -2; dr <= 2; dr++ {
 				for dc := -2; dc <= 2; dc++ {
 					m := Move{r: r + dr, c: c + dc}
-					if !in(m) || g.at(m) != empty {
+					if !In(m) || g.at(m) != Empty {
 						continue
 					}
 					rc := m.r*N + m.c
@@ -558,7 +595,7 @@ func (g *Game) adjacentTo(r, c int, player byte) bool {
 				continue
 			}
 			m := Move{r: r + dr, c: c + dc}
-			if in(m) && g.at(m) == player {
+			if In(m) && g.at(m) == player {
 				return true
 			}
 		}
@@ -572,7 +609,7 @@ func (g *Game) winningMoves(player byte) []Move {
 	moves := make([]Move, 0)
 	for r := range N {
 		for c := range N {
-			if !g.emptyAt(Move{r, c}) {
+			if !g.EmptyAt(Move{r, c}) {
 				continue
 			}
 			// quick adjacency prefilter (sound: any winning square must touch a p-stone)
@@ -580,9 +617,9 @@ func (g *Game) winningMoves(player byte) []Move {
 				continue
 			}
 			m := Move{r, c}
-			g.place(m, player)
-			won := g.checkWinFrom(m, player) // local check is enough here
-			g.unplace(m)
+			g.Place(m, player)
+			won := g.CheckWinFrom(m, player) // local check is enough here
+			g.Unplace(m)
 			if won {
 				moves = append(moves, m)
 			}
@@ -594,30 +631,30 @@ func (g *Game) winningMoves(player byte) []Move {
 func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Move) (int, Move) {
 	if !lastMove.isEmpty() {
 		// the side who just moved is the opposite of 'maximizing'
-		justPlayed := computer
+		justPlayed := Computer
 		if maximizing {
-			justPlayed = human
+			justPlayed = Human
 		}
-		if g.checkWinFrom(lastMove, justPlayed) {
-			if justPlayed == computer {
+		if g.CheckWinFrom(lastMove, justPlayed) {
+			if justPlayed == Computer {
 				return winScore, Move{-1, -1}
 			}
 			return -winScore, Move{-1, -1}
 		}
 	}
 
-	if depth == 0 || g.isFull() {
-		return g.evaluate(), Move{-1, -1}
+	if depth == 0 || g.IsFull() {
+		return g.Evaluate(), Move{-1, -1}
 	}
 
 	moves := g.candidates()
 
 	// tactical forcing: play immediate win if available; otherwise,
 	// restrict to blocking opponent's immediate wins.
-	player := computer
-	opponent := human
+	player := Computer
+	opponent := Human
 	if !maximizing {
-		player, opponent = human, computer
+		player, opponent = Human, Computer
 	}
 	finishers := g.winningMoves(player)
 	if len(finishers) > 0 {
@@ -640,9 +677,9 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 	ordered := make([]scored, 0, len(moves))
 
 	for _, m := range moves {
-		g.place(m, player)
-		score := g.evaluate()
-		g.unplace(m)
+		g.Place(m, player)
+		score := g.Evaluate()
+		g.Unplace(m)
 		ordered = append(ordered, scored{m, score})
 	}
 
@@ -660,14 +697,15 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 	if maximizing {
 		value := math.MinInt / 2
 		for _, scoredMove := range ordered {
-			g.place(scoredMove.move, computer)
+			m := scoredMove.move
+			g.Place(m, Computer)
 			// if this move allows any immediate human win next round, don't play it
-			if len(g.winningMoves(human)) > 0 {
+			if len(g.winningMoves(Human)) > 0 {
 				score := -winScore + 1
-				g.unplace(scoredMove.move)
+				g.Unplace(m)
 				if score > value {
 					value = score
-					bestMove = scoredMove.move
+					bestMove = m
 				}
 				if value > alpha {
 					alpha = value
@@ -677,11 +715,11 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 				}
 				continue
 			}
-			score, _ := g.minimax(depth-1, alpha, beta, false, scoredMove.move)
-			g.unplace(scoredMove.move)
+			score, _ := g.minimax(depth-1, alpha, beta, false, m)
+			g.Unplace(m)
 			if score > value {
 				value = score
-				bestMove = scoredMove.move
+				bestMove = m
 			}
 			if value > alpha {
 				alpha = value
@@ -696,14 +734,15 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 	// minimizing
 	value := math.MaxInt / 2
 	for _, scoreMove := range ordered {
-		g.place(scoreMove.move, human)
+		m := scoreMove.move
+		g.Place(m, Human)
 		// if this move allows any immediate computer win next round, don't play it
-		if len(g.winningMoves(computer)) > 0 {
+		if len(g.winningMoves(Computer)) > 0 {
 			score := winScore - 1
-			g.unplace(scoreMove.move)
+			g.Unplace(m)
 			if score < value {
 				value = score
-				bestMove = scoreMove.move
+				bestMove = m
 			}
 			if value < beta {
 				beta = value
@@ -713,11 +752,11 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 			}
 			continue
 		}
-		score, _ := g.minimax(depth-1, alpha, beta, true, scoreMove.move)
-		g.unplace(scoreMove.move)
+		score, _ := g.minimax(depth-1, alpha, beta, true, m)
+		g.Unplace(m)
 		if score < value {
 			value = score
-			bestMove = scoreMove.move
+			bestMove = m
 		}
 		if value < beta {
 			beta = value
@@ -727,4 +766,15 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 		}
 	}
 	return value, bestMove
+}
+
+func (g *Game) Minimax(depth int) (int, Move) {
+	value, move := g.minimax(depth, math.MinInt/2, math.MaxInt/2, true, Move{-1, -1})
+	if move.isEmpty() {
+		fmt.Println("ERROR: minimax returned no move, picking random candidate")
+		candidates := g.candidates()
+		move = candidates[rand.Intn(len(candidates))]
+		value = g.Evaluate()
+	}
+	return value, move
 }

@@ -1,7 +1,7 @@
 all: run
 
 run:
-    go run gomoku.go -depth=3
+    go run .
 
-sdl:
-    cp $HOMEBREW_CELLAR/sdl3/3.2.24/lib/libSDL3.dylib .
+test:
+    go test -bench ./gomoku && go test ./gomoku
