@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Go WASM Demo</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>
+            body {
+                font-family: system-ui, sans-serif;
+                margin: 2rem;
+            }
+            pre {
+                background: #f5f5f5;
+                padding: 1rem;
+                border-radius: 8px;
+            }
+            button {
+                padding: 0.6rem 1rem;
+                border-radius: 8px;
+                border: 0;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Go → WASM: Request → Response</h1>
+
+        <p><button id="btn" disabled>Call processRequest()</button></p>
+        <pre id="out">Loading WASM...</pre>
+
+        <script src="wasm_exec.js"></script>
+        <script>
+            // Fallback for browsers without instantiateStreaming
+            if (!WebAssembly.instantiateStreaming) {
+                WebAssembly.instantiateStreaming = async (resp, importObject) => {
+                    const source = await (await resp).arrayBuffer();
+                    return await WebAssembly.instantiate(source, importObject);
+                };
+            }
+
+            const out = document.getElementById("out");
+            const btn = document.getElementById("btn");
+            const go = new Go(); // defined by wasm_exec.js
+
+            (async () => {
+                try {
+                    const { instance } = await WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject);
+                    // Start the Go runtime (returns a Promise that settles when Go exits; we keep it running)
+                    go.run(instance);
+                    out.textContent = "WASM loaded. Click the button.";
+                    btn.disabled = false;
+                } catch (e) {
+                    out.textContent = "Failed to load WASM: " + e;
+                }
+            })();
+
+            btn.addEventListener("click", () => {
+                try {
+                    // Build a Request-like JS object
+                    const req = { Field: ["alpha", "beta", "gamma"] };
+                    const res = window.processRequest(req);
+                    out.textContent = "Response:\n" + JSON.stringify(res, null, 2);
+                } catch (e) {
+                    out.textContent = "Error calling processRequest: " + e;
+                }
+            });
+        </script>
+    </body>
+</html>
