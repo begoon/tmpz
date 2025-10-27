@@ -21,15 +21,11 @@ type direction struct {
 var directions = []direction{{1, 0}, {0, 1}, {1, 1}, {1, -1}}
 
 type Move struct {
-	r, c int
+	R, C int
 }
 
 func NewMove() Move {
-	return Move{r: -1, c: -1}
-}
-
-func (m Move) Unpack() (int, int) {
-	return m.r, m.c
+	return Move{R: -1, C: -1}
 }
 
 func MoveAt(r, c int) Move {
@@ -37,11 +33,11 @@ func MoveAt(r, c int) Move {
 }
 
 func (m Move) isEmpty() bool {
-	return m.r == -1 && m.c == -1
+	return m.R == -1 && m.C == -1
 }
 
 func (m Move) String() string {
-	return fmt.Sprintf("(%d, %d)", m.r, m.c)
+	return fmt.Sprintf("(%d, %d)", m.R, m.C)
 }
 
 type Game struct {
@@ -60,21 +56,21 @@ func NewGame() *Game {
 
 func in(r, c int) bool { return r >= 0 && r < N && c >= 0 && c < N }
 
-func In(m Move) bool         { return in(m.r, m.c) }
+func In(m Move) bool         { return in(m.R, m.C) }
 func (m Move) Invalid() bool { return !In(m) }
 
-func (g *Game) at(m Move) byte      { return g.Board[m.r][m.c] }
+func (g *Game) at(m Move) byte      { return g.Board[m.R][m.C] }
 func (g *Game) EmptyAt(m Move) bool { return g.at(m) == Empty }
 
 func (g *Game) Place(m Move, player byte) bool {
 	if !In(m) || g.at(m) != Empty {
 		return false
 	}
-	g.Board[m.r][m.c] = player
+	g.Board[m.R][m.C] = player
 	return true
 }
 
-func (g *Game) Unplace(m Move) { g.Board[m.r][m.c] = Empty }
+func (g *Game) Unplace(m Move) { g.Board[m.R][m.C] = Empty }
 
 func (g *Game) IsFull() bool {
 	for r := range N {
@@ -107,18 +103,18 @@ func (g *Game) CheckWinFrom(m Move, player byte) bool {
 	for _, dir := range directions {
 		count := 1
 		// forward
-		v := Move{r: m.r + dir.r, c: m.c + dir.c}
+		v := Move{R: m.R + dir.r, C: m.C + dir.c}
 		for In(v) && g.at(v) == player {
 			count++
-			v.r += dir.r
-			v.c += dir.c
+			v.R += dir.r
+			v.C += dir.c
 		}
 		// backward
-		v = Move{r: m.r - dir.r, c: m.c - dir.c}
+		v = Move{R: m.R - dir.r, C: m.C - dir.c}
 		for In(v) && g.at(v) == player {
 			count++
-			v.r -= dir.r
-			v.c -= dir.c
+			v.R -= dir.r
+			v.C -= dir.c
 		}
 		if count >= 5 {
 			return true
@@ -179,11 +175,11 @@ func (g *Game) evaluateFor(player byte) int {
 					continue
 				}
 				count := 0
-				end := Move{r: r, c: c}
+				end := Move{R: r, C: c}
 				for In(end) && g.at(end) == player {
 					count++
-					end.r += dir.r
-					end.c += dir.c
+					end.R += dir.r
+					end.C += dir.c
 				}
 				openEnds := 0
 				// check one end before start
@@ -272,12 +268,12 @@ func (g *Game) linesFor(player byte) []string {
 	for start := 0; start < N; start++ {
 		// top row -> down-right
 		// r, c := 0, start
-		m := Move{r: 0, c: start}
+		m := Move{R: 0, C: start}
 		buf := []byte{'B'}
 		for In(m) {
 			buf = append(buf, enc(g.at(m)))
-			m.r++
-			m.c++
+			m.R++
+			m.C++
 		}
 		buf = append(buf, 'B')
 		if len(buf) > 6 {
@@ -286,12 +282,12 @@ func (g *Game) linesFor(player byte) []string {
 	}
 	for start := 1; start < N; start++ {
 		// left col (excluding [0,0]) -> down-right
-		m := Move{r: start, c: 0}
+		m := Move{R: start, C: 0}
 		buf := []byte{'B'}
 		for In(m) {
 			buf = append(buf, enc(g.at(m)))
-			m.r++
-			m.c++
+			m.R++
+			m.C++
 		}
 		buf = append(buf, 'B')
 		if len(buf) > 6 {
@@ -301,12 +297,12 @@ func (g *Game) linesFor(player byte) []string {
 	// anti-diagonals (r+c constant)
 	for start := 0; start < N; start++ {
 		// top row -> down-left
-		m := Move{r: 0, c: start}
+		m := Move{R: 0, C: start}
 		buf := []byte{'B'}
 		for In(m) {
 			buf = append(buf, enc(g.at(m)))
-			m.r++
-			m.c--
+			m.R++
+			m.C--
 		}
 		buf = append(buf, 'B')
 		if len(buf) > 6 {
@@ -316,12 +312,12 @@ func (g *Game) linesFor(player byte) []string {
 	for start := 1; start < N; start++ {
 		// right col (excluding [0,N-1]) -> down-left
 		// r, c := start, N-1
-		m := Move{r: start, c: N - 1}
+		m := Move{R: start, C: N - 1}
 		buf := []byte{'B'}
 		for In(m) {
 			buf = append(buf, enc(g.at(m)))
-			m.r++
-			m.c--
+			m.R++
+			m.C--
 		}
 		buf = append(buf, 'B')
 		if len(buf) > 6 {
@@ -430,24 +426,24 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, player byte) int {
 	// Helper to add a cell if it’s empty.
 	rememeber := func(v Move) {
 		if In(v) && g.EmptyAt(v) {
-			seen[v.r*N+v.c] = struct{}{}
+			seen[v.R*N+v.C] = struct{}{}
 		}
 	}
 
 	for _, d := range directions {
 		// find start of the line
-		m := Move{m.r, m.c}
-		for In(Move{m.r - d.r, m.c - d.c}) {
-			m.r -= d.r
-			m.c -= d.c
+		m := Move{m.R, m.C}
+		for In(Move{m.R - d.r, m.C - d.c}) {
+			m.R -= d.r
+			m.C -= d.c
 		}
 		// traverse line, collect empty cells
 		for In(m) {
 			if g.at(m) == Empty {
 				rememeber(m)
 			}
-			m.r += d.r
-			m.c += d.c
+			m.R += d.r
+			m.C += d.c
 		}
 	}
 
@@ -455,7 +451,7 @@ func (g *Game) countLocalImmediateWinsFrom(m Move, player byte) int {
 	wins := 0
 	for rc := range seen {
 		r, c := rc/N, rc%N
-		m := Move{r: r, c: c}
+		m := Move{R: r, C: c}
 		g.Place(m, player)
 		if g.CheckWinFrom(m, player) {
 			wins++
@@ -516,16 +512,16 @@ func (g *Game) linesThrough(m Move, player byte) []string {
 
 	build := func(dr, dc int) string {
 		// back to start
-		v := Move{r: m.r, c: m.c}
-		for In(Move{r: v.r - dr, c: v.c - dc}) {
-			v.r -= dr
-			v.c -= dc
+		v := Move{R: m.R, C: m.C}
+		for In(Move{R: v.R - dr, C: v.C - dc}) {
+			v.R -= dr
+			v.C -= dc
 		}
 		buf := []byte{'B'}
 		for In(v) {
 			buf = append(buf, g.encodeFor(player, g.at(v)))
-			v.r += dr
-			v.c += dc
+			v.R += dr
+			v.C += dc
 		}
 		buf = append(buf, 'B')
 		return string(buf)
@@ -552,11 +548,11 @@ func (g *Game) candidates() []Move {
 			occupied = true
 			for dr := -2; dr <= 2; dr++ {
 				for dc := -2; dc <= 2; dc++ {
-					m := Move{r: r + dr, c: c + dc}
+					m := Move{R: r + dr, C: c + dc}
 					if !In(m) || g.at(m) != Empty {
 						continue
 					}
-					rc := m.r*N + m.c
+					rc := m.R*N + m.C
 					if !seen[rc] {
 						seen[rc] = true
 						moves = append(moves, m)
@@ -572,8 +568,8 @@ func (g *Game) candidates() []Move {
 	// order by proximity to center and quick heuristic
 	center := Move{N / 2, N / 2}
 	sort.Slice(moves, func(i, j int) bool {
-		di := abs(moves[i].r-center.r) + abs(moves[i].c-center.c)
-		dj := abs(moves[j].r-center.r) + abs(moves[j].c-center.c)
+		di := abs(moves[i].R-center.R) + abs(moves[i].C-center.C)
+		dj := abs(moves[j].R-center.R) + abs(moves[j].C-center.C)
 		return di < dj
 	})
 	return moves
@@ -594,7 +590,7 @@ func (g *Game) adjacentTo(r, c int, player byte) bool {
 			if dr == 0 && dc == 0 {
 				continue
 			}
-			m := Move{r: r + dr, c: c + dc}
+			m := Move{R: r + dr, C: c + dc}
 			if In(m) && g.at(m) == player {
 				return true
 			}
@@ -651,11 +647,11 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 
 	// tactical forcing: play immediate win if available; otherwise,
 	// restrict to blocking opponent's immediate wins.
-	player := Computer
-	opponent := Human
+	player, opponent := Computer, Human
 	if !maximizing {
 		player, opponent = Human, Computer
 	}
+
 	finishers := g.winningMoves(player)
 	if len(finishers) > 0 {
 		// win this turn

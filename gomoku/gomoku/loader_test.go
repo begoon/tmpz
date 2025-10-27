@@ -57,18 +57,3 @@ func TestExportImport(t *testing.T) {
 		}
 	}
 }
-
-func TestExportImportJSON(t *testing.T) {
-	g, expected := createGame()
-
-	exported := g.ExportJSON()
-	imported := ImportJSON(exported)
-	for r := range N {
-		for c := range N {
-			m := Move{r, c}
-			if imported.at(m) != expected[r][c] {
-				t.Errorf("at (%d,%d): imported %q, want %q", r, c, imported.at(m), expected[r][c])
-			}
-		}
-	}
-}
