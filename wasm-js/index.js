@@ -15,8 +15,8 @@ const i32 = new Int32Array(memory.buffer);
 
 // helper: write a C string (UTF-8, null-terminated) into wasm memory
 function writeCString(str) {
-    const enc = new TextEncoder();
-    const data = enc.encode(str);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
     const ptr = alloc(data.length + 1);
     u8.set(data, ptr);
     u8[ptr + data.length] = 0;
