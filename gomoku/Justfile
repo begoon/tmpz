@@ -1,7 +1,11 @@
-all: run
-
-run:
-    go run .
+all: build
 
 test:
-    go test -bench ./gomoku && go test ./gomoku
+	go test -bench=./gomoku -benchmem ./gomoku
+
+build:
+	GOOS=js GOARCH=wasm go build -o site/gomoku.wasm .
+	cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" site/
+
+serve:
+	python3 -m http.server -d site 8000

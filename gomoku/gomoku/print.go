@@ -4,6 +4,7 @@ import "fmt"
 
 func PrintBoard(g *Game) {
 	for r := range N {
+		fmt.Printf("%02d | ", r)
 		for c := range N {
 			var ch string
 			switch g.at(Move{r, c}) {

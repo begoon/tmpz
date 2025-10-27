@@ -5,18 +5,26 @@ const N = 15;
 
 const BOARD = Array.from({ length: N }, () => Array.from({ length: N }, () => "."));
 
-function boardString() {
-    return BOARD.map((r) => r.join(""));
+function boardString(move) {
+    try {
+        if (move) BOARD[move.r][move.c] = "X";
+        return BOARD.map((r) => r.join(""));
+    } finally {
+        if (move) BOARD[move.r][move.c] = ".";
+    }
 }
 
-BOARD[7][7] = "X";
-BOARD[7][8] = "O";
-
 async function main() {
+    const go = new Go(); // defined by wasm_exec.js
+    const { instance } = await WebAssembly.instantiateStreaming(fetch("gomoku.wasm"), go.importObject);
+    console.log("WASM loaded");
+    go.run(instance);
+
     const board = $("#board");
 
     let thinking = false;
     let lastMove = { r: -1, c: -1 };
+    let winner = null;
 
     function updateThinking(on) {
         thinking = on;
@@ -52,21 +60,20 @@ async function main() {
     await evaluation();
 
     async function isWinner() {
-        const data = JSON.stringify({ board: boardString() });
-        const response = await (await fetch(`/end`, { method: "POST", body: data })).json();
-        console.log("endgame data:", response);
-        if (response.winner !== ".") {
-            alert(`Game over! Winner: ${response.winner}`);
-            return response.winner;
+        const result = window.endgame(boardString());
+        console.log("endgame:", result);
+        if (result.winner !== ".") {
+            alert(`Game over! Winner: ${result.winner}`);
+            winner = result.winner;
+            return result.winner;
         }
-        return undefined;
     }
 
     async function evaluation() {
-        const data = JSON.stringify({ board: boardString() });
-        const response = await (await fetch(`/eval`, { method: "POST", body: data })).json();
-        console.log("evaluation:", response);
-        $("#evaluation").textContent = `evaluation: ${response.value}`;
+        const result = window.evaluate(boardString());
+        console.log("evaluation:", result);
+        console.log(JSON.stringify(result));
+        $("#evaluation").textContent = `evaluation: ${result.value}`;
     }
 
     function highlightLastMove(move) {
@@ -85,7 +92,7 @@ async function main() {
     }
 
     board.addEventListener("click", async (event) => {
-        if (thinking) return;
+        if (thinking || winner) return;
 
         const target = event.target;
         if (target.classList.contains("field")) {
@@ -105,18 +112,16 @@ async function main() {
                 await evaluation();
 
                 updateThinking(true);
+                await new Promise((r) => setTimeout(r, 100)); // allow UI to update
 
-                const response = await (
-                    await fetch(`/minimax`, {
-                        method: "POST",
-                        body: JSON.stringify({ depth: 3, board: boardString() }),
-                    })
-                ).json();
+                const response = window.minimax(boardString(), 2);
 
                 updateThinking(false);
 
-                console.log("minimax data:", response);
+                console.log("minimax:", response);
                 const { r, c } = response.move;
+                const { duration } = response;
+                $("#duration").textContent = `${duration}s`;
 
                 BOARD[r][c] = "O";
                 const fields = $$(".field");
@@ -151,10 +156,9 @@ async function main() {
             last = { row, col };
             $("#hover").textContent = `(${last.row}, ${last.col})`;
 
-            const data = JSON.stringify({ board: boardString(), move: { r: row, c: col } });
-
-            const response = await (await fetch(`/eval`, { method: "POST", body: data })).json();
-            console.log("evaluation:", response);
+            const result = window.evaluate(boardString({ r: row, c: col }));
+            console.log("evaluation:", result);
+            $("#evaluation").textContent = `evaluation: ${result.value}`;
         }
     });
 }

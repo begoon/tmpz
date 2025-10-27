@@ -43,7 +43,7 @@ func placePosition(g *Game, position position) {
 			}
 		}
 	}
-	m := Move{offsetY + position.move.r, offsetX + position.move.c}
+	m := Move{offsetY + position.move.R, offsetX + position.move.C}
 	g.Place(m, Human)
 }
 
