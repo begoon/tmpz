@@ -32,3 +32,19 @@ int native_function(int x, int *y, char *s)
 
     return sz;
 }
+
+uint32_t native_string(uint64_t val)
+{
+    static char hex[] = "0123456789ABCDEF";
+
+    const uint32_t ptr = alloc(18); // "0x" + 16 chars + null terminator
+    char *p = (char *)(uintptr_t)ptr;
+    p[0] = '0';
+    p[1] = 'x';
+    for (int i = 0; i < 16; i++)
+    {
+        p[i + 2] = hex[(val >> (60 - i * 4)) & 0xf];
+    }
+    p[18] = 0;
+    return ptr;
+}

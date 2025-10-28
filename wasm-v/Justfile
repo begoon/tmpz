@@ -1,0 +1,13 @@
+all: build run
+
+build:
+	v -b wasm -os browser -prod -o module.wasm main.v
+
+run:
+	bun index.js
+
+wat:
+	wasm2wat module.wasm -o module.wat
+
+clean:
+	rm -rf build

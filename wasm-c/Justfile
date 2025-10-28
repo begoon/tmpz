@@ -2,17 +2,17 @@ all: build run
 
 build:
 	#!/bin/bash
-	mkdir -p build
 	zig cc \
 	--target=wasm32-freestanding \
 	-O3 -flto -nostdlib \
 	-Wl,--no-entry \
 	-Wl,--export-memory \
 	-Wl,--export=native_function \
+	-Wl,--export=native_string \
 	-Wl,--export=alloc \
 	-Wl,--export=__heap_base \
 	-Wl,--export=__data_end \
-	-o build/module.wasm \
+	-o module.wasm \
 	main.c
 
 run:
@@ -20,8 +20,8 @@ run:
 
 cli:
 	#!/bin/bash
-	zig cc cli.c -target wasm32-wasi -O2 -o build/cli.wasm
-	wasmtime build/cli.wasm
+	zig cc cli.c -target wasm32-wasi -O2 -o cli.wasm
+	wasmtime cli.wasm
 
 clean:
 	rm -rf build

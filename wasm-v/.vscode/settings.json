@@ -1,0 +1,10 @@
+{
+    "emeraldwalk.runonsave": {
+        "commands": [
+            {
+                "match": "\\.v$",
+                "cmd": "${HOME}/other/v/v fmt -w ${file}"
+            }
+        ]
+    }
+}
