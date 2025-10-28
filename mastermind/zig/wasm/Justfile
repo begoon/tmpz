@@ -1,0 +1,8 @@
+abc:
+
+wasm:
+    zig build-exe -O ReleaseFast -target wasm32-freestanding -fno-entry -rdynamic -femit-bin=mastermind.wasm wasm.zig
+    bun index.js
+
+run:
+    zig run main.zig

@@ -1,0 +1,2 @@
+run:
+    v -o exe run .
