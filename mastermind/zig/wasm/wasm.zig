@@ -13,19 +13,13 @@ pub export fn init() usize {
     const game = allocator.create(mastermind.Game) catch return 0;
 
     // initialize the struct value into the allocated memory
-    game.* = mastermind.Game.init(allocator) catch {
-        allocator.destroy(game);
-        return 0;
-    };
+    game.* = mastermind.Game.init();
     // return the handle (pointer as integer) to JS
     return @intFromPtr(game);
 }
 
 pub export fn deinit(handle: usize) void {
     const game = castHandle(handle) orelse return;
-    // let Game release any owned resources
-    game.deinit(allocator);
-    // free the Game itself
     allocator.destroy(game);
 }
 

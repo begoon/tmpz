@@ -1,7 +1,16 @@
 abc:
 
-wasm:
-    zig build-exe -O ReleaseFast -target wasm32-freestanding -fno-entry -rdynamic -femit-bin=mastermind.wasm wasm.zig
+wasm-build:
+    zig build-exe -O ReleaseSmall -target wasm32-freestanding \
+    -fno-entry \
+    --export=init \
+    --export=deinit \
+    --export=remaining \
+    --export=tries \
+    --export=guess \
+    -femit-bin=mastermind.wasm wasm.zig
+
+wasm: wasm-build
     bun index.js
 
 run:

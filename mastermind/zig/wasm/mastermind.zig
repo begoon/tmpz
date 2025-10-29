@@ -1,43 +1,32 @@
 const std = @import("std");
 
+const N: usize = 6 * 6 * 6 * 6; // 1296 possible codes (1111..6666)
+
 pub const Comparison = struct {
     in_place: i32,
     by_value: i32,
 };
 
 pub const Game = struct {
-    universe: []u32,
-    candidates: []u32,
+    universe: [N]u32,
+    candidates: [N]u32,
     probe: u32,
     tries: i32,
     eliminated: i32,
     remaining: i32,
 
-    pub fn init(allocator: std.mem.Allocator) !Game {
-        const universe = try createUniverse(allocator);
-        const candidates = try createUniverse(allocator);
-        return Game{
-            .universe = universe,
-            .candidates = candidates,
+    pub fn init() Game {
+        var game = Game{
+            .universe = [_]u32{0} ** N,
+            .candidates = [_]u32{0} ** N,
             .probe = 0,
             .tries = 0,
             .eliminated = 0,
-            .remaining = @intCast(universe.len),
+            .remaining = N,
         };
-    }
-
-    pub fn deinit(self: *Game, allocator: std.mem.Allocator) void {
-        allocator.free(self.universe);
-        allocator.free(self.candidates);
-    }
-
-    pub fn reset(self: *Game, allocator: std.mem.Allocator) !void {
-        allocator.free(self.candidates);
-        self.candidates = try createUniverse(allocator);
-        self.probe = 0;
-        self.tries = 0;
-        self.eliminated = 0;
-        self.remaining = @intCast(self.universe.len);
+        createUniverse(&game.universe);
+        createUniverse(&game.candidates);
+        return game;
     }
 
     pub fn guess(self: *Game, in_place: i32, by_value: i32) i32 {
@@ -107,10 +96,7 @@ pub const Game = struct {
 };
 
 /// build the universe: integers 1111..6666 with base-6 digits (1..6)
-fn createUniverse(allocator: std.mem.Allocator) ![]u32 {
-    const N: usize = 6 * 6 * 6 * 6; // 1296
-    var universe = try allocator.alloc(u32, N);
-
+fn createUniverse(universe: *[N]u32) void {
     var off: usize = 0;
     var i: u32 = 0;
     while (i < 6) : (i += 1) {
@@ -127,7 +113,6 @@ fn createUniverse(allocator: std.mem.Allocator) ![]u32 {
             }
         }
     }
-    return universe;
 }
 
 /// compare a probe against a code, returning <in_place, by_value>

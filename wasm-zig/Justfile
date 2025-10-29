@@ -1,0 +1,9 @@
+wasm: wasm-build
+    bun index.js
+
+wasm-build:
+    zig build-exe -O ReleaseSmall -target wasm32-freestanding \
+    -fno-entry \
+    --export=func \
+    -femit-bin=module.wasm module.zig
+    ls -al module.wasm
