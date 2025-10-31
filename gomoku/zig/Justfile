@@ -1,0 +1,5 @@
+run:
+    zig run -O ReleaseFast gomoku.zig
+
+test:
+    zig test -O ReleaseFast gomoku_test.zig

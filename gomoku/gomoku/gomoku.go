@@ -233,6 +233,7 @@ func (g *Game) linesFor(player byte) []string {
 	if player == Human {
 		opponent = Computer
 	}
+
 	enc := func(b byte) byte {
 		switch b {
 		case player:
@@ -243,6 +244,7 @@ func (g *Game) linesFor(player byte) []string {
 			return 'B'
 		}
 	}
+
 	lines := make([]string, 0, N*4)
 	// rows
 	for r := range N {
@@ -258,7 +260,7 @@ func (g *Game) linesFor(player byte) []string {
 	for c := range N {
 		buf := make([]byte, 0, N+2)
 		buf = append(buf, 'B')
-		for r := 0; r < N; r++ {
+		for r := range N {
 			buf = append(buf, enc(g.at(Move{r, c})))
 		}
 		buf = append(buf, 'B')
@@ -643,8 +645,6 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 		return g.Evaluate(), Move{-1, -1}
 	}
 
-	moves := g.candidates()
-
 	// tactical forcing: play immediate win if available; otherwise,
 	// restrict to blocking opponent's immediate wins.
 	player, opponent := Computer, Human
@@ -657,6 +657,9 @@ func (g *Game) minimax(depth int, alpha, beta int, maximizing bool, lastMove Mov
 		// win this turn
 		return winScore - 1, finishers[0]
 	}
+
+	moves := g.candidates()
+
 	blockers := g.winningMoves(opponent)
 	if len(blockers) > 0 {
 		// only consider blocking moves to avoid instant loss
