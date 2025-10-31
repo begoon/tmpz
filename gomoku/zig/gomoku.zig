@@ -332,24 +332,24 @@ pub const Game = struct {
 
     /// Returns true if this move is "tactical": wins now, blocks an immediate win,
     /// or swings eval by a large amount (forcing moves / big threats).
-    fn is_tactical(self: *Game, mv: Move, player: Field) bool {
+    fn is_tactical(self: *Game, move: Move, player: Field) bool {
         // 1) our immediate win?
-        self.place(mv, player);
-        var w = self.check_win_at(mv);
-        self.unplace(mv);
-        if (w == player) return true;
+        self.place(move, player);
+        var winner = self.check_win_at(move);
+        self.unplace(move);
+        if (winner == player) return true;
 
         // 2) blocks opponent's immediate win?
-        const op: Field = if (player == .computer) .human else .computer;
-        self.place(mv, op);
-        w = self.check_win_at(mv);
-        self.unplace(mv);
-        if (w == op) return true; // if opponent could win by playing here, blocking is tactical
+        const opponents: Field = if (player == .computer) .human else .computer;
+        self.place(move, opponents);
+        winner = self.check_win_at(move);
+        self.unplace(move);
+        if (winner == opponents) return true; // if opponent could win by playing here, blocking is tactical
 
         // 3) big heuristic swing?
         const QUIET_THRESHOLD: i32 = 90; // ~ bigger than any 10/2/1 patterns, close to 100s
-        const d = self.move_delta(mv, player);
-        return @abs(d) >= QUIET_THRESHOLD;
+        const delta = self.move_delta(move, player);
+        return @abs(delta) >= QUIET_THRESHOLD;
     }
 
     /// Orders `moves` in-place: best-first for the side to move.
