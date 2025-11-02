@@ -3,3 +3,13 @@ run:
 
 test:
     zig test -O ReleaseFast gomoku_test.zig
+
+wasm: wasm-build
+    bun index.js
+
+wasm-build:
+    zig build-exe -O ReleaseFast -target wasm32-freestanding \
+    -fno-entry \
+    --export=func \
+    -femit-bin=module.wasm module.zig
+    ls -al module.wasm
