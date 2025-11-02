@@ -1,6 +1,12 @@
 const std = @import("std");
 const eql = std.mem.eql;
 const testing = std.testing;
+const builtin = @import("builtin");
+
+const WASM = builtin.target.cpu.arch == .wasm32;
+
+extern fn console(msg: [*]const u8, len: usize) void;
+extern fn enter() void;
 
 const DEPTH = 5;
 const QDEPTH: i32 = 1; // tune 2..6 based on speed
@@ -83,18 +89,6 @@ pub const Move = struct {
     pub inline fn invalid(self: Move) bool {
         return !self.in();
     }
-
-    pub fn format(
-        self: *const Move,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        _ = fmt; // unused
-        _ = options; // unused
-        try writer.print("Move{{ r = {}, c = {} }}", .{ self.r, self.c });
-        @panic("not implemented");
-    }
 };
 
 pub const Stats = struct {
@@ -142,12 +136,20 @@ pub const Stats = struct {
     }
 
     pub fn print(self: *const Stats) void {
-        std.debug.print("stats:\n", .{});
-        std.debug.print("  moves_analyzed: {any} in {any}s\n", .{ self.moves_analyzed, ns_to_s(self.move_time_ns) });
-        std.debug.print("  quiescence_count: {any} time(s): {any}, avg(s): {any}\n", .{ self.quiescence_count, ns_to_s(self.quiescence_time_ns), ns_to_s(self.quiescence_time_avg_ns) });
-        std.debug.print("  available_moves calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.available_moves_calls, ns_to_s(self.available_moves_time_ns), ns_to_s(self.available_moves_time_avg_ns) });
-        std.debug.print("  check_pattern calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.check_pattern_calls, ns_to_s(self.check_pattern_time_ns), ns_to_s(self.check_pattern_time_avg_ns) });
-        std.debug.print("  a/b pruning count: {any}\n", .{self.pruning_count});
+        output("stats:\n", .{});
+        if (!WASM) {
+            output("- moves_analyzed: {any} in {any}s\n", .{ self.moves_analyzed, ns_to_s(self.move_time_ns) });
+            output("- quiescence_count: {any} time(s): {any}, avg(s): {any}\n", .{ self.quiescence_count, ns_to_s(self.quiescence_time_ns), ns_to_s(self.quiescence_time_avg_ns) });
+            output("- available_moves calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.available_moves_calls, ns_to_s(self.available_moves_time_ns), ns_to_s(self.available_moves_time_avg_ns) });
+            output("- check_pattern calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.check_pattern_calls, ns_to_s(self.check_pattern_time_ns), ns_to_s(self.check_pattern_time_avg_ns) });
+            output("- a/b pruning count: {any}\n", .{self.pruning_count});
+        } else {
+            output("- moves_analyzed: {any}\n", .{self.moves_analyzed});
+            output("- quiescence_count: {any}\n", .{self.quiescence_count});
+            output("- available_moves calls: {any}\n", .{self.available_moves_calls});
+            output("- check_pattern calls: {any}\n", .{self.check_pattern_calls});
+            output("- a/b pruning count: {any}\n", .{self.pruning_count});
+        }
     }
 };
 
@@ -258,11 +260,13 @@ pub const Game = struct {
     pub fn check_pattern(self: *Game, from: Move, dir: Move, player: Field) i32 {
         self.counters.check_pattern_calls += 1;
 
-        var start_time = std.time.Timer.start() catch @panic("timer start failed");
-        defer {
-            const elapsed = start_time.read();
-            self.counters.check_pattern_time_ns += elapsed;
-            self.counters.check_pattern_time_avg_ns = (self.counters.check_pattern_time_avg_ns + elapsed) / 2;
+        if (!WASM) {
+            var start_time = std.time.Timer.start() catch @panic("timer start failed");
+            defer {
+                const elapsed = start_time.read();
+                self.counters.check_pattern_time_ns += elapsed;
+                self.counters.check_pattern_time_avg_ns = (self.counters.check_pattern_time_avg_ns + elapsed) / 2;
+            }
         }
 
         var v = from;
@@ -394,11 +398,13 @@ pub const Game = struct {
     // ---------- (kept) batch scanner; useful for validation or profiling ----------
     pub fn check_patterns(self: *Game, player: Field) i32 {
         self.counters.check_patterns_calls += 1;
-        var start_time = std.time.Timer.start() catch @panic("check_patterns: timer start failed");
-        defer {
-            const elapsed = start_time.read();
-            self.counters.check_patterns_time_ns += elapsed;
-            self.counters.check_patterns_time_avg_ns = (self.counters.check_patterns_time_avg_ns + elapsed) / 2;
+        if (!WASM) {
+            var start_time = std.time.Timer.start() catch @panic("check_patterns: timer start failed");
+            defer {
+                const elapsed = start_time.read();
+                self.counters.check_patterns_time_ns += elapsed;
+                self.counters.check_patterns_time_avg_ns = (self.counters.check_patterns_time_avg_ns + elapsed) / 2;
+            }
         }
 
         var score: i32 = 0;
@@ -433,11 +439,14 @@ pub const Game = struct {
 
     pub fn available_moves(self: *Game, backing: *[NN]Move) []Move {
         self.counters.available_moves_calls += 1;
-        var start_time = std.time.Timer.start() catch @panic("available_moves: timer start failed");
-        defer {
-            const elapsed = start_time.read();
-            self.counters.available_moves_time_ns += elapsed;
-            self.counters.available_moves_time_avg_ns = (self.counters.available_moves_time_avg_ns + elapsed) / 2;
+
+        if (!WASM) {
+            var start_time = std.time.Timer.start() catch @panic("available_moves: timer start failed");
+            defer {
+                const elapsed = start_time.read();
+                self.counters.available_moves_time_ns += elapsed;
+                self.counters.available_moves_time_avg_ns = (self.counters.available_moves_time_avg_ns + elapsed) / 2;
+            }
         }
 
         var empties: usize = 0;
@@ -478,10 +487,12 @@ pub const Game = struct {
     }
 
     pub fn choose_move(self: *Game, depth: i32, player: Field) Move {
-        var start_time = std.time.Timer.start() catch @panic("choose_move: timer start failed");
-        defer {
-            const elapsed = start_time.read();
-            self.counters.move_time_ns = elapsed;
+        if (!WASM) {
+            var start_time = std.time.Timer.start() catch @panic("choose_move: timer start failed");
+            defer {
+                const elapsed = start_time.read();
+                self.counters.move_time_ns = elapsed;
+            }
         }
 
         var backing: [NN]Move = undefined;
@@ -658,11 +669,14 @@ pub const Game = struct {
         if (qdepth <= 0) return stand_pat;
 
         self.counters.quiescence_count += 1;
-        var start_time = std.time.Timer.start() catch @panic("quiescence: timer start failed");
-        defer {
-            const elapsed = start_time.read();
-            self.counters.quiescence_time_ns += elapsed;
-            self.counters.quiescence_time_avg_ns = (self.counters.quiescence_time_avg_ns + elapsed) / 2;
+
+        if (!WASM) {
+            var start_time = std.time.Timer.start() catch @panic("quiescence: timer start failed");
+            defer {
+                const elapsed = start_time.read();
+                self.counters.quiescence_time_ns += elapsed;
+                self.counters.quiescence_time_avg_ns = (self.counters.quiescence_time_avg_ns + elapsed) / 2;
+            }
         }
 
         // consider only "tactical/noisy" moves
@@ -705,7 +719,7 @@ pub const Game = struct {
     }
 
     pub fn print_board(self: *const Game) void {
-        std.debug.print("\n", .{});
+        output("\n", .{});
         for (self.board) |row| {
             for (row) |field| {
                 const c: u8 = switch (field) {
@@ -713,9 +727,9 @@ pub const Game = struct {
                     .human => 'X',
                     .computer => 'O',
                 };
-                std.debug.print("{c} ", .{c});
+                output("{c} ", .{c});
             }
-            std.debug.print("\n", .{});
+            output("\n", .{});
         }
     }
 
@@ -729,10 +743,10 @@ pub const Game = struct {
     const ANSI_BOLD = "\x1b[1m";
 
     pub fn print_board_at(self: *const Game, move: Move) void {
-        std.debug.print("\n", .{});
+        output("\n", .{});
         for (self.board, 0..) |row, r| {
             const first: u8 = if (r == move.r and move.c == 0) '[' else ' ';
-            std.debug.print("{c}", .{first});
+            output("{c}", .{first});
             for (row, 0..) |field, c| {
                 const v: struct { color: []const u8, player: u8 } = switch (field) {
                     .empty => .{ .color = ANSI_GREEN, .player = '.' },
@@ -744,9 +758,9 @@ pub const Game = struct {
                 const bold = if (is_move) ANSI_BOLD else "";
 
                 const bracket: u8 = if (r == move.r and c == move.c) ']' else (if (r == move.r and c == move.c - 1) '[' else ' ');
-                std.debug.print("{s}{s}{c}{s}{c}", .{ v.color, bold, v.player, ANSI_RESET, bracket });
+                output("{s}{s}{c}{s}{c}", .{ v.color, bold, v.player, ANSI_RESET, bracket });
             }
-            std.debug.print("\n", .{});
+            output("\n", .{});
         }
     }
 
@@ -772,6 +786,10 @@ pub const Game = struct {
 };
 
 pub fn main() void {
+    play();
+}
+
+pub export fn play() void {
     const board = [_][]const u8{
         "...............",
         "...............",
@@ -799,22 +817,22 @@ pub fn main() void {
     while (true) {
         game.counters.reset();
 
-        std.debug.print("thinking...\n", .{});
+        output("thinking...\n", .{});
         const move = game.choose_move(DEPTH, player);
         game.place(move, player);
         game.print_board_at(move);
-        std.debug.print("{any}: {any}\n", .{ player, move });
+        output("{any}: {any}\n", .{ player, move });
 
         const winner = game.check_win();
         if (winner != .empty) {
-            std.debug.print("winner: {any}\n", .{winner});
+            output("winner: {any}\n", .{winner});
             break;
         }
         player = if (player == .computer) .human else .computer;
 
         game.counters.print();
 
-        enter() catch {};
+        wait_enter() catch {};
     }
 }
 
@@ -912,8 +930,13 @@ fn build_patterns(comptime lines: []const u8) [count_non_empty_lines(lines)]Patt
 
 pub const patterns: []const Pattern = &build_patterns(PATTERNS);
 
-pub fn enter() !void {
-    std.debug.print("press enter to continue...\n", .{});
+pub fn wait_enter() !void {
+    if (WASM) {
+        enter();
+        return;
+    }
+
+    output("press enter to continue...\n", .{});
 
     var in_buf: [64]u8 = undefined;
     var in_reader = std.fs.File.stdin().readerStreaming(&in_buf);
@@ -924,5 +947,15 @@ pub fn enter() !void {
             else => return err,
         };
         if (b == '\n') break;
+    }
+}
+
+pub fn output(comptime fmt: []const u8, args: anytype) void {
+    if (WASM) {
+        var buffer: [1024]u8 = undefined;
+        const v = std.fmt.bufPrint(&buffer, fmt, args) catch return;
+        console(v.ptr, v.len);
+    } else {
+        std.debug.print(fmt, args);
     }
 }
