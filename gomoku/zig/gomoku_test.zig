@@ -10,48 +10,17 @@ const NN = gomoku.NN;
 const patterns = gomoku.patterns;
 
 test "choose move" {
-    const board = [_][]const u8{
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        ".......X.......",
-        ".......OX......",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-    };
-    var game = Game.from_text(&board);
+    var game = Game.init();
+    game.place(Move.at(7, 7), .human);
+    game.place(Move.at(8, 7), .computer);
+    game.place(Move.at(8, 8), .human);
 
     const move = game.choose_move(3, .computer);
     try testing.expectEqual(Move{ .r = 6, .c = 6 }, move);
 }
 
 test "available moves" {
-    const board = [_][]const u8{
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-    };
-    var game = Game.from_text(&board);
+    var game = Game.init();
 
     var backing: [NN]Move = undefined;
 
@@ -68,52 +37,30 @@ test "available moves" {
 }
 
 test "check pattern" {
-    const board = [_][]const u8{
-        "...............",
-        "..X............",
-        "...X...........",
-        "....X..........",
-        ".....X.........",
-        "...............",
-        ".......X.......",
-        ".......X.......",
-        ".......X.......",
-        ".......X.......",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-    };
+    var game = Game.init();
+    game.place(Move.at(1, 2), .human);
+    game.place(Move.at(2, 3), .human);
+    game.place(Move.at(3, 4), .human);
+    game.place(Move.at(4, 5), .human);
 
-    var game = Game.from_text(&board);
-    // game.print_board();
+    game.place(Move.at(6, 7), .human);
+    game.place(Move.at(7, 7), .human);
+    game.place(Move.at(8, 7), .human);
+    game.place(Move.at(9, 7), .human);
+
     const score = game.check_patterns(.human);
     try testing.expectEqual(score, 1544);
 }
 
 test "check winner" {
-    const board = [_][]const u8{
-        "...............",
-        "..X............",
-        "...X...........",
-        "....X..........",
-        ".....X.........",
-        "......X........",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-    };
+    var game = Game.init();
+    game.place(Move.at(1, 2), .human);
+    game.place(Move.at(2, 3), .human);
+    game.place(Move.at(3, 4), .human);
+    game.place(Move.at(4, 5), .human);
+    game.place(Move.at(5, 6), .human);
 
-    var game = Game.from_text(&board);
-    // game.print_board();
-    const winner = game.check_win();
+    const winner = game.check_win_at(Move.at(5, 6));
     try testing.expectEqual(.human, winner);
 }
 
@@ -145,12 +92,12 @@ test "build_patterns works" {
     comptime {
         try std.testing.expect(patterns.len == 16);
 
-        try std.testing.expect(eql(u8, patterns[0].pattern, "GGGGG"));
+        try std.testing.expect(eql(u8, patterns[0].value, "GGGGG"));
         try std.testing.expect(patterns[0].weight == 10_000);
-        try std.testing.expect(eql(u8, patterns[1].pattern, "_GGGG_"));
+        try std.testing.expect(eql(u8, patterns[1].value, "_GGGG_"));
         try std.testing.expect(patterns[1].weight == 500);
 
-        try std.testing.expect(eql(u8, patterns[15].pattern, "GG_"));
+        try std.testing.expect(eql(u8, patterns[15].value, "GG_"));
         try std.testing.expect(patterns[15].weight == 1);
     }
 }

@@ -16,7 +16,7 @@ const ORDER_MOVES = true; // tune true/false based on speed
 pub const N: i32 = 15;
 pub const NN: usize = N * N;
 
-// Keep evaluation sensitive to shortest scored pattern (currently 3..6).
+// keep evaluation sensitive to shortest scored pattern (currently 3..6)
 const MIN_EVAL_PATTERN_LEN: usize = 3;
 
 const Field = enum {
@@ -24,16 +24,6 @@ const Field = enum {
     human,
     computer,
 };
-
-inline fn left_to_right_diagonal_length(i: usize) usize {
-    const offset: i32 = @as(i32, @intCast(i)) - (N - 1); // r-c
-    return @intCast(N - @as(i32, @intCast(@abs(offset)))); // length = N - |r-c|
-}
-
-inline fn right_to_left_diagonal_length(i: usize) usize {
-    const index: i32 = @as(i32, @intCast(i)); // r+c
-    return @intCast(if (index < N) (index + 1) else ((2 * N - 1) - index));
-}
 
 inline fn player_index(player: Field) usize {
     return switch (player) {
@@ -55,6 +45,11 @@ inline fn left_to_right_diagonal_start(n: usize) Move {
     return Move.at(start_r, start_c);
 }
 
+inline fn left_to_right_diagonal_length(i: usize) usize {
+    const offset: i32 = @as(i32, @intCast(i)) - (N - 1); // r-c
+    return @intCast(N - @as(i32, @intCast(@abs(offset)))); // length = N - |r-c|
+}
+
 inline fn right_to_left_diagonal_index(r: i32, c: i32) usize {
     // r + c in [0 .. 2*N-2]
     return @intCast(r + c);
@@ -65,6 +60,11 @@ inline fn right_to_left_diagonal_start(n: usize) Move {
     const start_r: i32 = if (i < N) 0 else i - (N - 1);
     const start_c: i32 = if (i < N) i else N - 1;
     return Move.at(start_r, start_c);
+}
+
+inline fn right_to_left_diagonal_length(i: usize) usize {
+    const index: i32 = @as(i32, @intCast(i)); // r+c
+    return @intCast(if (index < N) (index + 1) else ((2 * N - 1) - index));
 }
 
 const DIRECTIONS = [_]struct { r: i32, c: i32 }{
@@ -93,7 +93,7 @@ pub const Move = struct {
 
 pub const Stats = struct {
     moves_analyzed: usize = 0,
-    move_time_ns: u64 = 0,
+    choose_move_time_ns: u64 = 0,
 
     quiescence_count: usize = 0,
     quiescence_time_ns: u64 = 0,
@@ -115,6 +115,7 @@ pub const Stats = struct {
 
     pub fn reset(self: *Stats) void {
         self.moves_analyzed = 0;
+        self.choose_move_time_ns = 0;
 
         self.quiescence_count = 0;
         self.quiescence_time_ns = 0;
@@ -138,7 +139,7 @@ pub const Stats = struct {
     pub fn print(self: *const Stats) void {
         output("stats:\n", .{});
         if (!WASM) {
-            output("- moves_analyzed: {any} in {any}s\n", .{ self.moves_analyzed, ns_to_s(self.move_time_ns) });
+            output("- moves_analyzed: {any} in {any}s\n", .{ self.moves_analyzed, ns_to_s(self.choose_move_time_ns) });
             output("- quiescence_count: {any} time(s): {any}, avg(s): {any}\n", .{ self.quiescence_count, ns_to_s(self.quiescence_time_ns), ns_to_s(self.quiescence_time_avg_ns) });
             output("- available_moves calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.available_moves_calls, ns_to_s(self.available_moves_time_ns), ns_to_s(self.available_moves_time_avg_ns) });
             output("- check_pattern calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.check_pattern_calls, ns_to_s(self.check_pattern_time_ns), ns_to_s(self.check_pattern_time_avg_ns) });
@@ -167,7 +168,7 @@ pub const Game = struct {
 
     counters: Stats = Stats{},
 
-    // Running sum of all line scores per player:
+    // running sum of all line scores per player:
     // totals[0] = human, totals[1] = computer
     totals: [2]i32 = .{ 0, 0 },
 
@@ -178,6 +179,34 @@ pub const Game = struct {
     // diagonals (↘ and ↙) have 2*N - 1 lines each
     diagonal_left_cache: [DIAGONALS][2]i32 = [_][2]i32{[_]i32{-1} ** 2} ** DIAGONALS, // ↘ (r - c constant)
     diagonal_right_cache: [DIAGONALS][2]i32 = [_][2]i32{[_]i32{-1} ** 2} ** DIAGONALS, // ↙ (r + c constant)
+
+    // frontier for move generation
+    move_stack: [NN]Move = undefined,
+    stack_len: usize = 0,
+
+    // per-position mark to avoid duplicates when building candidate list
+    // uses an epoch counter so it does not have to clear the array every time
+    marks: [N][N]u32 = [_][N]u32{[_]u32{0} ** N} ** N,
+    mark_epoch: u32 = 1,
+
+    inline fn mark_once(self: *Game, m: Move) bool {
+        const r: usize = @intCast(m.r);
+        const c: usize = @intCast(m.c);
+        if (self.marks[r][c] == self.mark_epoch) return false; // already added
+        self.marks[r][c] = self.mark_epoch;
+        return true;
+    }
+
+    inline fn next_epoch(self: *Game) void {
+        self.mark_epoch +%= 1; // wrapping add
+        if (self.mark_epoch == 0) {
+            // extremely unlikely, but keep it robust
+            inline for (0..N) |r| {
+                inline for (0..N) |c| self.marks[r][c] = 0;
+            }
+            self.mark_epoch = 1;
+        }
+    }
 
     pub inline fn at(self: *const Game, move: Move) Field {
         const r: usize = @intCast(move.r);
@@ -191,6 +220,7 @@ pub const Game = struct {
 
     pub inline fn place(self: *Game, move: Move, player: Field) void {
         if (move.invalid()) @panic("place: invalid position");
+        if (player == .empty) @panic("place: cannot place empty");
         if (self.at(move) != .empty) @panic("place: position already occupied");
 
         self.counters.moves_analyzed += 1;
@@ -198,6 +228,9 @@ pub const Game = struct {
         const r: usize = @intCast(move.r);
         const c: usize = @intCast(move.c);
         self.board[r][c] = player;
+
+        self.move_stack[self.stack_len] = move;
+        self.stack_len += 1;
 
         self.recompute_lines_at(move);
     }
@@ -209,6 +242,9 @@ pub const Game = struct {
         const r: usize = @intCast(move.r);
         const c: usize = @intCast(move.c);
         self.board[r][c] = .empty;
+
+        self.stack_len -= 1;
+        std.debug.assert(self.move_stack[self.stack_len].r == move.r and self.move_stack[self.stack_len].c == move.c);
 
         self.recompute_lines_at(move);
     }
@@ -224,21 +260,7 @@ pub const Game = struct {
         return true;
     }
 
-    pub fn check_win(self: *const Game) Field {
-        var r: i32 = 0;
-        while (r < N) : (r += 1) {
-            var c: i32 = 0;
-            while (c < N) : (c += 1) {
-                const m = Move.at(r, c);
-                if (self.empty_at(m)) continue;
-                const field = self.at(m);
-                if (self.check_win_at(m) != .empty) return field;
-            }
-        }
-        return .empty;
-    }
-
-    fn check_win_at(self: *const Game, move: Move) Field {
+    pub fn check_win_at(self: *const Game, move: Move) Field {
         const player = self.at(move);
         inline for (DIRECTIONS) |dir| {
             var count: i32 = 1;
@@ -260,9 +282,12 @@ pub const Game = struct {
     pub fn check_pattern(self: *Game, from: Move, dir: Move, player: Field) i32 {
         self.counters.check_pattern_calls += 1;
 
+        var start_time: TimerType = undefined;
         if (!WASM) {
-            var start_time = std.time.Timer.start() catch @panic("timer start failed");
-            defer {
+            start_time = TimerType.start() catch @panic("check_pattern: timer start failed");
+        }
+        defer {
+            if (!WASM) {
                 const elapsed = start_time.read();
                 self.counters.check_pattern_time_ns += elapsed;
                 self.counters.check_pattern_time_avg_ns = (self.counters.check_pattern_time_avg_ns + elapsed) / 2;
@@ -284,12 +309,13 @@ pub const Game = struct {
             i += 1;
         }
         const line = buf[0..i];
+
         var score: i32 = 0;
         inline for (patterns) |pattern| {
             var j: usize = 0;
-            while (j + pattern.len <= line.len) : (j += 1) {
-                const part = line[j .. j + pattern.len];
-                const match = std.mem.eql(u8, part, pattern.pattern);
+            const L = pattern.value.len;
+            while (j + L <= line.len) : (j += 1) {
+                const match = std.mem.eql(u8, line[j .. j + L], pattern.value);
                 if (match) {
                     score += pattern.weight;
                     if (score >= 10_000) return score;
@@ -299,8 +325,8 @@ pub const Game = struct {
         return score;
     }
 
-    fn update_player_total(self: *Game, prev: i32, new: i32, p: Field) void {
-        const i = player_index(p);
+    inline fn update_player_total(self: *Game, prev: i32, new: i32, player: Field) void {
+        const i = player_index(player);
         self.totals[i] += (new - prev);
     }
 
@@ -395,12 +421,16 @@ pub const Game = struct {
         self.evaluation = self.totals[player_index(.computer)] - self.totals[player_index(.human)];
     }
 
-    // ---------- (kept) batch scanner; useful for validation or profiling ----------
+    // batch scanner: useful for validation or profiling
     pub fn check_patterns(self: *Game, player: Field) i32 {
         self.counters.check_patterns_calls += 1;
+
+        var start_time: TimerType = undefined;
         if (!WASM) {
-            var start_time = std.time.Timer.start() catch @panic("check_patterns: timer start failed");
-            defer {
+            start_time = TimerType.start() catch @panic("check_patterns: timer start failed");
+        }
+        defer {
+            if (!WASM) {
                 const elapsed = start_time.read();
                 self.counters.check_patterns_time_ns += elapsed;
                 self.counters.check_patterns_time_avg_ns = (self.counters.check_patterns_time_avg_ns + elapsed) / 2;
@@ -433,93 +463,109 @@ pub const Game = struct {
         return score;
     }
 
-    pub fn evaluate_static(self: *Game) i32 {
+    pub inline fn evaluate_static(self: *Game) i32 {
         return self.evaluation;
     }
 
     pub fn available_moves(self: *Game, backing: *[NN]Move) []Move {
         self.counters.available_moves_calls += 1;
 
+        var start_time: TimerType = undefined;
         if (!WASM) {
-            var start_time = std.time.Timer.start() catch @panic("available_moves: timer start failed");
-            defer {
+            start_time = TimerType.start() catch @panic("available_moves: timer start failed");
+        }
+        defer {
+            if (!WASM) {
                 const elapsed = start_time.read();
                 self.counters.available_moves_time_ns += elapsed;
                 self.counters.available_moves_time_avg_ns = (self.counters.available_moves_time_avg_ns + elapsed) / 2;
             }
         }
 
-        var empties: usize = 0;
+        // play center if first move
+        if (self.stack_len == 0) {
+            backing[0] = Move.at(@intCast(N / 2), @intCast(N / 2));
+            return backing[0..1];
+        }
+
+        // build candidates by scanning the neighborhood around each played move
+        // radius 1 (8-neighborhood) is typical; bump to 2 if you want a bit more breadth
+        const R: i32 = 1;
+
+        self.next_epoch(); // start fresh dedup epoch
         var n: usize = 0;
-        inline for (0..N) |r| {
-            inline for (0..N) |c| {
-                const move = Move.at(@intCast(r), @intCast(c));
-                if (self.empty_at(move)) {
-                    empties += 1;
-                    if (self.have_adjacent_fields(move)) {
-                        backing[n] = move;
+
+        var i: usize = 0;
+        while (i < self.stack_len) : (i += 1) {
+            const origin = self.move_stack[i];
+
+            var dr: i32 = -R;
+            while (dr <= R) : (dr += 1) {
+                var dc: i32 = -R;
+                while (dc <= R) : (dc += 1) {
+                    if (dr == 0 and dc == 0) continue;
+                    const v = Move.at(origin.r + dr, origin.c + dc);
+                    if (!v.in()) continue;
+                    if (!self.empty_at(v)) continue;
+
+                    // dedup across all origins
+                    if (!self.mark_once(v)) continue;
+
+                    backing[n] = v;
+                    n += 1;
+                }
+            }
+        }
+
+        comptime {
+            @setEvalBranchQuota(100_000);
+        }
+
+        // fallback: if somehow no candidates (almost-full board edge case), scan once.
+        if (n == 0) {
+            inline for (0..N) |r| {
+                inline for (0..N) |c| {
+                    const m = Move.at(@intCast(r), @intCast(c));
+                    if (self.empty_at(m)) {
+                        backing[n] = m;
                         n += 1;
                     }
                 }
             }
         }
-        if (empties == NN) {
-            backing[0] = Move.at(@intCast(N / 2), @intCast(N / 2));
-            return backing[0..1];
-        }
+
         return backing[0..n];
     }
 
-    fn have_adjacent_fields(self: *const Game, m: Move) bool {
-        const M = 1;
-        inline for (0..M + 2) |r_| {
-            const r: i32 = @as(i32, r_) - M;
-            inline for (0..M + 2) |c_| {
-                const c: i32 = @as(i32, c_) - M;
-                if (r == 0 and c == 0) continue;
-                const v = Move.at(m.r + r, m.c + c);
-                if (v.in() and !self.empty_at(v)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+    const TimerType = if (WASM) void else std.time.Timer;
 
     pub fn choose_move(self: *Game, depth: i32, player: Field) Move {
+        var start_time: TimerType = undefined;
         if (!WASM) {
-            var start_time = std.time.Timer.start() catch @panic("choose_move: timer start failed");
-            defer {
+            start_time = TimerType.start() catch @panic("choose_move: timer start failed");
+        }
+        defer {
+            if (!WASM) {
                 const elapsed = start_time.read();
-                self.counters.move_time_ns = elapsed;
+                self.counters.choose_move_time_ns = elapsed;
             }
         }
 
         var backing: [NN]Move = undefined;
         const moves = self.available_moves(&backing);
         if (moves.len == 0) @panic("choose_move: no available moves");
-
         if (moves.len == 1) return moves[0];
 
         self.order_moves(moves, player); // pre-order for first move optimization
 
         var best_move: ?Move = null;
-        var best_value: i32 = if (player == .computer)
-            -std.math.maxInt(i32)
-        else
-            std.math.maxInt(i32);
+        var best_value: i32 = if (player == .computer) -std.math.maxInt(i32) else std.math.maxInt(i32);
 
         for (moves) |move| {
             self.place(move, player);
 
-            // If this move wins immediately, no need to search deeper.
-            const winner = self.check_win_at(move);
-            const value: i32 = if (winner != .empty)
-                (if (winner == .computer) 1_000_000 else -1_000_000)
-            else blk: {
-                const opponent: Field = if (player == .computer) .human else .computer;
-                break :blk self.minimax(depth - 1, opponent, -std.math.maxInt(i32), std.math.maxInt(i32));
-            };
+            const opponent: Field = if (player == .computer) .human else .computer;
+            const value = self.minimax(depth - 1, opponent, -std.math.maxInt(i32), std.math.maxInt(i32), move);
 
             self.unplace(move);
 
@@ -537,12 +583,11 @@ pub const Game = struct {
         }
 
         if (best_move == null) @panic("choose_move: no best move found");
-
         return best_move.?;
     }
 
-    fn minimax(self: *Game, depth: i32, player: Field, alpha_: i32, beta_: i32) i32 {
-        const winner = self.check_win();
+    fn minimax(self: *Game, depth: i32, player: Field, alpha_: i32, beta_: i32, entry_move: Move) i32 {
+        const winner = self.check_win_at(entry_move);
         if (winner != .empty) {
             return if (winner == .computer) 1_000_000 else -1_000_000;
         }
@@ -566,7 +611,7 @@ pub const Game = struct {
         for (moves) |move| {
             self.place(move, player);
             const opponent: Field = if (player == .computer) .human else .computer;
-            const score = self.minimax(depth - 1, opponent, alpha, beta);
+            const score = self.minimax(depth - 1, opponent, alpha, beta, move);
             self.unplace(move);
 
             if (player == .computer) {
@@ -595,20 +640,20 @@ pub const Game = struct {
     /// Returns true if this move is "tactical": wins now, blocks an immediate win,
     /// or swings eval by a large amount (forcing moves / big threats).
     fn is_tactical(self: *Game, move: Move, player: Field) bool {
-        // 1) our immediate win?
+        // 1. our immediate win?
         self.place(move, player);
         var winner = self.check_win_at(move);
         self.unplace(move);
         if (winner == player) return true;
 
-        // 2) blocks opponent's immediate win?
+        // 2. blocks opponent's immediate win?
         const opponents: Field = if (player == .computer) .human else .computer;
         self.place(move, opponents);
         winner = self.check_win_at(move);
         self.unplace(move);
         if (winner == opponents) return true; // if opponent could win by playing here, blocking is tactical
 
-        // 3) big heuristic swing?
+        // 3. big heuristic swing?
         const delta = self.move_delta(move, player);
         return @abs(delta) >= QUIET_THRESHOLD;
     }
@@ -653,7 +698,6 @@ pub const Game = struct {
     }
 
     fn quiescence(self: *Game, qdepth: i32, player: Field, alpha_: i32, beta_: i32) i32 {
-        // stand-pat evaluation (always computer's perspective)
         var alpha = alpha_;
         var beta = beta_;
         const stand_pat = self.evaluate_static();
@@ -670,22 +714,23 @@ pub const Game = struct {
 
         self.counters.quiescence_count += 1;
 
+        var start_time: TimerType = undefined;
         if (!WASM) {
-            var start_time = std.time.Timer.start() catch @panic("quiescence: timer start failed");
-            defer {
+            start_time = TimerType.start() catch @panic("quiescence: timer start failed");
+        }
+        defer {
+            if (!WASM) {
                 const elapsed = start_time.read();
                 self.counters.quiescence_time_ns += elapsed;
                 self.counters.quiescence_time_avg_ns = (self.counters.quiescence_time_avg_ns + elapsed) / 2;
             }
         }
 
-        // consider only "tactical/noisy" moves
         var backing: [NN]Move = undefined;
         var noisy_backing: [NN]Move = undefined;
 
         const moves = self.available_moves(&backing);
 
-        // filter to tactical
         var n: usize = 0;
         for (moves) |move| {
             if (self.is_tactical(move, player)) {
@@ -697,11 +742,31 @@ pub const Game = struct {
 
         if (noisy.len == 0) return stand_pat;
 
-        // pre-order noisy moves
         self.order_moves(noisy, player);
 
         for (noisy) |move| {
             self.place(move, player);
+
+            // explicit terminal check to cut immediately on wins
+            const winner = self.check_win_at(move);
+            if (winner != .empty) {
+                const score: i32 = if (winner == .computer) 1_000_000 else -1_000_000;
+                self.unplace(move);
+
+                if (player == .computer) {
+                    if (score > alpha) alpha = score;
+                } else {
+                    if (score < beta) beta = score;
+                }
+
+                if (beta <= alpha) {
+                    self.counters.pruning_count += 1;
+                    break;
+                }
+                // continue to next noisy move if no cutoff
+                continue;
+            }
+
             const opponents: Field = if (player == .computer) .human else .computer;
             const score = self.quiescence(qdepth - 1, opponents, alpha, beta);
             self.unplace(move);
@@ -764,21 +829,11 @@ pub const Game = struct {
         }
     }
 
-    pub fn from_text(lines: []const []const u8) Game {
+    pub fn init() Game {
         var game = Game{};
-        var r: i32 = 0;
-        while (r < N) : (r += 1) {
-            const line = lines[@intCast(r)];
-            var c: i32 = 0;
-            while (c < N) : (c += 1) {
-                const ch = line[@intCast(c)];
-                const field: Field = switch (ch) {
-                    'X' => .human,
-                    'O' => .computer,
-                    '.' => .empty,
-                    else => unreachable,
-                };
-                game.place(Move.at(r, c), field);
+        for (0..N) |r| {
+            for (0..N) |c| {
+                game.board[@intCast(r)][@intCast(c)] = .empty;
             }
         }
         return game;
@@ -790,24 +845,7 @@ pub fn main() void {
 }
 
 pub export fn play() void {
-    const board = [_][]const u8{
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-        "...............",
-    };
-    var game = Game.from_text(&board);
+    var game = Game.init();
 
     const first_move = Move.at(7, 7);
     game.place(first_move, .human);
@@ -823,7 +861,7 @@ pub export fn play() void {
         game.print_board_at(move);
         output("{any}: {any}\n", .{ player, move });
 
-        const winner = game.check_win();
+        const winner = game.check_win_at(move);
         if (winner != .empty) {
             output("winner: {any}\n", .{winner});
             break;
@@ -836,99 +874,29 @@ pub export fn play() void {
     }
 }
 
-const PATTERNS =
-    \\ GGGGG,10000
-    \\ _GGGG_,500
-    \\ GGG_G,100
-    \\ GG_GG,100
-    \\ G_GGG,100
-    \\ _GGGG,100
-    \\ GGGG_,100
-    \\ _GG_G_,10
-    \\ _G_GG_,10
-    \\ _GGG_,10
-    \\ GGG_,10
-    \\ _GGG,10
-    \\ _G_G_,2
-    \\ _GG_,2
-    \\ _GG,1
-    \\ GG_,1
-;
-
-const Pattern = struct {
-    pattern: []const u8, // slice into the multiline literal
-    len: usize,
-    weight: i32,
+pub const patterns: [16]Pattern = [_]Pattern{
+    Pattern{ .value = "GGGGG", .weight = 10000 },
+    Pattern{ .value = "_GGGG_", .weight = 500 },
+    Pattern{ .value = "GGG_G", .weight = 100 },
+    Pattern{ .value = "GG_GG", .weight = 100 },
+    Pattern{ .value = "G_GGG", .weight = 100 },
+    Pattern{ .value = "_GGGG", .weight = 100 },
+    Pattern{ .value = "GGGG_", .weight = 100 },
+    Pattern{ .value = "_GG_G_", .weight = 10 },
+    Pattern{ .value = "_G_GG_", .weight = 10 },
+    Pattern{ .value = "_GGG_", .weight = 10 },
+    Pattern{ .value = "GGG_", .weight = 10 },
+    Pattern{ .value = "_GGG", .weight = 10 },
+    Pattern{ .value = "_G_G_", .weight = 2 },
+    Pattern{ .value = "_GG_", .weight = 2 },
+    Pattern{ .value = "_GG", .weight = 1 },
+    Pattern{ .value = "GG_", .weight = 1 },
 };
 
-inline fn is_ws(c: u8) bool {
-    return switch (c) {
-        ' ', '\t', '\r' => true,
-        else => false,
-    };
-}
-
-fn trim_slice(v: []const u8) []const u8 {
-    var start: usize = 0;
-    var end: usize = v.len;
-
-    while (start < end and is_ws(v[start])) start += 1;
-    while (end > start and is_ws(v[end - 1])) end -= 1;
-
-    return v[start..end];
-}
-
-fn count_non_empty_lines(comptime lines: []const u8) comptime_int {
-    var count: usize = 0;
-    var i: usize = 0;
-    var start: usize = 0;
-    while (i <= lines.len) : (i += 1) {
-        if (i == lines.len or lines[i] == '\n') {
-            const line = trim_slice(lines[start..i]);
-            if (line.len != 0) count += 1;
-            start = i + 1;
-        }
-    }
-    return count;
-}
-
-fn build_patterns(comptime lines: []const u8) [count_non_empty_lines(lines)]Pattern {
-    comptime {
-        @setEvalBranchQuota(100_000);
-    }
-    var v: [count_non_empty_lines(lines)]Pattern = undefined;
-
-    var n: usize = 0;
-
-    var start: usize = 0;
-    var i: usize = 0;
-    while (i <= lines.len) : (i += 1) {
-        if (i == lines.len or lines[i] == '\n') {
-            var line = trim_slice(lines[start..i]);
-            if (line.len != 0) {
-                const command_index_maybe = std.mem.indexOfScalar(u8, line, ',');
-                if (command_index_maybe == null) @compileError("missing comma: \"" ++ line ++ "\"");
-                const comma_index = command_index_maybe.?;
-
-                const patterns_slice = trim_slice(line[0..comma_index]);
-                const weight_slice = trim_slice(line[comma_index + 1 ..]);
-
-                const weight = std.fmt.parseInt(i32, weight_slice, 10) catch @compileError("invalid weight in line: \"" ++ line ++ "\"");
-
-                v[n] = .{
-                    .pattern = patterns_slice, // slice into the original literal (static storage)
-                    .len = patterns_slice.len,
-                    .weight = weight,
-                };
-                n += 1;
-            }
-            start = i + 1;
-        }
-    }
-    return v;
-}
-
-pub const patterns: []const Pattern = &build_patterns(PATTERNS);
+const Pattern = struct {
+    value: []const u8,
+    weight: i32,
+};
 
 pub fn wait_enter() !void {
     if (WASM) {
