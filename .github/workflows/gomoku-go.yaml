@@ -1,4 +1,4 @@
-name: gomoku
+name: gomoku-go
 on:
     push:
         branches: ["main"]

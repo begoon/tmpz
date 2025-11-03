@@ -1,4 +1,4 @@
-name: gomoku
+name: gomoku-zig
 on:
     push:
         branches: ["main"]
