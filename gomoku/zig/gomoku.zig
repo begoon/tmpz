@@ -92,7 +92,7 @@ pub const Move = struct {
 };
 
 pub const Stats = struct {
-    moves_analyzed: usize = 0,
+    analyzed_moves: usize = 0,
     choose_move_time_ns: u64 = 0,
 
     quiescence_count: usize = 0,
@@ -114,7 +114,7 @@ pub const Stats = struct {
     pruning_count: usize = 0,
 
     pub fn reset(self: *Stats) void {
-        self.moves_analyzed = 0;
+        self.analyzed_moves = 0;
         self.choose_move_time_ns = 0;
 
         self.quiescence_count = 0;
@@ -139,13 +139,13 @@ pub const Stats = struct {
     pub fn print(self: *const Stats) void {
         output("stats:\n", .{});
         if (!WASM) {
-            output("- moves_analyzed: {any} in {any}s\n", .{ self.moves_analyzed, ns_to_s(self.choose_move_time_ns) });
+            output("- analyzed_moves: {any} in {any}s\n", .{ self.analyzed_moves, ns_to_s(self.choose_move_time_ns) });
             output("- quiescence_count: {any} time(s): {any}, avg(s): {any}\n", .{ self.quiescence_count, ns_to_s(self.quiescence_time_ns), ns_to_s(self.quiescence_time_avg_ns) });
             output("- available_moves calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.available_moves_calls, ns_to_s(self.available_moves_time_ns), ns_to_s(self.available_moves_time_avg_ns) });
             output("- check_pattern calls: {any}, time(s): {any}, avg(s): {any}\n", .{ self.check_pattern_calls, ns_to_s(self.check_pattern_time_ns), ns_to_s(self.check_pattern_time_avg_ns) });
             output("- a/b pruning count: {any}\n", .{self.pruning_count});
         } else {
-            output("- moves_analyzed: {any}\n", .{self.moves_analyzed});
+            output("- analyzed_moves: {any}\n", .{self.analyzed_moves});
             output("- quiescence_count: {any}\n", .{self.quiescence_count});
             output("- available_moves calls: {any}\n", .{self.available_moves_calls});
             output("- check_pattern calls: {any}\n", .{self.check_pattern_calls});
@@ -223,7 +223,7 @@ pub const Game = struct {
         if (player == .empty) @panic("place: cannot place empty");
         if (self.at(move) != .empty) @panic("place: position already occupied");
 
-        self.counters.moves_analyzed += 1;
+        self.counters.analyzed_moves += 1;
 
         const r: usize = @intCast(move.r);
         const c: usize = @intCast(move.c);
@@ -561,7 +561,9 @@ pub const Game = struct {
         var best_move: ?Move = null;
         var best_value: i32 = if (player == .computer) -std.math.maxInt(i32) else std.math.maxInt(i32);
 
-        for (moves) |move| {
+        for (moves, 1..) |move, i| {
+            progress(i, moves.len, &self.counters);
+
             self.place(move, player);
 
             const opponent: Field = if (player == .computer) .human else .computer;
@@ -926,4 +928,13 @@ pub fn output(comptime fmt: []const u8, args: anytype) void {
     } else {
         std.debug.print(fmt, args);
     }
+}
+
+pub fn progress(i: usize, n: usize, stats: *const Stats) void {
+    if (builtin.is_test) {
+        return;
+    }
+    const crlf = if (i == n) "\n" else "\r";
+    const percent: f64 = @as(f64, @floatFromInt(i)) / @as(f64, @floatFromInt(n)) * 100.0;
+    output("{any: <.2}% ({any}/{any}) ({d}) {s}", .{ percent, i, n, stats.analyzed_moves, crlf });
 }
