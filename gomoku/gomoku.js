@@ -13,9 +13,10 @@ const { instance } = await WebAssembly.instantiateStreaming(fetch("file://" + ur
         enter: () => {
             prompt("press enter to continue...");
         },
+        status: (ptr, len) => {},
     },
 });
 
-const { play } = instance.exports;
+const { loopback } = instance.exports;
 
-play();
+loopback();

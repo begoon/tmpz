@@ -6,6 +6,7 @@ const builtin = @import("builtin");
 const WASM = builtin.target.cpu.arch == .wasm32;
 
 extern fn console(msg: [*]const u8, len: usize) void;
+extern fn status(msg: [*]const u8, len: usize) void;
 extern fn enter() void;
 
 const DEPTH = 5;
@@ -19,7 +20,7 @@ pub const NN: usize = N * N;
 // keep evaluation sensitive to shortest scored pattern (currently 3..6)
 const MIN_EVAL_PATTERN_LEN: usize = 3;
 
-const Field = enum {
+pub const Field = enum {
     empty,
     human,
     computer,
@@ -218,6 +219,10 @@ pub const Game = struct {
         return self.at(move) == .empty;
     }
 
+    pub inline fn place_at(self: *Game, r: i32, c: i32, player: Field) void {
+        self.place(Move.at(r, c), player);
+    }
+
     pub inline fn place(self: *Game, move: Move, player: Field) void {
         if (move.invalid()) @panic("place: invalid position");
         if (player == .empty) @panic("place: cannot place empty");
@@ -233,6 +238,10 @@ pub const Game = struct {
         self.stack_len += 1;
 
         self.recompute_lines_at(move);
+    }
+
+    pub inline fn unplace_at(self: *Game, r: i32, c: i32) void {
+        self.unplace(Move.at(r, c));
     }
 
     pub inline fn unplace(self: *Game, move: Move) void {
@@ -540,6 +549,8 @@ pub const Game = struct {
     const TimerType = if (WASM) void else std.time.Timer;
 
     pub fn choose_move(self: *Game, depth: i32, player: Field) Move {
+        self.counters.reset();
+
         var start_time: TimerType = undefined;
         if (!WASM) {
             start_time = TimerType.start() catch @panic("choose_move: timer start failed");
@@ -787,7 +798,8 @@ pub const Game = struct {
 
     pub fn print_board(self: *const Game) void {
         output("\n", .{});
-        for (self.board) |row| {
+        for (self.board, 0..) |row, r| {
+            output("{d: <2} | ", .{r});
             for (row) |field| {
                 const c: u8 = switch (field) {
                     .empty => '.',
@@ -812,6 +824,7 @@ pub const Game = struct {
     pub fn print_board_at(self: *const Game, move: Move) void {
         output("\n", .{});
         for (self.board, 0..) |row, r| {
+            output("{d: <2} | ", .{r});
             const first: u8 = if (r == move.r and move.c == 0) '[' else ' ';
             output("{c}", .{first});
             for (row, 0..) |field, c| {
@@ -843,10 +856,10 @@ pub const Game = struct {
 };
 
 pub fn main() void {
-    play();
+    loopback();
 }
 
-pub export fn play() void {
+pub export fn loopback() void {
     var game = Game.init();
 
     const first_move = Move.at(7, 7);
@@ -855,8 +868,6 @@ pub export fn play() void {
 
     var player: Field = .computer;
     while (true) {
-        game.counters.reset();
-
         output("thinking...\n", .{});
         const move = game.choose_move(DEPTH, player);
         game.place(move, player);
@@ -936,5 +947,15 @@ pub fn progress(i: usize, n: usize, stats: *const Stats) void {
     }
     const crlf = if (i == n) "\n" else "\r";
     const percent: f64 = @as(f64, @floatFromInt(i)) / @as(f64, @floatFromInt(n)) * 100.0;
-    output("{any: <.2}% ({any}/{any}) ({d}) {s}", .{ percent, i, n, stats.analyzed_moves, crlf });
+
+    var buffer: [1024]u8 = undefined;
+    const fmt = "{any: <.2}% ({any}/{any}) ({d}) {s}";
+    const args = .{ percent, i, n, stats.analyzed_moves, crlf };
+
+    const v = std.fmt.bufPrint(&buffer, fmt, args) catch return;
+    output("{s}", .{v});
+
+    if (WASM) {
+        status(v.ptr, v.len);
+    }
 }
