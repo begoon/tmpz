@@ -140,7 +140,12 @@ var (
 	verbose *bool   = flag.Bool("verbose", false, "verbose")
 )
 
-var CommonFolders = []string{".venv", "__pycache__", "node_modules", ".mypy_cache", ".pytest_cache"}
+var CommonFolders = []string{
+	".venv", "__pycache__", ".mypy_cache", ".pytest_cache", // python
+	"node_modules",          // node
+	".zig-cache", "zig-out", // zig
+	"target", // rust
+}
 
 type Settings struct {
 	Folders []string `json:"folders"`
@@ -195,9 +200,10 @@ func main() {
 	regexPattern := flag.Arg(1)
 	if regexPattern == "" {
 		prompt := &survey.MultiSelect{
-			Message: "where to search:",
-			Options: CommonFolders,
-			Default: settings.Folders,
+			Message:  "where to search:",
+			Options:  CommonFolders,
+			Default:  settings.Folders,
+			PageSize: 10,
 		}
 		folders := []string{}
 		err := survey.AskOne(prompt, &folders, survey.WithValidator(survey.Required))
