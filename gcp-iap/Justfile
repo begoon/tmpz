@@ -1,0 +1,19 @@
+import '.env'
+
+rig:
+    go run main.go \
+    -url https://cms.rig.chiro.iproov.io \
+    -path /health \
+    -audience {{ RIG_AUDIENCE }}
+
+canary:
+    go run main.go \
+    -url https://cms.canary.chiro.iproov.io \
+    -path /health \
+    -audience {{ CANARY_AUDIENCE }}
+
+console:
+    go run main.go \
+    -url https://console.chiro.iproov.io \
+    -path /health \
+    -audience {{ CONSOLE_AUDIENCE }}
