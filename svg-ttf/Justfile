@@ -1,0 +1,5 @@
+build:
+     python main.py rk_font.bin svg rk86font.ttf
+
+serve:
+    python -m http.server 8000

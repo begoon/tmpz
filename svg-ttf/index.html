@@ -1,0 +1,37 @@
+<style>
+    @font-face {
+        font-family: "Radio-86RKPixel";
+        src: url("rk86font.ttf") format("truetype");
+    }
+    body {
+        font-family: "Radio-86RKPixel";
+        font-size: 32px;
+    }
+    img {
+        image-rendering: pixelated;
+    }
+</style>
+
+<div style="display: flex; gap: 50px; background-color: black">
+    <div id="table" style="display: grid; grid-template-columns: repeat(16, 1ch); gap: 2px 4px"></div>
+    <div id="glyphs" style="display: grid; grid-template-columns: repeat(16, 1ch); gap: 2px 4px"></div>
+</div>
+
+<script>
+    Array.from({ length: 256 }, (_, i) => {
+        const e = document.createElement("span");
+        e.textContent = String.fromCodePoint(0x100 + i);
+        e.style.color = "white";
+        e.style.width = "1ch";
+        e.style.border = "1px solid red";
+        e.style.textAlign = "center";
+        document.getElementById("table").appendChild(e);
+        // ---
+        const img = document.createElement("img");
+        const hex = i.toString(16).toUpperCase().padStart(2, "0");
+        img.src = `svg/glyph_${hex}.svg`;
+        img.style.width = "1ch";
+        img.style.border = "1px solid red";
+        document.getElementById("glyphs").appendChild(img);
+    });
+</script>
