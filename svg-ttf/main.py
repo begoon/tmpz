@@ -30,8 +30,6 @@ GLYPH_ADVANCE = GLYPH_WIDTH_PIXELS * FONT_PIXEL_SIZE  # 6*100 = 600
 SVG_BACKGROUND_COLOR = "black"
 SVG_PIXEL_COLOR = "lightgreen"
 
-UNICODE_OFFSET = 0x0100
-
 
 def read_bitmap(path):
     data = Path(path).read_bytes()
@@ -94,6 +92,7 @@ def sprite_sheet_svg(all_glyph_bits):
     parts.append('<?xml version="1.0" encoding="UTF-8"?>')
     parts.append(
         f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'shape-rendering="crispEdges" '
         f'width="{sheet_width}" height="{sheet_height}" '
         f'viewBox="0 0 {sheet_width} {sheet_height}">'
     )
@@ -122,15 +121,15 @@ def sprite_sheet_svg(all_glyph_bits):
 
 
 def build_ttf_with_fonttools(all_glyph_bits, ttf_path):
-    fb = FontBuilder(FONT_EM, isTTF=True)
+    builder = FontBuilder(FONT_EM, isTTF=True)
 
     # 1) Glyph order
     glyph_order = [".notdef"] + [f"g{code:02X}" for code in range(NUM_GLYPHS)]
-    fb.setupGlyphOrder(glyph_order)
+    builder.setupGlyphOrder(glyph_order)
 
     # 2) Character map: map 0x00..0xFF -> g00..gFF (with offset)
-    cmap = {UNICODE_OFFSET + code: f"g{code:02X}" for code in range(NUM_GLYPHS)}
-    fb.setupCharacterMap(cmap)
+    cmap = {0x100 + code: f"g{code:02X}" for code in range(NUM_GLYPHS)}
+    builder.setupCharacterMap(cmap)
 
     # 3) Build glyphs and metrics
     glyphs = {}
@@ -183,14 +182,14 @@ def build_ttf_with_fonttools(all_glyph_bits, ttf_path):
 
         metrics[name] = (GLYPH_ADVANCE, lsb)
 
-    fb.setupGlyf(glyphs)
-    fb.setupHorizontalMetrics(metrics)
+    builder.setupGlyf(glyphs)
+    builder.setupHorizontalMetrics(metrics)
 
     # 4) Basic vertical metrics
-    fb.setupHorizontalHeader(ascent=FONT_ASCENT, descent=-FONT_DESCENT)
+    builder.setupHorizontalHeader(ascent=FONT_ASCENT, descent=-FONT_DESCENT)
 
     # 5) OS/2 table
-    fb.setupOS2(
+    builder.setupOS2(
         sTypoAscender=FONT_ASCENT,
         sTypoDescender=-FONT_DESCENT,
         sTypoLineGap=0,
@@ -209,12 +208,12 @@ def build_ttf_with_fonttools(all_glyph_bits, ttf_path):
         psName="Radio86RKPixel-Regular",
         version="Version 1.0",
     )
-    fb.setupNameTable(nameStrings)
+    builder.setupNameTable(nameStrings)
 
     # 7) post table (monospaced-ish)
-    fb.setupPost()
+    builder.setupPost()
 
-    fb.save(str(ttf_path))
+    builder.save(str(ttf_path))
 
 
 def main(bitmap_path, svg_dir, ttf_path):
@@ -246,7 +245,8 @@ def main(bitmap_path, svg_dir, ttf_path):
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print(
-            f"Usage: {sys.argv[0]} <font_bitmap.bin> <output_svg_dir> <output_font.ttf>",
+            f"usage: {sys.argv[0]} "
+            f"<font_bitmap.bin> <output_svg_dir> <output_font.ttf>",
             file=sys.stderr,
         )
         sys.exit(1)

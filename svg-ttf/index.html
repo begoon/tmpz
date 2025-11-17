@@ -10,28 +10,62 @@
     img {
         image-rendering: pixelated;
     }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(16, 1ch);
+        gap: 2px 4px;
+    }
 </style>
 
-<div style="display: flex; gap: 50px; background-color: black">
-    <div id="table" style="display: grid; grid-template-columns: repeat(16, 1ch); gap: 2px 4px"></div>
-    <div id="glyphs" style="display: grid; grid-template-columns: repeat(16, 1ch); gap: 2px 4px"></div>
+<div style="display: flex; gap: 10px; background-color: black; padding: 10px">
+    <div id="table" class="grid"></div>
+    <div id="glyphs" class="grid"></div>
+    <img src="svg/sprite.svg" style="image-rendering: pixelated; height: 600px; border: 1px solid red" />
 </div>
 
+<span
+    id="tff-preview"
+    style="
+        font-size: 4em;
+        border: 3px solid green;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 10em;
+        color: white;
+        background-color: black;
+    "
+></span>
+<span style="position: fixed; left: 0; bottom: 0; display: inline-block; align-items: top">
+    <span id="preview-code" style="font-size: 2em"></span>
+</span>
+
 <script>
+    const $ = (id) => document.getElementById(id);
     Array.from({ length: 256 }, (_, i) => {
         const e = document.createElement("span");
-        e.textContent = String.fromCodePoint(0x100 + i);
+        const c = i == 9 || i == 11 ? i + 0x80 : i;
+        e.textContent = String.fromCodePoint(c + 0x100);
         e.style.color = "white";
-        e.style.width = "1ch";
+        e.style.width = "fit-content";
         e.style.border = "1px solid red";
         e.style.textAlign = "center";
-        document.getElementById("table").appendChild(e);
+        e.addEventListener("mouseover", () => {
+            $("tff-preview").textContent = e.textContent;
+            $("preview-code").textContent = `U+${(c + 0x100).toString(16).toUpperCase().padStart(4, "0")}`;
+        });
+        e.addEventListener("mouseleave", () => {
+            $("tff-preview").textContent = "";
+        });
+        e.style.cursor = "pointer";
+        $("table").appendChild(e);
         // ---
         const img = document.createElement("img");
         const hex = i.toString(16).toUpperCase().padStart(2, "0");
         img.src = `svg/glyph_${hex}.svg`;
         img.style.width = "1ch";
         img.style.border = "1px solid red";
-        document.getElementById("glyphs").appendChild(img);
+        $("glyphs").appendChild(img);
     });
 </script>
