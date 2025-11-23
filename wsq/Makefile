@@ -7,7 +7,9 @@ $(VENDOR_PREFIX)/csrc/commonnbis/include \
 $(VENDOR_PREFIX)/csrc/imgtools/include \
 $(VENDOR_PREFIX)/csrc
 
-FLAGS = -D_POSIX_SOURCE -D__NBISLE__ -D__NBIS_PNG__ -m64
+FLAGS = -D_POSIX_SOURCE -D__NBISLE__ -D__NBIS_PNG__ -O3
+
+FLAGS_WASM = -D_POSIX_SOURCE -D__NBISLE__ -D__NBIS_PNG__ -O3
 
 FILES = \
 $(VENDOR_PREFIX)/csrc/commonnbis/src/lib/ioutil/dataio.c \
@@ -59,4 +61,16 @@ $(VENDOR_PREFIX)/csrc/imgtools/src/lib/jpegl/tableio.c \
 $(VENDOR_PREFIX)/csrc/imgtools/src/lib/jpegl/util.c \
 
 build:
-	 cc -o wsq $(FILES) main.c $(FLAGS) $(addprefix -I,$(INC))
+	 cc -o wsq $(FILES) main.c $(FLAGS) -m64 $(addprefix -I,$(INC))
+
+wasm:
+	emcc -o wsq.wasm \
+  	-s EXPORTED_FUNCTIONS='["_wsq_decode","_malloc","_free"]' \
+	-s STANDALONE_WASM=1 \
+	-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+  	 $(FILES) wqs_decode_wasm.c \
+	 $(FLAGS) \
+	 $(addprefix -I,$(INC))
+
+clean:
+	rm -f wsq wsq.wasm

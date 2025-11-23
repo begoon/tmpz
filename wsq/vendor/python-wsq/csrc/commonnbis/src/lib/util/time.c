@@ -71,8 +71,13 @@ char *current_time(void)
    long tm;
    char *dptr;
 
+#ifdef __EMSCRIPTEN__
+   tm = time((long long *)NULL);
+   dptr = (char *)ctime((long long *)&tm);
+#else
    tm = time((long *)NULL);
    dptr = (char *)ctime(&tm);
+#endif
    *(dptr + strlen(dptr) - 1) = '\0';
    return(dptr);
 }
