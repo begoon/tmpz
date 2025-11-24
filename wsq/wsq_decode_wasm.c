@@ -30,5 +30,3 @@ int wsq_decode(unsigned char *wsq_buffer, int wsq_size)
 
     return 0;
 }
-
-int main() { return 0; }

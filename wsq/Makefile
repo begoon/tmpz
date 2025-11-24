@@ -65,10 +65,9 @@ build:
 
 wasm:
 	emcc -o wsq.wasm \
-  	-s EXPORTED_FUNCTIONS='["_wsq_decode","_malloc","_free"]' \
-	-s STANDALONE_WASM=1 \
-	-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-  	 $(FILES) wqs_decode_wasm.c \
+	--no-entry \
+  	-s EXPORTED_FUNCTIONS=_wsq_decode,_malloc,_free \
+  	 $(FILES) wsq_decode_wasm.c \
 	 $(FLAGS) \
 	 $(addprefix -I,$(INC))
 
