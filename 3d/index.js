@@ -61,24 +61,65 @@ function rotate_xz({ x, y, z }, angle) {
 let dz = 1;
 let angle = 0;
 
+function sub(a, b) {
+    return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+}
+
+function dot(a, b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+function cross(a, b) {
+    return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x,
+    };
+}
+
+// returns true if the face should be drawn (front-facing + in front of camera)
+function face_visible(face, tvs) {
+    // need at least a triangle to define a plane
+    if (face.length < 3) return true;
+
+    const a = tvs[face[0]];
+    const b = tvs[face[1]];
+    const c = tvs[face[2]];
+
+    // if any vertex is behind/at the camera, skip (prevents x/z blow-ups)
+    const EPS = 1e-3;
+    for (const idx of face) {
+        if (tvs[idx].z <= EPS) return false;
+    }
+
+    // normal from winding order
+    const n = cross(sub(b, a), sub(c, a));
+
+    // Camera at origin. Face is visible if its normal points towards the camera.
+    // This test is stable even if the face is not centered:
+    // front-facing if dot(n, a) < 0 (with your projection assuming +z forward).
+    return dot(n, a) < 0;
+}
+
 function frame() {
     const dt = 1 / FPS;
-    // dz += 1*dt;
     angle += Math.PI * dt;
     clear();
-    // for (const v of vs) {
-    //     point(screen(project(translate_z(rotate_xz(v, angle), dz))))
-    // }
+
+    // Transform vertices once per frame (camera space)
+    const translated_vs = vs.map((v) => translate_z(rotate_xz(v, angle), dz));
+
     for (const f of fs) {
+        if (!face_visible(f, translated_vs)) continue;
+
         for (let i = 0; i < f.length; ++i) {
-            const a = vs[f[i]];
-            const b = vs[f[(i + 1) % f.length]];
-            line(
-                screen(project(translate_z(rotate_xz(a, angle), dz))),
-                screen(project(translate_z(rotate_xz(b, angle), dz)))
-            );
+            const a = translated_vs[f[i]];
+            const b = translated_vs[f[(i + 1) % f.length]];
+
+            line(screen(project(a)), screen(project(b)));
         }
     }
+
     setTimeout(frame, 1000 / FPS);
 }
 setTimeout(frame, 1000 / FPS);
