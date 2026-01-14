@@ -1,0 +1,6 @@
+[project]
+name = "lightstar"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = ["litestar[standard]>=2.19.0"]
