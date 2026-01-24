@@ -12,17 +12,17 @@ app = FastAPI(debug=True)
 
 where = os.environ["WHERE"].strip("/") + "/"
 
-print(f'{where=}')
+print(f"{where=}")
 
 
 @app.get("/x/{path:path}")
 async def proxy(path: str, response: Response):
     redirect = where + path
-    print(f'{redirect=}')
+    print(f"{redirect=}")
     async with httpx.AsyncClient() as client:
         proxy = await client.get(redirect, follow_redirects=True)
         response.body = proxy.content
-        print(f'{len(response.body)=}')
+        print(f"{len(response.body)=}")
         response.status_code = proxy.status_code
         return response
 
@@ -32,15 +32,15 @@ client = httpx.AsyncClient()
 
 async def streaming_reverse_proxy(request: Request):
     redirect = where.strip("/") + request.url.path
-    print(f'{redirect=}')
+    print(f"{redirect=}")
     url = httpx.URL(path=redirect, query=request.url.query.encode("utf-8"))
-    print(f'{request.method} {url}')
-    rp_req = client.build_request(
+    print(f"{request.method} {url}")
+    client_request = client.build_request(
         request.method,
         redirect,
         content=request.stream(),
     )
-    rp_resp = await client.send(rp_req, stream=True)
+    rp_resp = await client.send(client_request, stream=True)
     return StreamingResponse(
         rp_resp.aiter_raw(),
         status_code=rp_resp.status_code,
