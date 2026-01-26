@@ -29,10 +29,10 @@ def ping(
 ) -> bool:
     if isinstance(statuses, int):
         statuses = (statuses,)
-    req = urllib.request.Request(url, method="GET")
+    request = urllib.request.Request(url, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            code = getattr(resp, "status", None) or resp.getcode()
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            code = getattr(response, "status", None) or response.getcode()
             return code in statuses
     except (urllib.error.URLError, TimeoutError, OSError):
         return False
