@@ -144,7 +144,9 @@ var CommonFolders = []string{
 	".venv", "__pycache__", ".mypy_cache", ".pytest_cache", // python
 	"node_modules",          // node
 	".zig-cache", "zig-out", // zig
-	"target", // rust
+	"target",     // rust
+	".terraform", // terraform
+	".build",     // swift
 }
 
 type Settings struct {
