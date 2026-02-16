@@ -1,0 +1,9 @@
+[project]
+name = "gcp-bucket-compose"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-cloud-storage>=3.9.0",
+]
