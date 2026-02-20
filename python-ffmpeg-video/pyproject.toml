@@ -1,0 +1,9 @@
+[project]
+name = "python-ffmpeg-video"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "av>=16.1.0",
+    "pillow>=12.1.1",
+]
