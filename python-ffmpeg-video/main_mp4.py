@@ -22,8 +22,20 @@ class VideoDecoder:
         self._frames: list[bytes] = []
         self._flushed = False
 
-    def chunk(self, video: bytes) -> None:
-        print("feeding chunk (raw H.264)", len(video), "bytes")
+    def first_chunk(self, video: bytes) -> None:
+        print("feeding first chunk (MP4 container)", len(video), "bytes")
+        # feed the initial MP4 container chunk
+        container = av.open(BytesIO(video))
+        for packet in container.demux(container.streams.video[0]):
+            if packet.size == 0:
+                continue
+            raw_packet = av.Packet(bytes(packet))
+            raw_packet.time_base = packet.time_base
+            self._decode_packet(raw_packet)
+        container.close()
+
+    def next_chunk(self, video: bytes) -> None:
+        print("feeding next chunk (raw H.264)", len(video), "bytes")
         # feed a raw H.264 NAL unit chunk
         packet = av.Packet(video)
         self._decode_packet(packet)
@@ -53,10 +65,13 @@ def main():
     config = (INPUT_DIR / "enrollment_frame_codec_config.h264").read_bytes()
     decoder = VideoDecoder(config)
 
+    # feed the MP4 container as the first chunk
+    decoder.first_chunk((INPUT_DIR / "enrollment_encoded.mp4").read_bytes())
+
     # feed raw H.264 chunks one by one
     for i in range(9):
         chunk = (INPUT_DIR / f"enrollment_frame_{i}.h264").read_bytes()
-        decoder.chunk(chunk)
+        decoder.next_chunk(chunk)
 
     for i, png_data in enumerate(decoder.frames()):
         out_path = OUTPUT_DIR / f"frame_{i:04d}.png"
