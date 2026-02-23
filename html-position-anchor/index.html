@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <style>
+            .button {
+                anchor-name: --button-anchor;
+                padding: 10px 16px;
+                background: #4c73ff;
+                color: white;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+            }
+            .tooltip {
+                position: absolute;
+
+                position-anchor: --button-anchor;
+                font-size: 5em;
+
+                top: anchor(bottom);
+                left: anchor(center);
+
+                translate: -20% 8px;
+
+                background: black;
+                color: white;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 14px;
+                white-space: nowrap;
+
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+            }
+
+            .button:hover + .tooltip {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <button class="button">Hover me</button>
+        <div class="tooltip">This is an anchor-positioned tooltip</div>
+    </body>
+</html>
