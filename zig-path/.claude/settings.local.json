@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo $PATH:*)",
+      "Bash(echo $HOME:*)",
+      "Bash(zig version:*)",
+      "Bash(zig build:*)"
+    ]
+  }
+}
