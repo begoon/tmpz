@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const name = "zig-path";
+const name = "paths";
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -16,16 +16,17 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(exe);
 
-    const home = b.graph.environ_map.get("HOME") orelse @panic("HOME not set");
+    if (b.graph.environ_map.get("HOMEBREW_FORMULA_PREFIX") == null) {
+        const home = b.graph.environ_map.get("HOME") orelse @panic("HOME not set");
+        const dest = b.fmt("{s}/bin/{s}", .{ home, name });
+        const cp = b.addSystemCommand(&.{ "cp", "-f" });
+        cp.addArtifactArg(exe);
+        cp.addArg(dest);
 
-    const dest = b.fmt("{s}/bin/{s}", .{ home, name });
-    const cp = b.addSystemCommand(&.{ "cp", "-f" });
-    cp.addArtifactArg(exe);
-    cp.addArg(dest);
-    
-    const echo = b.addSystemCommand(&.{ "echo", b.fmt("installing {s} to ~/bin/{s}", .{ name, name }) });
-    echo.step.dependOn(&cp.step);
-    b.getInstallStep().dependOn(&echo.step);
+        const echo = b.addSystemCommand(&.{ "echo", b.fmt("installing {s} to ~/bin/{s}", .{ name, name }) });
+        echo.step.dependOn(&cp.step);
+        b.getInstallStep().dependOn(&echo.step);
+    }
 
     const run_step = b.step("run", "run the application");
 
