@@ -55,7 +55,9 @@ def main():
 
     # feed raw H.264 chunks one by one
     for i in range(9):
-        chunk = (INPUT_DIR / f"enrollment_frame_{i}.h264").read_bytes()
+        name = f"enrollment_frame_{i}.h264"
+        print(f"chunk {name} | ", end="")
+        chunk = (INPUT_DIR / name).read_bytes()
         decoder.chunk(chunk)
 
     for i, png_data in enumerate(decoder.frames()):
