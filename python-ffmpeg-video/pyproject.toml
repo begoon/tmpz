@@ -5,5 +5,27 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "av>=16.1.0",
+    "flatten-json>=0.1.14",
+    "mypy>=1.19.1",
     "pillow>=12.1.1",
+    "pytest>=9.0.2",
+    "structlog>=25.5.0",
+    "types-pillow>=10.1.0.0",
 ]
+
+[tool.mypy]
+strict = true
+pretty = true
+incremental = false
+explicit_package_bases = true
+show_error_context = true
+show_column_numbers = true
+error_summary = false
+
+[[tool.mypy.overrides]]
+module = "flatten_json"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "structlog.*"
+ignore_missing_imports = true
