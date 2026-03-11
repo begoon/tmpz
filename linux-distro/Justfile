@@ -1,0 +1,4 @@
+default:
+
+clean:
+    rm -f bzImage init.cpio
