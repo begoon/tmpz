@@ -4,6 +4,8 @@ import time
 
 # --- Constants ---
 WIDTH, HEIGHT = 64, 25
+# Border adds 1 cell on each side: total window = WIDTH+2 x HEIGHT+2
+BORDER_W, BORDER_H = WIDTH + 2, HEIGHT + 2
 PEAK_ROW = 9
 FPS = 10
 FRAME_DELAY = 1.0 / FPS
@@ -173,11 +175,24 @@ def heli_bounding_cells(heli):
 # --- Drawing helpers ---
 
 def safe_addch(win, y, x, ch, attr=0):
+    """Draw at game coords (x,y), offset by border."""
     if 0 <= y < HEIGHT and 0 <= x < WIDTH:
         try:
-            win.addch(y, x, ch, attr)
+            win.addch(y + 1, x + 1, ch, attr)
         except curses.error:
             pass
+
+
+def draw_border(win, color):
+    """Draw box-drawing border around the game field."""
+    try:
+        win.addstr(0, 0, "┌" + "─" * WIDTH + "┐", color)
+        for r in range(1, HEIGHT + 1):
+            win.addstr(r, 0, "│", color)
+            win.addstr(r, WIDTH + 1, "│", color)
+        win.addstr(HEIGHT + 1, 0, "└" + "─" * WIDTH + "┘", color)
+    except curses.error:
+        pass
 
 
 def draw_terrain(win, terrain, color):
@@ -224,8 +239,11 @@ def draw_heli(win, heli, color):
 
 def draw_hud(win, lives, rescued, total, color):
     msg = f" Lives:{lives}  Rescued:{rescued}/{total} "
-    for i, ch in enumerate(msg):
-        safe_addch(win, 0, i, ch, color)
+    x = (WIDTH - len(msg)) // 2 + 1  # center on top border
+    try:
+        win.addstr(0, x, msg, color)
+    except curses.error:
+        pass
 
 
 # --- Collision helpers ---
@@ -263,9 +281,12 @@ def main(stdscr):
 
     # Check terminal size
     max_y, max_x = stdscr.getmaxyx()
-    if max_y < HEIGHT or max_x < WIDTH:
+    if max_y < BORDER_H or max_x < BORDER_W:
         curses.endwin()
-        print(f"Terminal too small: need {WIDTH}x{HEIGHT}, have {max_x}x{max_y}")
+        print(
+            f"Terminal too small: need {BORDER_W}x{BORDER_H},"
+            f" have {max_x}x{max_y}"
+        )
         return
 
     # Colors
@@ -337,15 +358,16 @@ def main(stdscr):
 
         if game_over:
             stdscr.erase()
+            draw_border(stdscr, C_TERRAIN)
             try:
                 stdscr.addstr(
-                    HEIGHT // 2,
-                    max(0, (WIDTH - len(game_over_msg)) // 2),
+                    HEIGHT // 2 + 1,
+                    max(1, (WIDTH - len(game_over_msg)) // 2 + 1),
                     game_over_msg, C_HUD,
                 )
                 stdscr.addstr(
-                    HEIGHT // 2 + 2,
-                    max(0, (WIDTH - 16) // 2),
+                    HEIGHT // 2 + 3,
+                    max(1, (WIDTH - 16) // 2 + 1),
                     "Press Q to quit.", C_HUD,
                 )
             except curses.error:
@@ -571,6 +593,7 @@ def main(stdscr):
         # --- Render ---
         stdscr.erase()
 
+        draw_border(stdscr, C_TERRAIN)
         draw_terrain(stdscr, terrain, C_TERRAIN)
         draw_lava(stdscr, lava_level, C_LAVA)
         draw_station(stdscr, lives, C_STATION_ROOF, C_STATION_WALL, C_HELI)
