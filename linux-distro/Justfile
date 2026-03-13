@@ -1,4 +1,17 @@
 default:
 
+prerequisites:
+    mkdir -p fs
+
+initramfs: prerequisites build-go build-c
+    (cd fs && find . | cpio -o -H newc | lzma > ../init.cpio.lzma)
+
+build-go:
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -a -ldflags="-s -w" -o fs/init main.go
+
+build-c:
+    gcc --static main.c -o fs/init
+
 clean:
-    rm -f bzImage init.cpio
+    -rm -f bzImage init.cpio.lzma
+    -rm -rf fs/
