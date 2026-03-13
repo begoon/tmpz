@@ -31,3 +31,5 @@ The player must navigate the helicopter over the volcano and avoid collisions wi
 Additionally, over time, the lava spreads line by line from the top of the volcano down the slope. Each "spread" is a line "*" drawn from the left point of the volcano profile at a given level to the right.
 
 When the lava hits a level with living humans, the humans die and turn into the flying souls (drawn as "()"). It starts flying randomly like ashes. It cannot be shot, but it can kill the helicopter.
+
+Original game for BBC Micro - https://bbcmicro.co.uk/game.php?id=143
