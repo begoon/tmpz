@@ -1,40 +1,58 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-KERNEL="$1"
-INITRD="$2"
-IMAGE="$3"
+KERNEL="${1:?missing kernel path}"
+INITRD="${2:?missing initrd path}"
+IMAGE="${3:?missing image path}"
 
-SIZE_MB=3
-mkdir -p mnt
+SIZE_KB=2500
+MNT_DIR="mnt"
+LOOP=""
+
+cleanup() {
+    sync || true
+
+    if mountpoint -q "$MNT_DIR"; then
+        sudo umount "$MNT_DIR" || true
+    fi
+
+    if [[ -n "$LOOP" ]]; then
+        sudo losetup -d "$LOOP" || true
+    fi
+}
+
+trap cleanup EXIT INT TERM
+
+mkdir -p "$MNT_DIR"
 
 echo "Creating image..."
-dd if=/dev/zero of="$IMAGE" bs=1M count=$SIZE_MB
+dd if=/dev/zero of="$IMAGE" bs=1024 count="$SIZE_KB"
 
 echo "Partitioning..."
 printf 'label: dos\nstart=2048, type=83, bootable\n' | sudo sfdisk "$IMAGE"
 
 sudo modprobe loop
 LOOP=$(sudo losetup --show -Pf "$IMAGE")
-PART=${LOOP}p1
+PART="${LOOP}p1"
 
 echo "Formatting..."
 sudo mkfs.ext2 "$PART"
 
-sudo mount "$PART" mnt
+echo "Mounting..."
+sudo mount "$PART" "$MNT_DIR"
 
 echo "Installing extlinux..."
-sudo mkdir -p mnt/boot/syslinux
-sudo extlinux --install mnt/boot/syslinux
+sudo mkdir -p "$MNT_DIR/boot/syslinux"
+sudo extlinux --install "$MNT_DIR/boot/syslinux"
 
 echo "Installing MBR..."
 sudo dd if=/usr/lib/syslinux/mbr/mbr.bin of="$LOOP"
 
 echo "Copying kernel..."
-sudo cp "$KERNEL" mnt/boot/vmlinuz
-sudo cp "$INITRD" mnt/boot/initrd
+sudo cp "$KERNEL" "$MNT_DIR/boot/vmlinuz"
+sudo cp "$INITRD" "$MNT_DIR/boot/initrd"
 
-sudo tee mnt/boot/syslinux/syslinux.cfg > /dev/null <<EOF
+sudo tee "$MNT_DIR/boot/syslinux/syslinux.cfg" > /dev/null <<EOF
 DEFAULT linux
 PROMPT 0
 TIMEOUT 0
@@ -44,9 +62,5 @@ LABEL linux
     INITRD /boot/initrd
     APPEND console=ttyS0,115200
 EOF
-
-sync
-sudo umount mnt
-sudo losetup -d "$LOOP"
 
 echo "Created $IMAGE"
