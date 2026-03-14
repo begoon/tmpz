@@ -11,6 +11,8 @@ FPS = 10
 FRAME_DELAY = 1.0 / FPS
 LAVA_INTERVAL = 8.0
 ASH_SPAWN_INTERVAL = 6
+CARRY_TIME = 14.0  # seconds before person falls
+CARRY_WARN_TIME = 9.0  # seconds before person turns red
 
 # Station
 STATION_LEFT = 55
@@ -22,13 +24,14 @@ START_X, START_Y = 58, 15
 
 # --- Terrain data (exact positions from example.txt) ---
 
+
 def build_terrain():
     """Return set of (col, row) for all volcano X positions."""
     terrain = set()
 
     # Peak cap (normally hidden under lava)
     terrain |= {(37, 9), (38, 9), (39, 9), (40, 9)}
-    terrain |= {(35, 10), (41, 10)}
+    terrain |= {(35, 10), (36, 10), (41, 10)}
 
     # Left slope
     left_slope = {
@@ -41,10 +44,10 @@ def build_terrain():
         17: [23, 24],
         18: [18, 19, 20, 21, 22],  # platform
         19: [16, 17],
-        20: [15, 16],
-        21: [9, 10, 11, 12, 13],   # platform
+        20: [14, 15],
+        21: [9, 10, 11, 12, 13],  # platform
         22: [7, 8],
-        23: [2, 3, 4, 5, 6],       # platform
+        23: [2, 3, 4, 5, 6],  # platform
         24: [0, 1],
     }
 
@@ -85,7 +88,7 @@ LAVA_BOUNDS = {
     17: (23, 50),
     18: (18, 51),
     19: (16, 52),
-    20: (15, 54),
+    20: (14, 54),
     21: (9, 54),
     22: (7, 54),
     23: (2, 54),
@@ -111,14 +114,26 @@ PEOPLE_DEF = [
 
 # --- Entity factories ---
 
+
 def make_helicopter(x, y):
-    return {"x": x, "y": y, "direction": -1, "carrying": False, "alive": True}
+    return {
+        "x": x,
+        "y": y,
+        "direction": -1,
+        "carrying": False,
+        "alive": True,
+        "carry_timer": 0.0,
+    }
 
 
 def make_person(x, y, platform_row):
     return {
-        "x": x, "y": y, "alive": True, "rescued": False,
-        "wave_timer": 0, "platform_row": platform_row,
+        "x": x,
+        "y": y,
+        "alive": True,
+        "rescued": False,
+        "wave_timer": 0,
+        "platform_row": platform_row,
     }
 
 
@@ -128,7 +143,8 @@ def make_ash(x, y, vx, vy):
 
 def make_soul(x, y):
     return {
-        "x": float(x), "y": float(y),
+        "x": float(x),
+        "y": float(y),
         "vx": random.uniform(-0.5, 0.5),
         "vy": random.uniform(-1.0, -0.3),
     }
@@ -139,6 +155,7 @@ def make_projectile(x, y, dx):
 
 
 # --- Helicopter sprite ---
+
 
 def heli_cells(heli):
     """Return list of (x, y, char) for the helicopter."""
@@ -174,6 +191,7 @@ def heli_bounding_cells(heli):
 
 # --- Drawing helpers ---
 
+
 def safe_addch(win, y, x, ch, attr=0):
     """Draw at game coords (x,y), offset by border."""
     if 0 <= y < HEIGHT and 0 <= x < WIDTH:
@@ -196,7 +214,7 @@ def draw_border(win, color):
 
 
 def draw_terrain(win, terrain, color):
-    for (x, y) in terrain:
+    for x, y in terrain:
         safe_addch(win, y, x, "X", color)
 
 
@@ -208,7 +226,9 @@ def draw_lava(win, lava_level, color):
                 safe_addch(win, row, c, "+", color)
 
 
-def draw_station(win, lives, color_roof, color_wall, color_heli):
+def draw_station(
+    win, lives, rescued_count, color_roof, color_wall, color_heli, color_people
+):
     # Roof
     for c in range(STATION_LEFT, STATION_RIGHT + 1):
         safe_addch(win, STATION_ROOF, c, "=", color_roof)
@@ -216,9 +236,18 @@ def draw_station(win, lives, color_roof, color_wall, color_heli):
     for row in range(STATION_ROOF + 1, HEIGHT):
         safe_addch(win, row, STATION_LEFT, "!", color_wall)
         safe_addch(win, row, STATION_RIGHT, "!", color_wall)
+    # Rescued people just below roof
+    for i in range(rescued_count):
+        safe_addch(
+            win,
+            STATION_ROOF + 1,
+            STATION_LEFT + 1 + i,
+            "I",
+            color_people,
+        )
     # Spare helicopters inside station (facing left: O-+)
     spare_count = max(0, lives - 1)
-    spare_positions = [20, 22]  # cockpit Y positions from example
+    spare_positions = [20, 22]  # cockpit Y positions
     for i in range(min(spare_count, len(spare_positions))):
         sy = spare_positions[i]
         sx = 58  # cockpit X
@@ -232,13 +261,16 @@ def draw_station(win, lives, color_roof, color_wall, color_heli):
         safe_addch(win, sy, sx + 2, "+", color_heli)
 
 
-def draw_heli(win, heli, color):
+def draw_heli(win, heli, color, carry_warn_color=None):
     for x, y, ch in heli_cells(heli):
-        safe_addch(win, y, x, ch, color)
+        if ch == "I" and carry_warn_color is not None:
+            safe_addch(win, y, x, ch, carry_warn_color)
+        else:
+            safe_addch(win, y, x, ch, color)
 
 
 def draw_hud(win, lives, rescued, total, color):
-    msg = f" Lives:{lives}  Rescued:{rescued}/{total} "
+    msg = f" lives:{lives} rescued:{rescued}/{total} "
     x = (WIDTH - len(msg)) // 2 + 1  # center on top border
     try:
         win.addstr(0, x, msg, color)
@@ -246,7 +278,43 @@ def draw_hud(win, lives, rescued, total, color):
         pass
 
 
+def run_explosion(win, ox, oy, render_fn):
+    """Animate 8 dots radiating from (ox, oy) with acceleration."""
+    directions = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ]
+    # Each dot: [fx, fy, dx, dy, speed]
+    dots = [[float(ox), float(oy), dx, dy, 0.3] for dx, dy in directions]
+
+    while dots:
+        new_dots = []
+        for d in dots:
+            d[4] += 0.15  # accelerate
+            d[0] += d[2] * d[4]
+            d[1] += d[3] * d[4]
+            ix, iy = int(d[0]), int(d[1])
+            if 0 <= ix < WIDTH and 0 <= iy < HEIGHT:
+                new_dots.append(d)
+        dots = new_dots
+        if not dots:
+            break
+
+        render_fn()
+        for d in dots:
+            safe_addch(win, int(d[1]), int(d[0]), ".", curses.A_BOLD)
+        win.refresh()
+        time.sleep(FRAME_DELAY)
+
+
 # --- Collision helpers ---
+
 
 def cell_in_terrain(x, y, terrain):
     return (x, y) in terrain
@@ -272,7 +340,29 @@ def cell_at_station_deposit(x, y):
     return y <= STATION_ROOF and STATION_LEFT <= x <= STATION_RIGHT
 
 
+def run_person_fall(win, px, py, terrain, lava_level, render_fn):
+    """Animate person 'I' falling from (px, py) until hitting ground."""
+    y = py
+    while y + 1 < HEIGHT:
+        ny = y + 1
+        if cell_in_terrain(px, ny, terrain) or cell_in_lava(px, ny, lava_level):
+            break
+        y = ny
+        render_fn()
+        safe_addch(
+            win,
+            y,
+            px,
+            "I",
+            curses.color_pair(2) | curses.A_BOLD,
+        )
+        win.refresh()
+        time.sleep(FRAME_DELAY)
+    return px, y
+
+
 # --- Main game ---
+
 
 def main(stdscr):
     curses.curs_set(0)
@@ -359,22 +449,98 @@ def main(stdscr):
         if game_over:
             stdscr.erase()
             draw_border(stdscr, C_TERRAIN)
+            hint = "Press any key to play or Q to quit."
             try:
                 stdscr.addstr(
                     HEIGHT // 2 + 1,
                     max(1, (WIDTH - len(game_over_msg)) // 2 + 1),
-                    game_over_msg, C_HUD,
+                    game_over_msg,
+                    C_HUD,
                 )
                 stdscr.addstr(
                     HEIGHT // 2 + 3,
-                    max(1, (WIDTH - 16) // 2 + 1),
-                    "Press Q to quit.", C_HUD,
+                    max(1, (WIDTH - len(hint)) // 2 + 1),
+                    hint,
+                    C_HUD,
                 )
             except curses.error:
                 pass
             stdscr.refresh()
+            if key != -1 and key != ord("q") and key != ord("Q"):
+                # Restart game
+                heli = make_helicopter(START_X, START_Y)
+                lives = 3
+                rescued_count = 0
+                people = [make_person(px, py, pr) for px, py, pr in PEOPLE_DEF]
+                total_people = len(people)
+                ashes = []
+                souls = []
+                projectiles = []
+                lava_level = PEAK_ROW
+                lava_timer = 0.0
+                respawning = False
+                game_over = False
+                game_over_msg = ""
             time.sleep(FRAME_DELAY)
             continue
+
+        # --- Render helper (closure over current mutable state) ---
+        def render_world():
+            stdscr.erase()
+            draw_border(stdscr, C_TERRAIN)
+            draw_terrain(stdscr, terrain, C_TERRAIN)
+            draw_lava(stdscr, lava_level, C_LAVA)
+            draw_station(
+                stdscr,
+                lives,
+                rescued_count,
+                C_STATION_ROOF,
+                C_STATION_WALL,
+                C_HELI,
+                C_PEOPLE,
+            )
+            for person in people:
+                if person["alive"] and not person["rescued"]:
+                    ch = "Y" if wave_toggle else "I"
+                    safe_addch(
+                        stdscr,
+                        person["y"],
+                        person["x"],
+                        ch,
+                        C_PEOPLE,
+                    )
+            for a in ashes:
+                safe_addch(
+                    stdscr,
+                    int(a["y"]),
+                    int(a["x"]),
+                    "*",
+                    C_ASH,
+                )
+            for s in souls:
+                ix, iy = int(s["x"]), int(s["y"])
+                safe_addch(stdscr, iy, ix, "(", C_SOUL)
+                safe_addch(stdscr, iy, ix + 1, ")", C_SOUL)
+            for p in projectiles:
+                safe_addch(
+                    stdscr,
+                    p["y"],
+                    p["x"],
+                    "-",
+                    C_PROJ,
+                )
+            if heli["alive"] and not respawning:
+                warn = None
+                if heli["carrying"] and heli["carry_timer"] >= CARRY_WARN_TIME:
+                    warn = C_LAVA  # red
+                draw_heli(stdscr, heli, C_HELI, warn)
+            draw_hud(
+                stdscr,
+                lives,
+                rescued_count,
+                total_people,
+                C_HUD,
+            )
 
         # --- Update helicopter ---
         if heli["alive"] and not respawning:
@@ -385,11 +551,13 @@ def main(stdscr):
             elif key == curses.KEY_LEFT:
                 if heli["direction"] != -1:
                     heli["direction"] = -1
+                    heli["x"] -= 1  # O shifts toward new direction
                 else:
                     heli["x"] -= 1
             elif key == curses.KEY_RIGHT:
                 if heli["direction"] != 1:
                     heli["direction"] = 1
+                    heli["x"] += 1  # O shifts toward new direction
                 else:
                     heli["x"] += 1
             elif key == ord(" "):
@@ -400,21 +568,80 @@ def main(stdscr):
             heli["x"] = max(2, min(WIDTH - 3, heli["x"]))
             heli["y"] = max(1, min(HEIGHT - 2, heli["y"]))
 
+            # Check deposit before collision (person touching roof)
+            if heli["carrying"]:
+                py = heli["y"] + 1
+                if (
+                    py == STATION_ROOF
+                    and STATION_LEFT <= heli["x"] <= STATION_RIGHT
+                ):
+                    heli["carrying"] = False
+                    rescued_count += 1
+                    if rescued_count == total_people:
+                        game_over = True
+                        game_over_msg = f"YOU WIN! All {total_people} rescued!"
+                    else:
+                        alive_left = sum(
+                            1 for p in people if p["alive"] and not p["rescued"]
+                        )
+                        if alive_left == 0:
+                            game_over = True
+                            game_over_msg = (
+                                "GAME OVER - Rescued "
+                                f"{rescued_count}/{total_people}"
+                            )
+
             # Check terrain/station/lava collision
             heli_set = heli_bounding_cells(heli)
-            blocked = False
-            for (cx, cy) in heli_set:
-                if cell_in_terrain(cx, cy, terrain):
-                    blocked = True
+            ox, oy = heli["x"], heli["y"]
+            crash = False
+            safe_block = False
+            for cx, cy in heli_set:
+                if cell_in_terrain(cx, cy, terrain) or cell_in_lava(
+                    cx, cy, lava_level
+                ):
+                    crash = True
                     break
                 if cell_in_station(cx, cy):
-                    blocked = True
-                    break
-                if cell_in_lava(cx, cy, lava_level):
-                    blocked = True
-                    break
-            if blocked:
-                # Undo move
+                    # Cockpit O on roof from above = safe block
+                    if (
+                        cx == ox
+                        and cy == oy
+                        and cy == STATION_ROOF
+                        and STATION_LEFT <= cx <= STATION_RIGHT
+                    ):
+                        safe_block = True
+                    else:
+                        crash = True
+                        break
+            if crash:
+                # Undo move first, then explode
+                if key == curses.KEY_UP:
+                    heli["y"] += 1
+                elif key == curses.KEY_DOWN:
+                    heli["y"] -= 1
+                elif key == curses.KEY_LEFT:
+                    heli["x"] += 1
+                elif key == curses.KEY_RIGHT:
+                    heli["x"] -= 1
+                ex, ey = heli["x"], heli["y"]
+                was_carrying = heli["carrying"]
+                heli["alive"] = False
+                heli["carrying"] = False
+                lives -= 1
+                run_explosion(stdscr, ex, ey, render_world)
+                if was_carrying:
+                    souls.append(make_soul(ex, ey))
+                if lives <= 0:
+                    game_over = True
+                    game_over_msg = (
+                        "GAME OVER - Rescued " f"{rescued_count}/{total_people}"
+                    )
+                else:
+                    respawning = True
+                    respawn_timer = 1.0
+            elif safe_block:
+                # Just undo the move
                 if key == curses.KEY_UP:
                     heli["y"] += 1
                 elif key == curses.KEY_DOWN:
@@ -442,7 +669,7 @@ def main(stdscr):
         # --- Update ashes ---
         new_ashes = []
         for a in ashes:
-            a["vy"] += 0.025
+            a["vy"] -= 0.01
             a["vx"] += random.uniform(-0.08, 0.08)
             a["x"] += a["vx"] * 0.5
             a["y"] += a["vy"] * 0.5
@@ -461,7 +688,9 @@ def main(stdscr):
             p["x"] += p["dx"] * 2
             if not (0 <= p["x"] < WIDTH):
                 continue
-            if cell_in_terrain(p["x"], p["y"], terrain) or cell_in_station(p["x"], p["y"]):
+            if cell_in_terrain(p["x"], p["y"], terrain) or cell_in_station(
+                p["x"], p["y"]
+            ):
                 continue
             new_proj.append(p)
         projectiles = new_proj
@@ -492,55 +721,64 @@ def main(stdscr):
                     break
             if not destroyed:
                 for s in souls:
-                    if (int(s["x"]), int(s["y"])) in heli_set:
+                    sx, sy = int(s["x"]), int(s["y"])
+                    if (sx, sy) in heli_set or (sx + 1, sy) in heli_set:
                         destroyed = True
                         break
             if destroyed:
+                ex, ey = heli["x"], heli["y"]
+                was_carrying = heli["carrying"]
                 heli["alive"] = False
                 heli["carrying"] = False
                 lives -= 1
+                run_explosion(stdscr, ex, ey, render_world)
+                if was_carrying:
+                    souls.append(make_soul(ex, ey))
                 if lives <= 0:
                     game_over = True
-                    game_over_msg = f"GAME OVER - Rescued {rescued_count}/{total_people}"
+                    game_over_msg = (
+                        "GAME OVER - Rescued " f"{rescued_count}/{total_people}"
+                    )
                 else:
                     respawning = True
                     respawn_timer = 1.0
 
         # --- Pick up person ---
         if heli["alive"] and not respawning and not heli["carrying"]:
-            heli_set = heli_bounding_cells(heli)
+            ox, oy = heli["x"], heli["y"]  # cockpit O position
             for person in people:
                 if person["alive"] and not person["rescued"]:
-                    px, py = person["x"], person["y"]
-                    for (cx, cy) in heli_set:
-                        if abs(cx - px) <= 1 and abs(cy - py) <= 1:
-                            person["alive"] = False
-                            person["rescued"] = True
-                            heli["carrying"] = True
-                            break
-                    if heli["carrying"]:
+                    if person["x"] == ox and person["y"] == oy + 1:
+                        person["alive"] = False
+                        person["rescued"] = True
+                        heli["carrying"] = True
+                        heli["carry_timer"] = 0.0
                         break
 
-        # --- Deposit person at station ---
+        # --- Carry timer / person fall ---
         if heli["alive"] and not respawning and heli["carrying"]:
-            # Person hangs at (ox, oy+1) — deposit when person hits station
-            px, py = heli["x"], heli["y"] + 1
-            if cell_in_station(px, py):
+            heli["carry_timer"] += dt
+            if heli["carry_timer"] >= CARRY_TIME:
+                # Person falls
                 heli["carrying"] = False
-                rescued_count += 1
-                if rescued_count == total_people:
+                fx, fy = run_person_fall(
+                    stdscr,
+                    heli["x"],
+                    heli["y"] + 1,
+                    terrain,
+                    lava_level,
+                    render_world,
+                )
+                souls.append(make_soul(fx, fy))
+                # Check end condition
+                alive_left = sum(
+                    1 for p in people if p["alive"] and not p["rescued"]
+                )
+                if alive_left == 0 and not game_over:
                     game_over = True
-                    game_over_msg = f"YOU WIN! All {total_people} rescued!"
-                else:
-                    alive_left = sum(
-                        1 for p in people
-                        if p["alive"] and not p["rescued"]
+                    game_over_msg = (
+                        "GAME OVER - Rescued " f"{rescued_count}/{total_people}"
                     )
-                    if alive_left == 0:
-                        game_over = True
-                        game_over_msg = (
-                            f"GAME OVER - Rescued {rescued_count}/{total_people}"
-                        )
 
         # --- Lava ---
         lava_timer += dt
@@ -569,20 +807,38 @@ def main(stdscr):
 
         # --- Update souls ---
         for s in souls:
-            s["vy"] += random.uniform(-0.15, 0.05)
-            s["vx"] += random.uniform(-0.15, 0.15)
-            s["x"] += s["vx"]
-            s["y"] += s["vy"]
-            if s["x"] < 0:
-                s["vx"] = abs(s["vx"])
-            if s["x"] >= WIDTH:
-                s["vx"] = -abs(s["vx"])
-            if s["y"] < 0:
-                s["vy"] = abs(s["vy"])
-            if s["y"] >= HEIGHT:
-                s["vy"] = -abs(s["vy"])
-            s["x"] = max(0, min(WIDTH - 1, s["x"]))
-            s["y"] = max(0, min(HEIGHT - 1, s["y"]))
+            s["vy"] += random.uniform(-0.1, 0.03)
+            s["vx"] += random.uniform(-0.1, 0.1)
+            nx = s["x"] + s["vx"] * 0.4
+            ny = s["y"] + s["vy"] * 0.4
+            ix, iy = int(nx), int(ny)
+            # Bounce off screen edges
+            if nx < 0:
+                nx, s["vx"] = 0, abs(s["vx"])
+            if nx >= WIDTH - 1:
+                nx, s["vx"] = WIDTH - 2, -abs(s["vx"])
+            if ny < 0:
+                ny, s["vy"] = 0, abs(s["vy"])
+            if ny >= HEIGHT:
+                ny, s["vy"] = HEIGHT - 1, -abs(s["vy"])
+            # Bounce off volcano terrain, station, and lava
+            # Check BOTH characters: '(' at (ix, iy) and ')' at (ix+1, iy)
+            ix, iy = int(nx), int(ny)
+            blocked = False
+            for cx in (ix, ix + 1):
+                if (
+                    cell_in_terrain(cx, iy, terrain)
+                    or cell_in_station(cx, iy)
+                    or cell_in_lava(cx, iy, lava_level)
+                ):
+                    blocked = True
+                    break
+            if blocked:
+                s["vx"] = -s["vx"]
+                s["vy"] = -s["vy"]
+            else:
+                s["x"] = nx
+                s["y"] = ny
 
         # --- Wave animation ---
         wave_timer += dt
@@ -591,38 +847,7 @@ def main(stdscr):
             wave_toggle = not wave_toggle
 
         # --- Render ---
-        stdscr.erase()
-
-        draw_border(stdscr, C_TERRAIN)
-        draw_terrain(stdscr, terrain, C_TERRAIN)
-        draw_lava(stdscr, lava_level, C_LAVA)
-        draw_station(stdscr, lives, C_STATION_ROOF, C_STATION_WALL, C_HELI)
-
-        # People
-        for person in people:
-            if person["alive"] and not person["rescued"]:
-                ch = "Y" if wave_toggle else "I"
-                safe_addch(stdscr, person["y"], person["x"], ch, C_PEOPLE)
-
-        # Ashes
-        for a in ashes:
-            safe_addch(stdscr, int(a["y"]), int(a["x"]), "*", C_ASH)
-
-        # Souls
-        for s in souls:
-            ix, iy = int(s["x"]), int(s["y"])
-            safe_addch(stdscr, iy, ix, "(", C_SOUL)
-            safe_addch(stdscr, iy, ix + 1, ")", C_SOUL)
-
-        # Projectiles
-        for p in projectiles:
-            safe_addch(stdscr, p["y"], p["x"], "-", C_PROJ)
-
-        # Helicopter
-        if heli["alive"] and not respawning:
-            draw_heli(stdscr, heli, C_HELI)
-
-        draw_hud(stdscr, lives, rescued_count, total_people, C_HUD)
+        render_world()
 
         stdscr.refresh()
 
