@@ -158,5 +158,26 @@ cp arch/x86/boot/bzImage ..
 ## QEMU
 
 ```sh
-qemu-system-x86_64 -kernel bzImage -initrd init.cpio.lzma -append "rdinit=/init console=ttyS0,115200n8" -nographic
+qemu-system-x86_64 -kernel bzImage -initrd init.cpio.lzma -append "rdinit=/init console=ttyS0,115200n8" -nographic -serial mon:stdio
+```
+
+## Image build (ISO or IMG)
+
+```sh
+sudo apt-get install \
+fdisk \
+util-linux \
+e2fsprogs \
+syslinux \
+syslinux-common \
+isolinux \
+xorriso \
+grub-pc-bin \
+grub-common
+```
+
+```sh
+qemu-system-x86_64 -cdrom os.iso -nographic -serial mon:stdio
+
+qemu-system-x86_64 -drive file=usb.img,format=raw -nographic -serial mon:stdio
 ```

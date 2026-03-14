@@ -2,3 +2,5 @@
 bzImage
 init.cpio
 init.cpio.lzma
+os.iso
+usb.img
