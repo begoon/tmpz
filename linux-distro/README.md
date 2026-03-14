@@ -63,6 +63,13 @@ CONFIG_VT=y
 CONFIG_VT_CONSOLE=y
 ```
 
+### Enable using QEMU with -nographic
+
+```text
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+```
+
 ### What the Go runtime specifically needed
 
 ```text
@@ -90,6 +97,9 @@ CONFIG_POSIX_TIMERS=y
 CONFIG_HIGH_RES_TIMERS=y
 CONFIG_EPOLL=y
 CONFIG_EVENTFD=y
+
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
 ```
 
 ## Configure the kernel
@@ -115,7 +125,9 @@ make tinyconfig
   -e POSIX_TIMERS \
   -e HIGH_RES_TIMERS \
   -e EPOLL \
-  -e EVENTFD
+  -e EVENTFD \
+  -e SERIAL_8250 \
+  -e SERIAL_8250_CONSOLE
 make olddefconfig
 ```
 
@@ -146,5 +158,5 @@ cp arch/x86/boot/bzImage ..
 ## QEMU
 
 ```sh
-qemu-system-x86_64 -kernel bzImage -initrd init.cpio.lzma -append "rdinit=/init"
+qemu-system-x86_64 -kernel bzImage -initrd init.cpio.lzma -append "rdinit=/init console=ttyS0,115200n8" -nographic
 ```
