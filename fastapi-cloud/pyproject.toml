@@ -7,3 +7,11 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.135.2",
 ]
+
+[dependency-groups]
+dev = [
+    "anyio>=4.13.0",
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+    "pytest-anyio>=0.0.0",
+]
