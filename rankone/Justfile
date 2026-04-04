@@ -1,0 +1,13 @@
+set dotenv-load := true
+set unstable := true
+
+default: version
+
+version:
+    uv run rankone.py 
+
+represent image:
+    uv run rankone.py {{ image }}
+
+compare image1 image2:
+    uv run rankone.py {{ image1 }} {{ image2 }}

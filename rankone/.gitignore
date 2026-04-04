@@ -1,0 +1,3 @@
+.venv
+faces/*.*
+.claude/settings.local.json
