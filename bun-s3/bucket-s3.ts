@@ -10,5 +10,8 @@ const client = new Bun.S3Client({
     secretAccessKey: S3_SECRET_ACCESS_KEY,
 });
 
-const f = client.file("gallery.gal");
+const f = client.file("rankone-documentaion-data.zip");
+
+const started = Date.now();
 console.log((await f.arrayBuffer()).byteLength);
+console.log(`took ${(Date.now() - started) / 1000} seconds`);
