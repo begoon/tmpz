@@ -1,0 +1,13 @@
+static := "$(find static -type f)"
+
+build-linux:
+    bun build --compile --minify --target=bun-linux-x64-musl ./index.ts {{static}} --outfile exe
+
+build-macos:
+    bun build --compile --minify ./index.ts {{static}} --outfile exe
+
+docker-build:
+    docker build -t bun-bundle --platform linux/amd64 .
+
+docker-run:
+    docker run -it --rm --init -p 3000:3000 bun-bundle
