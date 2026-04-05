@@ -42,10 +42,10 @@ serve({
 
         const filename = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
         const { PUBLIC_CLERK_PUBLISHABLE_KEY } = process.env;
-        const html = (await Bun.file(filename).text()).replace(
-            "PUBLIC_CLERK_PUBLISHABLE_KEY",
-            PUBLIC_CLERK_PUBLISHABLE_KEY!
-        );
+        const clerkFrontendAPI = atob(PUBLIC_CLERK_PUBLISHABLE_KEY!.split("_")[2]).replace(/\$$/, "");
+        const html = (await Bun.file(filename).text())
+            .replaceAll("PUBLIC_CLERK_PUBLISHABLE_KEY", PUBLIC_CLERK_PUBLISHABLE_KEY!)
+            .replaceAll("CLERK_FRONTEND_API", clerkFrontendAPI);
         const contentType = filename.endsWith(".js") ? "application/javascript" : "text/html";
         return new Response(html, {
             headers: { "Content-Type": contentType },
