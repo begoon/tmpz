@@ -1,3 +1,4 @@
 .venv
 faces/*.*
+result.jpg
 .claude/settings.local.json

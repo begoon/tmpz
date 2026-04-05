@@ -6,8 +6,8 @@ default: version
 version:
     uv run rankone.py 
 
-represent image:
+represent image="faces/a1.jpg":
     uv run rankone.py {{ image }}
 
-compare image1 image2:
+compare image1="faces/a1.jpg" image2="faces/a2.jpg":
     uv run rankone.py {{ image1 }} {{ image2 }}
