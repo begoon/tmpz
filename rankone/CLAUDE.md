@@ -26,4 +26,4 @@ JSON API client for the Rank One (ROC) face recognition server.
 ## Test images
 
 - `faces/a1.jpg`, `faces/a2.jpg` — same person (expect high similarity ~0.99)
-- `faces/b.jpeg` — different person (expect similarity ~0.0)
+- `faces/b.jpg` — different person (expect similarity ~0.0)
