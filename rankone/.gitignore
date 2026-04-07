@@ -1,4 +1,6 @@
 .venv
-faces/*.*
+i/**
 result.jpg
 .claude/settings.local.json
+__pycache__
+*.pyc

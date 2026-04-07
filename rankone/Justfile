@@ -1,13 +1,28 @@
 set dotenv-load := true
 set unstable := true
 
-default: version
+default: version-face
 
-version:
-    uv run rankone.py 
+version-face:
+    uv run rankone_face.py 
 
-represent image="faces/a1.jpg":
-    uv run rankone.py {{ image }}
+represent-face image="i/faces/a1.jpg":
+    uv run rankone_face.py {{ image }}
 
-compare image1="faces/a1.jpg" image2="faces/a2.jpg":
-    uv run rankone.py {{ image1 }} {{ image2 }}
+compare-face-match image1="i/faces/a1.jpg" image2="i/faces/a2.jpg":
+    uv run rankone_face.py {{ image1 }} {{ image2 }}
+
+compare-face-mismatch image1="i/faces/a1.jpg" image2="i/faces/b.jpg":
+    uv run rankone_face.py {{ image1 }} {{ image2 }}
+
+version-fingerprints:
+    uv run rankone_fingerprints.py
+
+represent-fingerprints image="i/fingerprints/a1.png":
+    uv run rankone_fingerprints.py {{ image }}
+
+compare-fingerprints-match image1="i/fingerprints/a1.png" image2="i/fingerprints/a1.png":
+    uv run rankone_fingerprints.py {{ image1 }} {{ image2 }}
+
+compare-fingerprints-mismatch image1="i/fingerprints/a1.png" image2="i/fingerprints/a2.png":
+    uv run rankone_fingerprints.py {{ image1 }} {{ image2 }}
