@@ -30,6 +30,11 @@
         { src: "/i/faces/a1.jpg", name: "Face A1" },
         { src: "/i/faces/a2.jpg", name: "Face A2" },
         { src: "/i/faces/b.jpg", name: "Face B" },
+        { src: "/i/faces/c.jpg", name: "Face C" },
+        { src: "/i/faces/d.jpg", name: "Face D" },
+        { src: "/i/faces/e1.jpg", name: "Face E1" },
+        { src: "/i/faces/e2.jpg", name: "Face E2" },
+        { src: "/i/faces/e3.jpg", name: "Face E3" },
         { src: "/i/fingerprints/a1.png", name: "FP A1" },
         { src: "/i/fingerprints/a2.png", name: "FP A2" },
     ];
