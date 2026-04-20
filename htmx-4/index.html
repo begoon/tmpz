@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>htmx 4 extension examples</title>
+        <meta name="htmx-config" content='{"mode": "cors", "boostBrowserIndicator": true}' />
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@next/dist/htmx.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@next/dist/ext/hx-download.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@next/dist/ext/hx-browser-indicator.js"></script>
+    </head>
+    <body>
+        <h2>Download extension</h2>
+
+        <!-- httpbin /bytes/N returns N random bytes with Content-Length set,
+       so the progress events fire with real numbers. -->
+        <button hx-get="https://httpbin.org/bytes/100000000" hx-swap="download">Download 100 MB</button>
+
+        <progress id="prog" value="0" max="100"></progress>
+        <span id="status">idle</span>
+
+        <script>
+            const prog = document.getElementById("prog");
+            const status = document.getElementById("status");
+
+            addEventListener("htmx:download:start", (e) => (status.textContent = `starting (${e.detail.total} bytes)`));
+            addEventListener("htmx:download:progress", (e) => {
+                prog.value = e.detail.percent;
+            });
+            addEventListener("htmx:download:complete", (e) => (status.textContent = `done: ${e.detail.filename}`));
+        </script>
+
+        <h2>Browser indicator extension</h2>
+
+        <!-- httpbin /delay/N holds the response for N seconds, so the tab spinner is visible. -->
+        <button hx-get="https://httpbin.org/delay/2" hx-target="#data" hx-swap="innerHTML" hx-browser-indicator="true">
+            Load data (2s delay, watch the tab spinner)
+        </button>
+        <pre id="data"></pre>
+
+        <!-- Boosted link: picks up the indicator automatically via boostBrowserIndicator in htmx-config. -->
+        <p><a href="https://httpbin.org/html" hx-boost="true">Boosted navigation (httpbin /html)</a></p>
+    </body>
+</html>
