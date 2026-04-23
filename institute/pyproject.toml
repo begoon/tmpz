@@ -1,0 +1,17 @@
+[project]
+name = "matrix1"
+version = "1.0.0"
+description = "Python/SDL port of the 1995 Turbo Pascal Matrix demo by Alexander Demin"
+requires-python = ">=3.11"
+dependencies = [
+    "pygame-ce>=2.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.0",
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py311"]
