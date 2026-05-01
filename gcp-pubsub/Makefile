@@ -13,7 +13,7 @@ publish:
 	--message "$(MSG)"
 
 tunnel:
-	grok http 8000
+	ngrok http 8000
 
 tf-apply:
 	terraform apply
