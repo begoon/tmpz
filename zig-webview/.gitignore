@@ -1,0 +1,20 @@
+# Zig
+zig-out/
+.zig-cache/
+
+# Node
+node_modules/
+trial/frontend/dist/
+
+# Locally-bootstrapped zero-native CLI (regenerable via `npm install zero-native`)
+.cli-install/
+
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+*.swp
+
+# Claude Code
+.claude/

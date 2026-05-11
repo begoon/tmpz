@@ -1,0 +1,27 @@
+set working-directory := "trial"
+
+export PATH := justfile_directory() / ".cli-install/node_modules/.bin:" + env_var('PATH')
+
+default:
+    @just --list
+
+# Run with Vite dev server + native shell (HMR enabled)
+dev:
+    zig build dev
+
+# Build a release .app bundle for macOS
+build:
+    zig build package -Doptimize=ReleaseSmall
+    chmod +x zig-out/package/trial-*.app/Contents/MacOS/trial
+    @echo "Built: trial/$(ls -d zig-out/package/trial-*.app)"
+
+# Launch the most recently built .app bundle
+run-app:
+    open $(ls -dt zig-out/package/trial-*.app | head -1)
+
+open-folder:
+    open $(ls -dt zig-out/package | head -1)
+
+# Remove build artifacts
+clean:
+    rm -rf zig-out .zig-cache frontend/dist frontend/node_modules
