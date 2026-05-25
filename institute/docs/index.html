@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <style type="text/css">
+            .dosbox-container {
+                width: 640px;
+                height: 400px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="dosbox1"></div>
+        <div id="dosbox2"></div>
+
+        <script type="text/javascript" src="https://js-dos.com/cdn/js-dos-api.js"></script>
+        <script type="text/javascript">
+            new Dosbox({
+                id: "dosbox1",
+                onload: function (dosbox) {
+                    dosbox.run("./MAT.ZIP", "MAT10.EXE");
+                },
+            });
+
+            new Dosbox({
+                id: "dosbox2",
+                onload: function (dosbox) {
+                    dosbox.run("./MAT.ZIP", "MAT20.BAT");
+                },
+            });
+        </script>
+    </body>
+</html>
