@@ -1,9 +1,5 @@
 .env
 node_modules
+.venv
 
-
-htmx-4/.claude/settings.local.json
-mastermind/.claude/settings.local.json
-institute/.claude/settings.local.json
-institute/__pycache__
-institute/.venv
+.claude/settings.local.json
