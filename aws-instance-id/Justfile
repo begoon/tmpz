@@ -1,0 +1,18 @@
+default: build
+
+# Build sdist and wheel into dist/
+build:
+    uv build
+
+# Publish to PyPI (requires UV_PUBLISH_TOKEN or ~/.pypirc credentials)
+publish: clean build
+    uv publish
+
+clean:
+    rm -rf dist
+
+run:
+    uv run ec2-instance-id
+
+clean-build:
+    rm -rf dist .venv
