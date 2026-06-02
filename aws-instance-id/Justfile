@@ -8,11 +8,8 @@ build:
 publish: clean build
     uv publish
 
-clean:
-    rm -rf dist
-
 run:
     uv run ec2-instance-id
 
-clean-build:
+clean:
     rm -rf dist .venv
