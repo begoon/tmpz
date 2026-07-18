@@ -1,0 +1,17 @@
+{
+  "name": "gcp-notification",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  },
+  "description": "CLI to write structured log entries to GCP Cloud Logging + log-based Slack alerting",
+  "private": true,
+  "scripts": {
+    "gcp-message": "bun run gcp-message.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "google-auth-library": "^10.9.0"
+  }
+}
