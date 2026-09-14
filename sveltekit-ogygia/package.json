@@ -1,0 +1,26 @@
+{
+  "name": "sveltekit-ogygia-islands",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SvelteKit + Bun example app showcasing partial (island) hydration with ogygia",
+  "scripts": {
+    "dev": "bunx --bun vite dev",
+    "build": "bunx --bun vite build",
+    "preview": "bunx --bun vite preview",
+    "start": "bun ./build/index.js",
+    "check": "bunx svelte-kit sync && bunx svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "ogygia": "^0.7.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.5.7",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  }
+}
