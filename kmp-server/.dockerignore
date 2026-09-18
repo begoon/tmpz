@@ -1,0 +1,14 @@
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+.git/
+Dockerfile
+.dockerignore
+README.md
+justfile
+.tools/
+.vscode/
+bin/
+.editorconfig

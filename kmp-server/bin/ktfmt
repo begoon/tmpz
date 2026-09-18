@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Runs ktfmt in kotlinlang style, the same engine and version the Gradle ktfmtCheck task
+# uses, so editor formatting and `just build` always agree. Reads stdin when given "-".
+# The jar is downloaded once into .tools/ (git-ignored).
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+version="$(sed -nE 's/^ktfmt = "([^"]+)"/\1/p' "$root/gradle/libs.versions.toml")"
+jar="$root/.tools/ktfmt-$version-with-dependencies.jar"
+if [ ! -f "$jar" ]; then
+    mkdir -p "$root/.tools"
+    curl -fsSL -o "$jar.tmp" \
+        "https://repo1.maven.org/maven2/com/facebook/ktfmt/$version/ktfmt-$version-with-dependencies.jar"
+    mv "$jar.tmp" "$jar"
+fi
+exec java -jar "$jar" --kotlinlang-style "$@"

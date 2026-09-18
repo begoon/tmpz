@@ -1,0 +1,6 @@
+{
+  "recommendations": [
+    "jetbrains.kotlin-server",
+    "jkillian.custom-local-formatters"
+  ]
+}

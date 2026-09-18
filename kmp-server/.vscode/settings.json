@@ -1,0 +1,14 @@
+{
+  "[kotlin]": {
+    "editor.defaultFormatter": "jkillian.custom-local-formatters",
+    "editor.formatOnSave": true
+  },
+  "customLocalFormatters.formatters": [
+    {
+      "command": "bin/ktfmt -",
+      "languages": ["kotlin"]
+    }
+  ],
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true
+}

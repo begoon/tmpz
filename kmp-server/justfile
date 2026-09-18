@@ -1,0 +1,35 @@
+set quiet
+
+# List recipes
+default:
+    just --list --unsorted
+
+# Check formatting, then compile and assemble the server jar
+build:
+    ./gradlew ktfmtCheck assemble
+
+# Reformat all Kotlin sources and build scripts with ktfmt
+fmt:
+    ./gradlew ktfmtFormat
+
+# Check formatting without changing anything
+fmt-check:
+    ./gradlew ktfmtCheck
+
+# Run the server (PORT env var overrides 8080)
+serve:
+    ./gradlew run
+
+# Run endpoint tests
+test:
+    ./gradlew test
+
+image := "kmp-server"
+
+# Build the Docker image
+docker-build:
+    docker build -t {{image}} .
+
+# Run the Docker image (PORT env var overrides 8080 on the host side)
+docker-run port=env('PORT', '8080'):
+    docker run --rm -it -p {{port}}:8080 {{image}}
