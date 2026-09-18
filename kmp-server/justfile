@@ -24,6 +24,11 @@ serve:
 test:
     ./gradlew test
 
+# Stop Gradle daemons and remove all local build output and caches
+clean:
+    -./gradlew --stop
+    rm -rf build .gradle .kotlin .tools
+
 image := "kmp-server"
 
 # Build the Docker image

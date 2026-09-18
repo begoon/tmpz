@@ -15,6 +15,7 @@ just serve      # start on http://localhost:8080 (PORT overrides)
 just test       # run endpoint tests
 just fmt        # reformat all Kotlin with ktfmt
 just fmt-check  # formatting check only
+just clean      # stop Gradle daemons, remove build/, .gradle/, .kotlin/, .tools/
 ```
 
 ## Formatting
