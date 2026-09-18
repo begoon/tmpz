@@ -11,14 +11,14 @@ RUN ./gradlew --no-daemon dependencies --quiet > /dev/null
 COPY src ./src
 RUN ./gradlew --no-daemon installDist
 
-# Stage 2: run on distroless Java. No shell or package manager, runs as uid 65532 (nonroot).
-# Its entrypoint is `java -jar`, which the Gradle start script cannot use, so the classpath
-# is passed explicitly instead.
-FROM gcr.io/distroless/java17-debian12:nonroot
+# Stage 2: run on a small JRE-only Alpine image. Temurin publishes no Alpine JRE 17
+# for arm64, so the runtime uses Liberica, which does.
+FROM bellsoft/liberica-openjre-alpine:17
 WORKDIR /app
-COPY --from=build /app/build/install/kmp-server/lib ./lib
+COPY --from=build /app/build/install/kmp-server ./
 
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-cp", "/app/lib/*", "dev.abc.server.ApplicationKt"]
+USER 1000:1000
+ENTRYPOINT ["bin/kmp-server"]
