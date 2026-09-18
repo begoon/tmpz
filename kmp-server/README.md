@@ -36,3 +36,7 @@ just docker-build          # builds the kmp-server image
 just docker-run            # runs it on http://localhost:8080
 just docker-run 9090       # or any other host port
 ```
+
+The runtime image is Google distroless Java 17: no shell or package manager, and the
+server runs as the unprivileged `nonroot` user. Because there is no shell,
+`docker exec` into the container does not work; use `docker logs` instead.
