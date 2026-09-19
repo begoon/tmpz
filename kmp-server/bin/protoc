@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Runs the protoc release pinned in gradle/libs.versions.toml, the same version as the
+# protobuf runtime the server links against, which the generated code requires.
+# The binary is downloaded once from Maven Central into .tools/ (git-ignored).
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+version="$(sed -nE 's/^protobuf = "([^"]+)"/\1/p' "$root/gradle/libs.versions.toml")"
+case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64) platform=osx-aarch_64 ;;
+    Darwin-x86_64) platform=osx-x86_64 ;;
+    Linux-x86_64) platform=linux-x86_64 ;;
+    Linux-aarch64) platform=linux-aarch_64 ;;
+    *) echo "bin/protoc: unsupported platform $(uname -s)-$(uname -m)" >&2; exit 1 ;;
+esac
+bin="$root/.tools/protoc-$version-$platform"
+if [ ! -x "$bin" ]; then
+    mkdir -p "$root/.tools"
+    curl -fsSL -o "$bin.tmp" \
+        "https://repo1.maven.org/maven2/com/google/protobuf/protoc/$version/protoc-$version-$platform.exe"
+    chmod +x "$bin.tmp"
+    mv "$bin.tmp" "$bin"
+fi
+exec "$bin" "$@"

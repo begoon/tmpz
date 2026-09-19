@@ -1,0 +1,42 @@
+// Messages exchanged over the /ws/{id} websocket endpoint as binary frames.
+// Every frame from the client is a Request; every frame from the server is a Response.
+// Regenerate the Kotlin/Java sources with `just protobuf` after editing.
+syntax = "proto3";
+
+package abc;
+
+option java_package = "dev.abc.server.proto";
+option java_multiple_files = true;
+
+message Request {
+  oneof body {
+    Ping ping = 1;
+    GetStatus get_status = 2;
+  }
+}
+
+message Response {
+  oneof body {
+    Pong pong = 1;
+    Status status = 2;
+  }
+}
+
+// The server logs the message.
+message Ping {
+  string message = 1;
+}
+
+// Answer to Ping; n is the sequential number of pings the server has received
+// since it started, across all connections.
+message Pong {
+  int32 n = 1;
+}
+
+message GetStatus {}
+
+// Answer to GetStatus; memory is the resident set size of the server process in bytes.
+message Status {
+  int64 memory = 1;
+  string state = 2;
+}

@@ -24,6 +24,15 @@ serve:
 test:
     ./gradlew test
 
+# Regenerate Kotlin and Java sources from proto/protocol.proto into src/main/generated
+protobuf:
+    rm -rf src/main/generated
+    mkdir -p src/main/generated/java src/main/generated/kotlin
+    bin/protoc --proto_path=proto \
+        --java_out=src/main/generated/java \
+        --kotlin_out=src/main/generated/kotlin \
+        protocol.proto
+
 # Stop Gradle daemons and remove all local build output and caches
 clean:
     -./gradlew --stop

@@ -1,11 +1,37 @@
 # kmp-server
 
-Demo REST server written in Kotlin (JVM) with Ktor.
+Demo REST and websocket server written in Kotlin (JVM) with Ktor.
 
 | Endpoint  | Response                |
 |-----------|-------------------------|
 | `GET /`   | `ok` (text/plain)       |
 | `GET /health` | `{"status":"UP"}` (application/json) |
+| `WS /ws/{id}` | one `Response` per `Request` (binary protobuf frames) |
+
+## Websocket
+
+`/ws/{id}` speaks protobuf, defined in `proto/protocol.proto`. Each binary frame from
+the client is a `Request` and is answered with one `Response`; both are `oneof`
+envelopes, since bare protobuf messages are not self-describing.
+
+| Request | Response | Behaviour |
+|---------|----------|-----------|
+| `Ping { message: string }` | `Pong { n: int32 }` | logs the message; `n` counts pings since the server started, across all connections and ids |
+| `GetStatus {}` | `Status { memory: int64, state: string }` | `memory` is the resident set size of the server process in bytes, `state` is `ok` |
+
+A text frame, a frame that is not a valid `Request`, or a `Request` with no body closes
+the connection with close code 1003.
+
+Kotlin and Java sources for the messages are generated into `src/main/generated/`
+and committed, so building needs no protoc. After editing the `.proto`, run:
+
+```sh
+just protobuf   # regenerates src/main/generated with bin/protoc
+```
+
+`bin/protoc` downloads the protoc release pinned in `gradle/libs.versions.toml` into
+`.tools/` on first use; the pinned version matches the protobuf runtime dependency,
+which the generated code requires.
 
 ## Commands
 
@@ -13,6 +39,7 @@ Demo REST server written in Kotlin (JVM) with Ktor.
 just build      # check formatting, compile and assemble
 just serve      # start on http://localhost:8080 (PORT overrides)
 just test       # run endpoint tests
+just protobuf   # regenerate protobuf sources from proto/protocol.proto
 just fmt        # reformat all Kotlin with ktfmt
 just fmt-check  # formatting check only
 just clean      # stop Gradle daemons, remove build/, .gradle/, .kotlin/, .tools/
