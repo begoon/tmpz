@@ -62,7 +62,7 @@ private fun DefaultWebSocketServerSession.handle(
             call.application.log.info("ws/$id ping #$n: ${request.ping.message}")
             response { pong = pong { this.n = n } }
         }
-        Request.BodyCase.GET_STATUS ->
+        Request.BodyCase.QUERY_STATUS ->
             response {
                 status = status {
                     memory = ProcessMemory.rssBytes()

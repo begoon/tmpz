@@ -55,7 +55,7 @@ private static final long serialVersionUID = 0L;
       implements com.google.protobuf.Internal.EnumLite,
           com.google.protobuf.AbstractMessage.InternalOneOfEnum {
     PING(1),
-    GET_STATUS(2),
+    QUERY_STATUS(2),
     BODY_NOT_SET(0);
     private final int value;
     private BodyCase(int value) {
@@ -74,7 +74,7 @@ private static final long serialVersionUID = 0L;
     public static BodyCase forNumber(int value) {
       switch (value) {
         case 1: return PING;
-        case 2: return GET_STATUS;
+        case 2: return QUERY_STATUS;
         case 0: return BODY_NOT_SET;
         default: return null;
       }
@@ -121,35 +121,35 @@ private static final long serialVersionUID = 0L;
     return dev.abc.server.proto.Ping.getDefaultInstance();
   }
 
-  public static final int GET_STATUS_FIELD_NUMBER = 2;
+  public static final int QUERY_STATUS_FIELD_NUMBER = 2;
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
-   * @return Whether the getStatus field is set.
+   * <code>.abc.QueryStatus query_status = 2;</code>
+   * @return Whether the queryStatus field is set.
    */
   @java.lang.Override
-  public boolean hasGetStatus() {
+  public boolean hasQueryStatus() {
     return bodyCase_ == 2;
   }
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
-   * @return The getStatus.
+   * <code>.abc.QueryStatus query_status = 2;</code>
+   * @return The queryStatus.
    */
   @java.lang.Override
-  public dev.abc.server.proto.GetStatus getGetStatus() {
+  public dev.abc.server.proto.QueryStatus getQueryStatus() {
     if (bodyCase_ == 2) {
-       return (dev.abc.server.proto.GetStatus) body_;
+       return (dev.abc.server.proto.QueryStatus) body_;
     }
-    return dev.abc.server.proto.GetStatus.getDefaultInstance();
+    return dev.abc.server.proto.QueryStatus.getDefaultInstance();
   }
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
+   * <code>.abc.QueryStatus query_status = 2;</code>
    */
   @java.lang.Override
-  public dev.abc.server.proto.GetStatusOrBuilder getGetStatusOrBuilder() {
+  public dev.abc.server.proto.QueryStatusOrBuilder getQueryStatusOrBuilder() {
     if (bodyCase_ == 2) {
-       return (dev.abc.server.proto.GetStatus) body_;
+       return (dev.abc.server.proto.QueryStatus) body_;
     }
-    return dev.abc.server.proto.GetStatus.getDefaultInstance();
+    return dev.abc.server.proto.QueryStatus.getDefaultInstance();
   }
 
   private byte memoizedIsInitialized = -1;
@@ -170,7 +170,7 @@ private static final long serialVersionUID = 0L;
       output.writeMessage(1, (dev.abc.server.proto.Ping) body_);
     }
     if (bodyCase_ == 2) {
-      output.writeMessage(2, (dev.abc.server.proto.GetStatus) body_);
+      output.writeMessage(2, (dev.abc.server.proto.QueryStatus) body_);
     }
     getUnknownFields().writeTo(output);
   }
@@ -182,7 +182,7 @@ private static final long serialVersionUID = 0L;
     }
     if (bodyCase_ == 2) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(2, (dev.abc.server.proto.GetStatus) body_);
+        .computeMessageSize(2, (dev.abc.server.proto.QueryStatus) body_);
     }
     return size;
   }
@@ -215,8 +215,8 @@ private static final long serialVersionUID = 0L;
             .equals(other.getPing())) return false;
         break;
       case 2:
-        if (!getGetStatus()
-            .equals(other.getGetStatus())) return false;
+        if (!getQueryStatus()
+            .equals(other.getQueryStatus())) return false;
         break;
       case 0:
       default:
@@ -238,8 +238,8 @@ private static final long serialVersionUID = 0L;
         hash = (53 * hash) + getPing().hashCode();
         break;
       case 2:
-        hash = (37 * hash) + GET_STATUS_FIELD_NUMBER;
-        hash = (53 * hash) + getGetStatus().hashCode();
+        hash = (37 * hash) + QUERY_STATUS_FIELD_NUMBER;
+        hash = (53 * hash) + getQueryStatus().hashCode();
         break;
       case 0:
       default:
@@ -378,8 +378,8 @@ private static final long serialVersionUID = 0L;
       if (pingBuilder_ != null) {
         pingBuilder_.clear();
       }
-      if (getStatusBuilder_ != null) {
-        getStatusBuilder_.clear();
+      if (queryStatusBuilder_ != null) {
+        queryStatusBuilder_.clear();
       }
       bodyCase_ = 0;
       body_ = null;
@@ -427,8 +427,8 @@ private static final long serialVersionUID = 0L;
         result.body_ = pingBuilder_.build();
       }
       if (bodyCase_ == 2 &&
-          getStatusBuilder_ != null) {
-        result.body_ = getStatusBuilder_.build();
+          queryStatusBuilder_ != null) {
+        result.body_ = queryStatusBuilder_.build();
       }
     }
 
@@ -449,8 +449,8 @@ private static final long serialVersionUID = 0L;
           mergePing(other.getPing());
           break;
         }
-        case GET_STATUS: {
-          mergeGetStatus(other.getGetStatus());
+        case QUERY_STATUS: {
+          mergeQueryStatus(other.getQueryStatus());
           break;
         }
         case BODY_NOT_SET: {
@@ -490,7 +490,7 @@ private static final long serialVersionUID = 0L;
             } // case 10
             case 18: {
               input.readMessage(
-                  internalGetGetStatusFieldBuilder().getBuilder(),
+                  internalGetQueryStatusFieldBuilder().getBuilder(),
                   extensionRegistry);
               bodyCase_ = 2;
               break;
@@ -668,69 +668,69 @@ private static final long serialVersionUID = 0L;
     }
 
     private com.google.protobuf.SingleFieldBuilder<
-        dev.abc.server.proto.GetStatus, dev.abc.server.proto.GetStatus.Builder, dev.abc.server.proto.GetStatusOrBuilder> getStatusBuilder_;
+        dev.abc.server.proto.QueryStatus, dev.abc.server.proto.QueryStatus.Builder, dev.abc.server.proto.QueryStatusOrBuilder> queryStatusBuilder_;
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
-     * @return Whether the getStatus field is set.
+     * <code>.abc.QueryStatus query_status = 2;</code>
+     * @return Whether the queryStatus field is set.
      */
     @java.lang.Override
-    public boolean hasGetStatus() {
+    public boolean hasQueryStatus() {
       return bodyCase_ == 2;
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
-     * @return The getStatus.
+     * <code>.abc.QueryStatus query_status = 2;</code>
+     * @return The queryStatus.
      */
     @java.lang.Override
-    public dev.abc.server.proto.GetStatus getGetStatus() {
-      if (getStatusBuilder_ == null) {
+    public dev.abc.server.proto.QueryStatus getQueryStatus() {
+      if (queryStatusBuilder_ == null) {
         if (bodyCase_ == 2) {
-          return (dev.abc.server.proto.GetStatus) body_;
+          return (dev.abc.server.proto.QueryStatus) body_;
         }
-        return dev.abc.server.proto.GetStatus.getDefaultInstance();
+        return dev.abc.server.proto.QueryStatus.getDefaultInstance();
       } else {
         if (bodyCase_ == 2) {
-          return getStatusBuilder_.getMessage();
+          return queryStatusBuilder_.getMessage();
         }
-        return dev.abc.server.proto.GetStatus.getDefaultInstance();
+        return dev.abc.server.proto.QueryStatus.getDefaultInstance();
       }
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
-    public Builder setGetStatus(dev.abc.server.proto.GetStatus value) {
-      if (getStatusBuilder_ == null) {
+    public Builder setQueryStatus(dev.abc.server.proto.QueryStatus value) {
+      if (queryStatusBuilder_ == null) {
         java.util.Objects.requireNonNull(value);
         body_ = value;
         onChanged();
       } else {
-        getStatusBuilder_.setMessage(value);
+        queryStatusBuilder_.setMessage(value);
       }
       bodyCase_ = 2;
       return this;
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
-    public Builder setGetStatus(
-        dev.abc.server.proto.GetStatus.Builder builderForValue) {
-      if (getStatusBuilder_ == null) {
+    public Builder setQueryStatus(
+        dev.abc.server.proto.QueryStatus.Builder builderForValue) {
+      if (queryStatusBuilder_ == null) {
         body_ = builderForValue.build();
         onChanged();
       } else {
-        getStatusBuilder_.setMessage(builderForValue.build());
+        queryStatusBuilder_.setMessage(builderForValue.build());
       }
       bodyCase_ = 2;
       return this;
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
-    public Builder mergeGetStatus(dev.abc.server.proto.GetStatus value) {
-      if (getStatusBuilder_ == null) {
+    public Builder mergeQueryStatus(dev.abc.server.proto.QueryStatus value) {
+      if (queryStatusBuilder_ == null) {
         if (bodyCase_ == 2 &&
-            body_ != dev.abc.server.proto.GetStatus.getDefaultInstance()) {
-          body_ = dev.abc.server.proto.GetStatus.newBuilder((dev.abc.server.proto.GetStatus) body_)
+            body_ != dev.abc.server.proto.QueryStatus.getDefaultInstance()) {
+          body_ = dev.abc.server.proto.QueryStatus.newBuilder((dev.abc.server.proto.QueryStatus) body_)
               .mergeFrom(value).buildPartial();
         } else {
           body_ = value;
@@ -738,19 +738,19 @@ private static final long serialVersionUID = 0L;
         onChanged();
       } else {
         if (bodyCase_ == 2) {
-          getStatusBuilder_.mergeFrom(value);
+          queryStatusBuilder_.mergeFrom(value);
         } else {
-          getStatusBuilder_.setMessage(value);
+          queryStatusBuilder_.setMessage(value);
         }
       }
       bodyCase_ = 2;
       return this;
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
-    public Builder clearGetStatus() {
-      if (getStatusBuilder_ == null) {
+    public Builder clearQueryStatus() {
+      if (queryStatusBuilder_ == null) {
         if (bodyCase_ == 2) {
           bodyCase_ = 0;
           body_ = null;
@@ -761,50 +761,50 @@ private static final long serialVersionUID = 0L;
           bodyCase_ = 0;
           body_ = null;
         }
-        getStatusBuilder_.clear();
+        queryStatusBuilder_.clear();
       }
       return this;
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
-    public dev.abc.server.proto.GetStatus.Builder getGetStatusBuilder() {
-      return internalGetGetStatusFieldBuilder().getBuilder();
+    public dev.abc.server.proto.QueryStatus.Builder getQueryStatusBuilder() {
+      return internalGetQueryStatusFieldBuilder().getBuilder();
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
     @java.lang.Override
-    public dev.abc.server.proto.GetStatusOrBuilder getGetStatusOrBuilder() {
-      if ((bodyCase_ == 2) && (getStatusBuilder_ != null)) {
-        return getStatusBuilder_.getMessageOrBuilder();
+    public dev.abc.server.proto.QueryStatusOrBuilder getQueryStatusOrBuilder() {
+      if ((bodyCase_ == 2) && (queryStatusBuilder_ != null)) {
+        return queryStatusBuilder_.getMessageOrBuilder();
       } else {
         if (bodyCase_ == 2) {
-          return (dev.abc.server.proto.GetStatus) body_;
+          return (dev.abc.server.proto.QueryStatus) body_;
         }
-        return dev.abc.server.proto.GetStatus.getDefaultInstance();
+        return dev.abc.server.proto.QueryStatus.getDefaultInstance();
       }
     }
     /**
-     * <code>.abc.GetStatus get_status = 2;</code>
+     * <code>.abc.QueryStatus query_status = 2;</code>
      */
     private com.google.protobuf.SingleFieldBuilder<
-        dev.abc.server.proto.GetStatus, dev.abc.server.proto.GetStatus.Builder, dev.abc.server.proto.GetStatusOrBuilder> 
-        internalGetGetStatusFieldBuilder() {
-      if (getStatusBuilder_ == null) {
+        dev.abc.server.proto.QueryStatus, dev.abc.server.proto.QueryStatus.Builder, dev.abc.server.proto.QueryStatusOrBuilder> 
+        internalGetQueryStatusFieldBuilder() {
+      if (queryStatusBuilder_ == null) {
         if (!(bodyCase_ == 2)) {
-          body_ = dev.abc.server.proto.GetStatus.getDefaultInstance();
+          body_ = dev.abc.server.proto.QueryStatus.getDefaultInstance();
         }
-        getStatusBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-            dev.abc.server.proto.GetStatus, dev.abc.server.proto.GetStatus.Builder, dev.abc.server.proto.GetStatusOrBuilder>(
-                (dev.abc.server.proto.GetStatus) body_,
+        queryStatusBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            dev.abc.server.proto.QueryStatus, dev.abc.server.proto.QueryStatus.Builder, dev.abc.server.proto.QueryStatusOrBuilder>(
+                (dev.abc.server.proto.QueryStatus) body_,
                 getParentForChildren(),
                 isClean());
         body_ = null;
       }
       bodyCase_ = 2;
       onChanged();
-      return getStatusBuilder_;
+      return queryStatusBuilder_;
     }
 
     // @@protoc_insertion_point(builder_scope:abc.Request)

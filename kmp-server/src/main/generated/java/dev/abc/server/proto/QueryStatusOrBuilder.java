@@ -6,7 +6,7 @@
 package dev.abc.server.proto;
 
 @com.google.protobuf.Generated
-public interface GetStatusOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:abc.GetStatus)
+public interface QueryStatusOrBuilder extends
+    // @@protoc_insertion_point(interface_extends:abc.QueryStatus)
     com.google.protobuf.MessageOrBuilder {
 }

@@ -2,8 +2,8 @@ package dev.abc.server
 
 import dev.abc.server.proto.Request
 import dev.abc.server.proto.Response
-import dev.abc.server.proto.getStatus
 import dev.abc.server.proto.ping
+import dev.abc.server.proto.queryStatus
 import dev.abc.server.proto.request
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -83,7 +83,7 @@ class WebSocketRoutesTest {
         val client = wsClient()
 
         client.webSocket("/ws/s") {
-            send(request { getStatus = getStatus {} })
+            send(request { queryStatus = queryStatus {} })
 
             val response = receive()
             assertEquals(Response.BodyCase.STATUS, response.bodyCase)
@@ -97,7 +97,7 @@ class WebSocketRoutesTest {
         val client = wsClient()
 
         client.webSocket("/ws/s") {
-            send(request { getStatus = getStatus {} })
+            send(request { queryStatus = queryStatus {} })
             receive()
             sendPing("first ping")
 

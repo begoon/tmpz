@@ -12,7 +12,7 @@ public inline fun status(block: dev.abc.server.proto.StatusKt.Dsl.() -> kotlin.U
   dev.abc.server.proto.StatusKt.Dsl._create(dev.abc.server.proto.Status.newBuilder()).apply { block() }._build()
 /**
  * ```
- * Answer to GetStatus; memory is the resident set size of the server process in bytes.
+ * Answer to QueryStatus; memory is the resident set size of the server process in bytes.
  * ```
  *
  * Protobuf type `abc.Status`

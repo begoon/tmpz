@@ -47,10 +47,10 @@ public final class Protocol extends com.google.protobuf.GeneratedFile {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_abc_Pong_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_abc_GetStatus_descriptor;
+    internal_static_abc_QueryStatus_descriptor;
   static final 
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_abc_GetStatus_fieldAccessorTable;
+      internal_static_abc_QueryStatus_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_abc_Status_descriptor;
   static final 
@@ -65,14 +65,15 @@ public final class Protocol extends com.google.protobuf.GeneratedFile {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\016protocol.proto\022\003abc\"R\n\007Request\022\031\n\004ping" +
-      "\030\001 \001(\0132\t.abc.PingH\000\022$\n\nget_status\030\002 \001(\0132" +
-      "\016.abc.GetStatusH\000B\006\n\004body\"L\n\010Response\022\031\n" +
-      "\004pong\030\001 \001(\0132\t.abc.PongH\000\022\035\n\006status\030\002 \001(\013" +
-      "2\013.abc.StatusH\000B\006\n\004body\"\027\n\004Ping\022\017\n\007messa" +
-      "ge\030\001 \001(\t\"\021\n\004Pong\022\t\n\001n\030\001 \001(\005\"\013\n\tGetStatus" +
-      "\"\'\n\006Status\022\016\n\006memory\030\001 \001(\003\022\r\n\005state\030\002 \001(" +
-      "\tB\030\n\024dev.abc.server.protoP\001b\006proto3"
+      "\n\016protocol.proto\022\003abc\"V\n\007Request\022\031\n\004ping" +
+      "\030\001 \001(\0132\t.abc.PingH\000\022(\n\014query_status\030\002 \001(" +
+      "\0132\020.abc.QueryStatusH\000B\006\n\004body\"L\n\010Respons" +
+      "e\022\031\n\004pong\030\001 \001(\0132\t.abc.PongH\000\022\035\n\006status\030\002" +
+      " \001(\0132\013.abc.StatusH\000B\006\n\004body\"\027\n\004Ping\022\017\n\007m" +
+      "essage\030\001 \001(\t\"\021\n\004Pong\022\t\n\001n\030\001 \001(\005\"\r\n\013Query" +
+      "Status\"\'\n\006Status\022\016\n\006memory\030\001 \001(\003\022\r\n\005stat" +
+      "e\030\002 \001(\tB\030\n\024dev.abc.server.protoP\001b\006proto" +
+      "3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -83,7 +84,7 @@ public final class Protocol extends com.google.protobuf.GeneratedFile {
     internal_static_abc_Request_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_abc_Request_descriptor,
-        new java.lang.String[] { "Ping", "GetStatus", "Body", });
+        new java.lang.String[] { "Ping", "QueryStatus", "Body", });
     internal_static_abc_Response_descriptor =
       getDescriptor().getMessageType(1);
     internal_static_abc_Response_fieldAccessorTable = new
@@ -102,11 +103,11 @@ public final class Protocol extends com.google.protobuf.GeneratedFile {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_abc_Pong_descriptor,
         new java.lang.String[] { "N", });
-    internal_static_abc_GetStatus_descriptor =
+    internal_static_abc_QueryStatus_descriptor =
       getDescriptor().getMessageType(4);
-    internal_static_abc_GetStatus_fieldAccessorTable = new
+    internal_static_abc_QueryStatus_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_abc_GetStatus_descriptor,
+        internal_static_abc_QueryStatus_descriptor,
         new java.lang.String[] { });
     internal_static_abc_Status_descriptor =
       getDescriptor().getMessageType(5);

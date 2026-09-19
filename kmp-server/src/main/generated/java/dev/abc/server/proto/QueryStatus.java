@@ -6,13 +6,13 @@
 package dev.abc.server.proto;
 
 /**
- * Protobuf type {@code abc.GetStatus}
+ * Protobuf type {@code abc.QueryStatus}
  */
 @com.google.protobuf.Generated
-public final class GetStatus extends
+public final class QueryStatus extends
     com.google.protobuf.GeneratedMessage implements
-    // @@protoc_insertion_point(message_implements:abc.GetStatus)
-    GetStatusOrBuilder {
+    // @@protoc_insertion_point(message_implements:abc.QueryStatus)
+    QueryStatusOrBuilder {
 private static final long serialVersionUID = 0L;
   static {
     com.google.protobuf.RuntimeVersion.validateProtobufGencodeVersion(
@@ -21,31 +21,31 @@ private static final long serialVersionUID = 0L;
       /* minor= */ 36,
       /* patch= */ 2,
       /* suffix= */ "",
-      "GetStatus");
+      "QueryStatus");
   }
-  // Use GetStatus.newBuilder() to construct.
-  private GetStatus(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+  // Use QueryStatus.newBuilder() to construct.
+  private QueryStatus(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
     super(builder);
   }
-  private GetStatus() {
+  private QueryStatus() {
   }
 
   public static final com.google.protobuf.Descriptors.Descriptor
       getDescriptor() {
-    return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_descriptor;
+    return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_descriptor;
   }
 
   @java.lang.Override
   public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
-    return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_descriptor;
+    return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_descriptor;
   }
 
   @java.lang.Override
   protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internalGetFieldAccessorTable() {
-    return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_fieldAccessorTable
+    return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_fieldAccessorTable
         .ensureFieldAccessorsInitialized(
-            dev.abc.server.proto.GetStatus.class, dev.abc.server.proto.GetStatus.Builder.class);
+            dev.abc.server.proto.QueryStatus.class, dev.abc.server.proto.QueryStatus.Builder.class);
   }
 
   private byte memoizedIsInitialized = -1;
@@ -80,10 +80,10 @@ private static final long serialVersionUID = 0L;
     if (obj == this) {
      return true;
     }
-    if (!(obj instanceof dev.abc.server.proto.GetStatus)) {
+    if (!(obj instanceof dev.abc.server.proto.QueryStatus)) {
       return super.equals(obj);
     }
-    dev.abc.server.proto.GetStatus other = (dev.abc.server.proto.GetStatus) obj;
+    dev.abc.server.proto.QueryStatus other = (dev.abc.server.proto.QueryStatus) obj;
 
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
@@ -101,44 +101,44 @@ private static final long serialVersionUID = 0L;
     return hash;
   }
 
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       java.nio.ByteBuffer data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       com.google.protobuf.ByteString data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       com.google.protobuf.ByteString data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(byte[] data)
+  public static dev.abc.server.proto.QueryStatus parseFrom(byte[] data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       byte[] data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(java.io.InputStream input)
+  public static dev.abc.server.proto.QueryStatus parseFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseWithIOException(PARSER, input);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
@@ -146,26 +146,26 @@ private static final long serialVersionUID = 0L;
         .parseWithIOException(PARSER, input, extensionRegistry);
   }
 
-  public static dev.abc.server.proto.GetStatus parseDelimitedFrom(java.io.InputStream input)
+  public static dev.abc.server.proto.QueryStatus parseDelimitedFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseDelimitedWithIOException(PARSER, input);
   }
 
-  public static dev.abc.server.proto.GetStatus parseDelimitedFrom(
+  public static dev.abc.server.proto.QueryStatus parseDelimitedFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       com.google.protobuf.CodedInputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseWithIOException(PARSER, input);
   }
-  public static dev.abc.server.proto.GetStatus parseFrom(
+  public static dev.abc.server.proto.QueryStatus parseFrom(
       com.google.protobuf.CodedInputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
@@ -178,7 +178,7 @@ private static final long serialVersionUID = 0L;
   public static Builder newBuilder() {
     return DEFAULT_INSTANCE.toBuilder();
   }
-  public static Builder newBuilder(dev.abc.server.proto.GetStatus prototype) {
+  public static Builder newBuilder(dev.abc.server.proto.QueryStatus prototype) {
     return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
   }
   @java.lang.Override
@@ -194,26 +194,26 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code abc.GetStatus}
+   * Protobuf type {@code abc.QueryStatus}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-      // @@protoc_insertion_point(builder_implements:abc.GetStatus)
-      dev.abc.server.proto.GetStatusOrBuilder {
+      // @@protoc_insertion_point(builder_implements:abc.QueryStatus)
+      dev.abc.server.proto.QueryStatusOrBuilder {
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_descriptor;
+      return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_descriptor;
     }
 
     @java.lang.Override
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_fieldAccessorTable
+      return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              dev.abc.server.proto.GetStatus.class, dev.abc.server.proto.GetStatus.Builder.class);
+              dev.abc.server.proto.QueryStatus.class, dev.abc.server.proto.QueryStatus.Builder.class);
     }
 
-    // Construct using dev.abc.server.proto.GetStatus.newBuilder()
+    // Construct using dev.abc.server.proto.QueryStatus.newBuilder()
     private Builder() {
 
     }
@@ -232,17 +232,17 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public com.google.protobuf.Descriptors.Descriptor
         getDescriptorForType() {
-      return dev.abc.server.proto.Protocol.internal_static_abc_GetStatus_descriptor;
+      return dev.abc.server.proto.Protocol.internal_static_abc_QueryStatus_descriptor;
     }
 
     @java.lang.Override
-    public dev.abc.server.proto.GetStatus getDefaultInstanceForType() {
-      return dev.abc.server.proto.GetStatus.getDefaultInstance();
+    public dev.abc.server.proto.QueryStatus getDefaultInstanceForType() {
+      return dev.abc.server.proto.QueryStatus.getDefaultInstance();
     }
 
     @java.lang.Override
-    public dev.abc.server.proto.GetStatus build() {
-      dev.abc.server.proto.GetStatus result = buildPartial();
+    public dev.abc.server.proto.QueryStatus build() {
+      dev.abc.server.proto.QueryStatus result = buildPartial();
       if (!result.isInitialized()) {
         throw newUninitializedMessageException(result);
       }
@@ -250,24 +250,24 @@ private static final long serialVersionUID = 0L;
     }
 
     @java.lang.Override
-    public dev.abc.server.proto.GetStatus buildPartial() {
-      dev.abc.server.proto.GetStatus result = new dev.abc.server.proto.GetStatus(this);
+    public dev.abc.server.proto.QueryStatus buildPartial() {
+      dev.abc.server.proto.QueryStatus result = new dev.abc.server.proto.QueryStatus(this);
       onBuilt();
       return result;
     }
 
     @java.lang.Override
     public Builder mergeFrom(com.google.protobuf.Message other) {
-      if (other instanceof dev.abc.server.proto.GetStatus) {
-        return mergeFrom((dev.abc.server.proto.GetStatus)other);
+      if (other instanceof dev.abc.server.proto.QueryStatus) {
+        return mergeFrom((dev.abc.server.proto.QueryStatus)other);
       } else {
         super.mergeFrom(other);
         return this;
       }
     }
 
-    public Builder mergeFrom(dev.abc.server.proto.GetStatus other) {
-      if (other == dev.abc.server.proto.GetStatus.getDefaultInstance()) return this;
+    public Builder mergeFrom(dev.abc.server.proto.QueryStatus other) {
+      if (other == dev.abc.server.proto.QueryStatus.getDefaultInstance()) return this;
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
       return this;
@@ -308,23 +308,23 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
-    // @@protoc_insertion_point(builder_scope:abc.GetStatus)
+    // @@protoc_insertion_point(builder_scope:abc.QueryStatus)
   }
 
-  // @@protoc_insertion_point(class_scope:abc.GetStatus)
-  private static final dev.abc.server.proto.GetStatus DEFAULT_INSTANCE;
+  // @@protoc_insertion_point(class_scope:abc.QueryStatus)
+  private static final dev.abc.server.proto.QueryStatus DEFAULT_INSTANCE;
   static {
-    DEFAULT_INSTANCE = new dev.abc.server.proto.GetStatus();
+    DEFAULT_INSTANCE = new dev.abc.server.proto.QueryStatus();
   }
 
-  public static dev.abc.server.proto.GetStatus getDefaultInstance() {
+  public static dev.abc.server.proto.QueryStatus getDefaultInstance() {
     return DEFAULT_INSTANCE;
   }
 
-  private static final com.google.protobuf.Parser<GetStatus>
-      PARSER = new com.google.protobuf.AbstractParser<GetStatus>() {
+  private static final com.google.protobuf.Parser<QueryStatus>
+      PARSER = new com.google.protobuf.AbstractParser<QueryStatus>() {
     @java.lang.Override
-    public GetStatus parsePartialFrom(
+    public QueryStatus parsePartialFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -343,17 +343,17 @@ private static final long serialVersionUID = 0L;
     }
   };
 
-  public static com.google.protobuf.Parser<GetStatus> parser() {
+  public static com.google.protobuf.Parser<QueryStatus> parser() {
     return PARSER;
   }
 
   @java.lang.Override
-  public com.google.protobuf.Parser<GetStatus> getParserForType() {
+  public com.google.protobuf.Parser<QueryStatus> getParserForType() {
     return PARSER;
   }
 
   @java.lang.Override
-  public dev.abc.server.proto.GetStatus getDefaultInstanceForType() {
+  public dev.abc.server.proto.QueryStatus getDefaultInstanceForType() {
     return DEFAULT_INSTANCE;
   }
 

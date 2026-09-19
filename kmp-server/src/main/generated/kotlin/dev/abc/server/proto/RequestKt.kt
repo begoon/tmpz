@@ -54,27 +54,27 @@ public object RequestKt {
     }
 
     /**
-     * `.abc.GetStatus get_status = 2;`
+     * `.abc.QueryStatus query_status = 2;`
      */
-    public var getStatus: dev.abc.server.proto.GetStatus
-      @kotlin.jvm.JvmName("getGetStatus")
-        get() = _builder.getStatus
-      @kotlin.jvm.JvmName("setGetStatus")
+    public var queryStatus: dev.abc.server.proto.QueryStatus
+      @kotlin.jvm.JvmName("getQueryStatus")
+        get() = _builder.queryStatus
+      @kotlin.jvm.JvmName("setQueryStatus")
         set(value) {
-        _builder.getStatus = value
+        _builder.queryStatus = value
       }
     /**
-     * `.abc.GetStatus get_status = 2;`
+     * `.abc.QueryStatus query_status = 2;`
      */
-    public fun clearGetStatus() {
-      _builder.clearGetStatus()
+    public fun clearQueryStatus() {
+      _builder.clearQueryStatus()
     }
     /**
-     * `.abc.GetStatus get_status = 2;`
-     * @return Whether the getStatus field is set.
+     * `.abc.QueryStatus query_status = 2;`
+     * @return Whether the queryStatus field is set.
      */
-    public fun hasGetStatus(): kotlin.Boolean {
-      return _builder.hasGetStatus()
+    public fun hasQueryStatus(): kotlin.Boolean {
+      return _builder.hasQueryStatus()
     }
     public val bodyCase: dev.abc.server.proto.Request.BodyCase
     @kotlin.jvm.JvmName("getBodyCase")
@@ -92,6 +92,6 @@ public inline fun dev.abc.server.proto.Request.copy(block: `dev.abc.server.proto
 public val dev.abc.server.proto.RequestOrBuilder.pingOrNull: dev.abc.server.proto.Ping?
   get() = if (hasPing()) getPing() else null
 
-public val dev.abc.server.proto.RequestOrBuilder.getStatusOrNull: dev.abc.server.proto.GetStatus?
-  get() = if (hasGetStatus()) getGetStatus() else null
+public val dev.abc.server.proto.RequestOrBuilder.queryStatusOrNull: dev.abc.server.proto.QueryStatus?
+  get() = if (hasQueryStatus()) getQueryStatus() else null
 

@@ -11,7 +11,7 @@ option java_multiple_files = true;
 message Request {
   oneof body {
     Ping ping = 1;
-    GetStatus get_status = 2;
+    QueryStatus query_status = 2;
   }
 }
 
@@ -33,9 +33,9 @@ message Pong {
   int32 n = 1;
 }
 
-message GetStatus {}
+message QueryStatus {}
 
-// Answer to GetStatus; memory is the resident set size of the server process in bytes.
+// Answer to QueryStatus; memory is the resident set size of the server process in bytes.
 message Status {
   int64 memory = 1;
   string state = 2;

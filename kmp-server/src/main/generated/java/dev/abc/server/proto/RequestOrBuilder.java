@@ -26,19 +26,19 @@ public interface RequestOrBuilder extends
   dev.abc.server.proto.PingOrBuilder getPingOrBuilder();
 
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
-   * @return Whether the getStatus field is set.
+   * <code>.abc.QueryStatus query_status = 2;</code>
+   * @return Whether the queryStatus field is set.
    */
-  boolean hasGetStatus();
+  boolean hasQueryStatus();
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
-   * @return The getStatus.
+   * <code>.abc.QueryStatus query_status = 2;</code>
+   * @return The queryStatus.
    */
-  dev.abc.server.proto.GetStatus getGetStatus();
+  dev.abc.server.proto.QueryStatus getQueryStatus();
   /**
-   * <code>.abc.GetStatus get_status = 2;</code>
+   * <code>.abc.QueryStatus query_status = 2;</code>
    */
-  dev.abc.server.proto.GetStatusOrBuilder getGetStatusOrBuilder();
+  dev.abc.server.proto.QueryStatusOrBuilder getQueryStatusOrBuilder();
 
   dev.abc.server.proto.Request.BodyCase getBodyCase();
 }

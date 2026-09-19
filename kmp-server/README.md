@@ -17,7 +17,7 @@ envelopes, since bare protobuf messages are not self-describing.
 | Request | Response | Behaviour |
 |---------|----------|-----------|
 | `Ping { message: string }` | `Pong { n: int32 }` | logs the message; `n` counts pings since the server started, across all connections and ids |
-| `GetStatus {}` | `Status { memory: int64, state: string }` | `memory` is the resident set size of the server process in bytes, `state` is `ok` |
+| `QueryStatus {}` | `Status { memory: int64, state: string }` | `memory` is the resident set size of the server process in bytes, `state` is `ok` |
 
 A text frame, a frame that is not a valid `Request`, or a `Request` with no body closes
 the connection with close code 1003.

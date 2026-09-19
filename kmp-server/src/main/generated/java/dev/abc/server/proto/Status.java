@@ -7,7 +7,7 @@ package dev.abc.server.proto;
 
 /**
  * <pre>
- * Answer to GetStatus; memory is the resident set size of the server process in bytes.
+ * Answer to QueryStatus; memory is the resident set size of the server process in bytes.
  * </pre>
  *
  * Protobuf type {@code abc.Status}
@@ -277,7 +277,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Answer to GetStatus; memory is the resident set size of the server process in bytes.
+   * Answer to QueryStatus; memory is the resident set size of the server process in bytes.
    * </pre>
    *
    * Protobuf type {@code abc.Status}
