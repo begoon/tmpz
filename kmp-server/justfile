@@ -33,6 +33,16 @@ protobuf:
         --kotlin_out=src/main/generated/kotlin \
         protocol.proto
 
+# Download the htmx release pinned in gradle/libs.versions.toml into src/main/resources/assets/htmx
+htmx:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="$(sed -nE 's/^htmx = "([^"]+)"/\1/p' gradle/libs.versions.toml)"
+    mkdir -p src/main/resources/assets/htmx
+    curl -fsSL -o src/main/resources/assets/htmx/htmx.min.js \
+        "https://cdn.jsdelivr.net/npm/htmx.org@$version/dist/htmx.min.js"
+    echo "htmx $version -> src/main/resources/assets/htmx/htmx.min.js"
+
 # Stop Gradle daemons and remove all local build output and caches
 clean:
     -./gradlew --stop

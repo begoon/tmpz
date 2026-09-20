@@ -13,7 +13,9 @@ fun Application.module() {
     val pingCounter = PingCounter()
     routing {
         rootRoute()
+        statsRoute(pingCounter)
         healthRoute()
+        assetsRoute()
         websocketRoute(pingCounter)
     }
 }

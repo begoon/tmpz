@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger
 class PingCounter {
     private val count = AtomicInteger()
 
+    val value: Int
+        get() = count.get()
+
     fun next(): Int = count.incrementAndGet()
 }
 

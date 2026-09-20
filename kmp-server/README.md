@@ -4,9 +4,22 @@ Demo REST and websocket server written in Kotlin (JVM) with Ktor.
 
 | Endpoint  | Response                |
 |-----------|-------------------------|
-| `GET /`   | `ok` (text/plain)       |
+| `GET /`   | dashboard page (text/html) |
+| `GET /stats` | HTML fragment with ping count and RSS, used by the dashboard |
+| `GET /assets/htmx/htmx.min.js` | vendored htmx script |
 | `GET /health` | `{"status":"UP"}` (application/json) |
 | `WS /ws/{id}` | one `Response` per `Request` (binary protobuf frames) |
+
+## Dashboard
+
+`GET /` is a small [htmx](https://htmx.org) page showing the number of pings received and
+the server's resident memory. The `#stats` block is loaded from `GET /stats` on page load and
+every 5 seconds via `hx-trigger="load, every 5s"`; a Refresh button fetches it on demand.
+Only the fragment is swapped, never the whole page.
+
+htmx 4 is served by the application itself from `src/main/resources/assets/htmx/`. The file is
+committed; `just htmx` re-downloads the version pinned in `gradle/libs.versions.toml` from
+the jsDelivr CDN.
 
 ## Websocket
 
@@ -40,6 +53,7 @@ just build      # check formatting, compile and assemble
 just serve      # start on http://localhost:8080 (PORT overrides)
 just test       # run endpoint tests
 just protobuf   # regenerate protobuf sources from proto/protocol.proto
+just htmx       # re-download the pinned htmx release into src/main/resources/assets/htmx
 just fmt        # reformat all Kotlin with ktfmt
 just fmt-check  # formatting check only
 just clean      # stop Gradle daemons, remove build/, .gradle/, .kotlin/, .tools/
