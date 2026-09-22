@@ -35,7 +35,7 @@ class PingCounter {
 
 /** htmx sends JSON form values and swaps the HTML reply into the dashboard. */
 fun Route.browserPingRoute(counter: PingCounter, pingStore: PingStore) {
-    webSocket("/ui/pings") {
+    webSocket("/ping/send") {
         for (frame in incoming) {
             val message =
                 try {

@@ -82,9 +82,10 @@ private val PAGE =
     </head>
     <body>
       <h1>kmp-server</h1>
+      <p><a href="/swagger">API documentation</a></p>
       <div id="stats" hx-get="/stats" hx-trigger="load, every 5s" hx-swap="innerHTML">Loading…</div>
       <button hx-get="/stats" hx-target="#stats" hx-swap="innerHTML">Refresh</button>
-      <section id="ping-ui" hx-ws:connect="/ui/pings" hx-target="#ping-result">
+      <section id="ping-ui" hx-ws:connect="/ping/send" hx-target="#ping-result">
         <h2>Send a ping</h2>
         <p id="ping-connection" role="status">Connecting…</p>
         <form hx-ws:send>

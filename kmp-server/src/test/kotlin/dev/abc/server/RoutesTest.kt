@@ -15,12 +15,39 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.websocket.Frame
+import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class RoutesTest {
+
+    @Test
+    fun `swagger UI serves a loadable specification for our endpoints`() = testApplication {
+        serverUnderTest()
+        val response = client.get("/swagger")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.contentType()?.match(ContentType.Text.Html) == true)
+        val html = response.bodyAsText()
+        assertContains(html, "SwaggerUIBundle")
+        val specUrl =
+            assertNotNull(Regex("""url\s*:\s*["']([^"']+)["']""").find(html)).groupValues[1]
+        val specResponse =
+            client.get(URI(response.call.request.url.toString()).resolve(specUrl).toString())
+        assertEquals(HttpStatusCode.OK, specResponse.status)
+        val spec = Json.parseToJsonElement(specResponse.bodyAsText()).jsonObject
+        assertEquals("3.0.3", spec.getValue("openapi").jsonPrimitive.content)
+        val paths = spec.getValue("paths").jsonObject
+        for (path in listOf("/", "/health", "/stats", "/swagger", "/ws/{id}", "/ping/send")) {
+            assertTrue(path in paths, "Missing endpoint $path")
+        }
+        assertContains(paths.getValue("/ws/{id}").toString(), "protobuf")
+    }
 
     @Test
     fun `stats reads existing and externally added documents on every request`() = testApplication {

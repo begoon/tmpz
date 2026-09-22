@@ -70,7 +70,7 @@ class WebSocketRoutesTest {
     fun `browser pings are saved and share the protobuf counter`() = testApplication {
         val saved = mutableListOf<StoredPing>()
         val client = wsClient(TestPingStore(saved))
-        client.webSocket("/ui/pings") {
+        client.webSocket("/ping/send") {
             send(Frame.Text("""{"message":"<script>alert(1)</script>","headers":{}}"""))
             val html = (incoming.receive() as Frame.Text).readText()
             assertContains(html, "Pong: n=1")
@@ -92,7 +92,7 @@ class WebSocketRoutesTest {
         testApplication {
             val saved = mutableListOf<StoredPing>()
             val client = wsClient(TestPingStore(saved))
-            client.webSocket("/ui/pings") {
+            client.webSocket("/ping/send") {
                 for (message in listOf("not json", "{}", "[]", """{"message":42}""")) {
                     send(Frame.Text(message))
                     assertContains(
@@ -110,7 +110,7 @@ class WebSocketRoutesTest {
     @Test
     fun `browser save failure closes without a success reply`() = testApplication {
         val client = wsClient(TestPingStore { error("database unavailable") })
-        client.webSocket("/ui/pings") {
+        client.webSocket("/ping/send") {
             send(Frame.Text("""{"message":"hello"}"""))
             assertEquals(CloseReason.Codes.INTERNAL_ERROR.code, closeReason.await()?.code)
             for (frame in incoming) {

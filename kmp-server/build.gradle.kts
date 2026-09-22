@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.swagger)
+    implementation(libs.ktor.server.routing.openapi)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.protobuf.kotlin)
     implementation(libs.logback.classic)

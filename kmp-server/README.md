@@ -8,9 +8,14 @@ Demo REST and websocket server written in Kotlin (JVM) with Ktor.
 | `GET /stats` | HTML fragment with ping count and RSS, used by the dashboard |
 | `GET /assets/htmx/htmx.min.js` | vendored htmx script |
 | `GET /health` | `{"status":"UP"}` (application/json) |
+| `GET /swagger` | Swagger UI with endpoint documentation and HTTP try-it-out |
 | `WS /ws/{id}` | one `Response` per `Request` (binary protobuf frames) |
 
 ## Dashboard
+
+Open `/swagger` for API documentation, backed by `src/main/resources/openapi/documentation.json`.
+HTTP endpoints can be called from Swagger UI. WebSocket protocols are documented there;
+use the dashboard or `just ping` to send WebSocket messages.
 
 `GET /` is a small [htmx](https://htmx.org) page showing pings received since startup, the number of records in `kmp.pings`, and
 the server's resident memory. The `#stats` block is loaded from `GET /stats` on page load and
@@ -18,7 +23,7 @@ every 5 seconds via `hx-trigger="load, every 5s"`; a Refresh button fetches it o
 Only the fragment is swapped, never the whole page.
 
 The **Send a ping** form uses the [htmx 4 WebSocket extension](https://four.htmx.org/extensions/hx-ws)
-to send JSON form values to `/ui/pings`. The server saves each ping with client ID `browser`
+to send JSON form values to `/ping/send`. The server saves each ping with client ID `browser`
 through the same handler and counter as protobuf pings, then returns HTML showing the pong
 number and refreshing the stats. Connection and save failures are shown on the page.
 The extension is vendored alongside htmx; `just htmx` refreshes both scripts.

@@ -1,0 +1,217 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "kmp-server API",
+    "version": "0.1.0",
+    "description": "Ktor demo server with MongoDB ping persistence. HTTP endpoints support Try it out. WebSocket endpoints require an Upgrade connection; Swagger UI cannot send WebSocket messages. Use the dashboard at / or just ping."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "HTTP"
+    },
+    {
+      "name": "WebSocket",
+      "description": "WebSocket handshakes and message protocols (documentation only)."
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Dashboard",
+        "description": "HTML dashboard with both ping counters, resident memory, and an htmx WebSocket ping form.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Health check",
+        "description": "Reports that the application is running. Does not check MongoDB availability.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "UP"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Dashboard statistics",
+        "description": "HTML fragment containing pings since application startup, the current number of documents in kmp.pings, resident memory in MB, and update time. MongoDB count is shown as Unavailable when it cannot be read.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/htmx/htmx.min.js": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Vendored htmx.min.js",
+        "description": "JavaScript asset used by the dashboard.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/htmx/hx-ws.min.js": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Vendored hx-ws.min.js",
+        "description": "JavaScript asset used by the dashboard.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/swagger": {
+      "get": {
+        "tags": [
+          "HTTP"
+        ],
+        "summary": "Swagger UI",
+        "description": "Interactive HTTP API documentation and WebSocket protocol reference.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ws/{id}": {
+      "get": {
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Protobuf WebSocket",
+        "description": "Connect using ws:// or wss:// and send binary frames encoded using proto/protocol.proto.\n\nEach frame is a Request envelope with one body:\n- Ping { message: string } returns Response { pong: Pong { n: int32 } }.\n- QueryStatus {} returns Response { status: Status { memory: int64, state: string } }.\n\nPong.n counts valid pings received since application startup across browser and protobuf connections. Each ping is saved to kmp.pings before its pong is sent. Failed saves still increment the in-memory count. The path id is stored as clientId. Status.memory is resident memory in bytes and state is ok. Status requests are not saved.\n\nText frames, malformed protobuf, or missing request bodies close with code 1003. Save failures close with code 1011 without a pong. A plain HTTP GET returns 404. Use just ping to try this endpoint; Swagger UI cannot perform the WebSocket exchange.",
+        "responses": {
+          "101": {
+            "description": "Switching Protocols: WebSocket connection established."
+          },
+          "404": {
+            "description": "A WebSocket Upgrade request is required; ordinary HTTP GET is rejected."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Client identifier saved with each ping.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "my-client"
+          }
+        ]
+      }
+    },
+    "/ping/send": {
+      "get": {
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Dashboard WebSocket",
+        "description": "Used by the htmx 4 hx-ws extension. Send a JSON text frame such as {\"message\":\"hello\",\"headers\":{}}. Only the string message field is required; htmx metadata is ignored.\n\nThe ping is saved to kmp.pings with clientId browser. The reply is HTML containing the pong number and an hx-partial updating #stats with both counters and resident memory. The per-run counter is shared with /ws/{id}.\n\nInvalid messages receive an HTML error without saving or incrementing the counter. Save failures close with code 1011 without a success reply. A plain HTTP GET returns 404. Use the dashboard at / to try this endpoint.",
+        "responses": {
+          "101": {
+            "description": "Switching Protocols: WebSocket connection established."
+          },
+          "404": {
+            "description": "A WebSocket Upgrade request is required; ordinary HTTP GET is rejected."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
