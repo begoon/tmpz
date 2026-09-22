@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>OPFS Lab · A filesystem in your browser</title>
+        <style>
+            :root {
+                color-scheme: dark;
+                --bg: #101512;
+                --panel: #18201b;
+                --line: #303c32;
+                --text: #eef3e9;
+                --muted: #a0afa2;
+                --green: #c6f283;
+                --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    15px/1.55 system-ui,
+                    -apple-system,
+                    sans-serif;
+            }
+            button,
+            input,
+            textarea {
+                font: inherit;
+            }
+            button,
+            a,
+            input,
+            textarea {
+                outline-offset: 5px;
+            }
+            button {
+                cursor: pointer;
+                border: 1px solid var(--line);
+                background: #242e26;
+                color: var(--text);
+                border-radius: 8px;
+                padding: 9px 14px;
+                transition: background 0.15s;
+            }
+            button:hover:not(:disabled) {
+                background: #354333;
+            }
+            button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            .primary {
+                background: var(--green);
+                color: #19220e;
+                border-color: var(--green);
+                font-weight: 650;
+            }
+            .primary:hover:not(:disabled) {
+                background: #dcffac;
+            }
+            .danger {
+                color: #ffb5a9;
+            }
+            a {
+                color: var(--green);
+            }
+            .wrap {
+                max-width: 1200px;
+                margin: auto;
+                padding: 28px 32px;
+            }
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding-bottom: 25px;
+                border-bottom: 1px solid var(--line);
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 11px;
+                font-weight: 750;
+                letter-spacing: -0.5px;
+                font-size: 20px;
+            }
+            .logo {
+                width: 34px;
+                height: 34px;
+                background: var(--green);
+                color: #17200e;
+                display: grid;
+                place-items: center;
+                border-radius: 9px;
+                font: 700 22px var(--mono);
+            }
+            .badge {
+                font: 11px var(--mono);
+                padding: 7px 10px;
+                border: 1px solid var(--line);
+                border-radius: 30px;
+                color: var(--muted);
+            }
+            .badge::before {
+                content: "●";
+                margin-right: 7px;
+                color: var(--green);
+            }
+            .intro {
+                display: grid;
+                grid-template-columns: 1.2fr 1fr;
+                gap: 50px;
+                align-items: center;
+                padding: 45px 0 35px;
+            }
+            .eyebrow {
+                color: var(--green);
+                font: 11px var(--mono);
+                letter-spacing: 2px;
+                text-transform: uppercase;
+            }
+            h1 {
+                font-size: clamp(32px, 4.5vw, 52px);
+                line-height: 1.1;
+                letter-spacing: -2px;
+                margin: 14px 0 18px;
+                font-weight: 600;
+            }
+            h1 span {
+                color: var(--green);
+            }
+            .intro p {
+                color: var(--muted);
+                max-width: 510px;
+                margin: 0;
+            }
+            .diagram {
+                position: relative;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 22px;
+                background: radial-gradient(ellipse at bottom, #2e3e23, transparent 75%);
+            }
+            .diagram-label {
+                font: 10px var(--mono);
+                color: var(--muted);
+                letter-spacing: 1.5px;
+            }
+            .flow {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 25px 0;
+                gap: 12px;
+            }
+            .node {
+                text-align: center;
+                font: 12px var(--mono);
+            }
+            .node-icon {
+                display: grid;
+                place-items: center;
+                width: 70px;
+                height: 65px;
+                border: 1px solid #526549;
+                border-radius: 12px;
+                background: #202c20;
+                margin: 0 auto 9px;
+                color: var(--green);
+            }
+            .node-icon svg {
+                width: 32px;
+                height: 32px;
+            }
+            .wire {
+                height: 1px;
+                background: #526549;
+                flex: 1;
+                position: relative;
+                margin-bottom: 24px;
+            }
+            .wire::after {
+                content: "";
+                position: absolute;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--green);
+                top: -3px;
+                left: 0;
+                opacity: 0.3;
+            }
+            .diagram.active .wire::after {
+                animation: transfer 0.65s ease-in-out 2;
+            }
+            .diagram-foot {
+                border-top: 1px solid var(--line);
+                padding-top: 12px;
+                color: var(--muted);
+                font: 11px var(--mono);
+            }
+            @keyframes transfer {
+                from {
+                    left: 0;
+                    opacity: 1;
+                }
+                to {
+                    left: 95%;
+                    opacity: 0.2;
+                }
+            }
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+                margin-bottom: 25px;
+            }
+            .stat {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 17px 20px;
+            }
+            .stat-top {
+                display: flex;
+                justify-content: space-between;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .stat strong {
+                display: block;
+                font: 26px var(--mono);
+                margin: 8px 0 3px;
+            }
+            .stat small {
+                font-size: 11px;
+                color: var(--muted);
+            }
+            .bar {
+                height: 4px;
+                background: #303c32;
+                margin: 11px 0 7px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .bar span {
+                display: block;
+                height: 100%;
+                background: var(--green);
+                width: 0;
+                transition: width 0.3s;
+            }
+            .workspace {
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                overflow: hidden;
+                display: grid;
+                grid-template-columns: 290px 1fr;
+                background: var(--panel);
+            }
+            .files {
+                border-right: 1px solid var(--line);
+                min-height: 370px;
+            }
+            .section-head {
+                min-height: 58px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 13px 18px;
+                border-bottom: 1px solid var(--line);
+            }
+            h2 {
+                font-size: 13px;
+                font-weight: 600;
+                margin: 0;
+            }
+            .section-head small {
+                color: var(--muted);
+                font: 11px var(--mono);
+            }
+            .file-actions {
+                padding: 14px;
+                display: flex;
+                gap: 8px;
+            }
+            .file-actions button {
+                flex: 1;
+                font-size: 12px;
+                padding: 8px;
+            }
+            .file-list {
+                padding: 0 9px 12px;
+                max-height: 310px;
+                overflow: auto;
+            }
+            .file {
+                display: flex;
+                width: 100%;
+                align-items: center;
+                gap: 11px;
+                background: transparent;
+                border: 1px solid transparent;
+                text-align: left;
+                padding: 11px;
+                margin-bottom: 4px;
+            }
+            .file.selected {
+                background: #2a3826;
+                border-color: #526746;
+            }
+            .file-symbol {
+                font: 10px var(--mono);
+                color: var(--green);
+                border: 1px solid #536548;
+                border-radius: 4px;
+                padding: 8px 4px;
+            }
+            .file-info {
+                min-width: 0;
+            }
+            .file-name {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 13px;
+            }
+            .file-size {
+                color: var(--muted);
+                font: 10px var(--mono);
+            }
+            .empty {
+                padding: 24px 16px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .editor {
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .editor-title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: 0;
+            }
+            #filename {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font: 12px var(--mono);
+            }
+            #dirty {
+                font-size: 10px;
+                color: var(--green);
+                white-space: nowrap;
+            }
+            .edit-area {
+                display: flex;
+                flex: 1;
+                min-height: 245px;
+                background: #141b16;
+            }
+            textarea {
+                width: 100%;
+                resize: vertical;
+                min-height: 245px;
+                border: 0;
+                background: transparent;
+                color: #d8e5cb;
+                padding: 20px;
+                font: 13px/1.8 var(--mono);
+                tab-size: 2;
+            }
+            textarea:focus {
+                outline: 1px solid #526746;
+                outline-offset: -1px;
+            }
+            .editor-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 16px;
+                border-top: 1px solid var(--line);
+            }
+            .editor-footer button {
+                font-size: 12px;
+            }
+            .editor-footer .right {
+                display: flex;
+                gap: 8px;
+            }
+            .lower {
+                display: grid;
+                grid-template-columns: 1.2fr 1fr;
+                gap: 24px;
+                margin-top: 25px;
+            }
+            .activity,
+            .explain {
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .log {
+                height: 165px;
+                overflow: auto;
+                padding: 12px 18px;
+                font: 11px/1.9 var(--mono);
+            }
+            .log-entry {
+                display: flex;
+                gap: 14px;
+                overflow-wrap: anywhere;
+            }
+            .log-entry time {
+                color: #78887a;
+                flex-shrink: 0;
+            }
+            .log-entry span {
+                color: #b7caa7;
+            }
+            .log-entry.error span {
+                color: #ffb5a9;
+            }
+            .explain {
+                padding: 20px;
+                background: #1c261c;
+            }
+            .explain h2 {
+                color: var(--green);
+                margin-bottom: 10px;
+            }
+            .explain p {
+                font-size: 12px;
+                color: #b1bfae;
+                margin: 8px 0;
+            }
+            .explain code {
+                font: 11px var(--mono);
+                color: var(--green);
+            }
+            .notice {
+                padding: 12px 16px;
+                background: #2b281b;
+                border: 1px solid #685f33;
+                border-radius: 8px;
+                margin-bottom: 18px;
+                color: #f1d997;
+                font-size: 13px;
+            }
+            .notice[hidden] {
+                display: none;
+            }
+            footer {
+                display: flex;
+                justify-content: space-between;
+                gap: 20px;
+                padding: 25px 0 0;
+                color: var(--muted);
+                font-size: 11px;
+            }
+            footer a {
+                text-decoration: none;
+            }
+            dialog {
+                color: var(--text);
+                background: var(--panel);
+                border: 1px solid #526746;
+                border-radius: 14px;
+                padding: 25px;
+                width: min(420px, 90vw);
+            }
+            dialog::backdrop {
+                background: #0009;
+            }
+            dialog h2 {
+                font-size: 19px;
+                margin-bottom: 12px;
+            }
+            dialog label {
+                font-size: 13px;
+                display: block;
+            }
+            dialog input {
+                display: block;
+                width: 100%;
+                margin: 8px 0 18px;
+                background: var(--bg);
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                color: var(--text);
+                padding: 10px;
+            }
+            dialog .buttons {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .dialog-error {
+                font-size: 12px;
+                color: #ffb5a9;
+            }
+            #status {
+                min-height: 24px;
+                margin: 12px 0 0;
+                font-size: 12px;
+                color: var(--muted);
+            }
+            @media (max-width: 760px) {
+                .wrap {
+                    padding: 20px;
+                }
+                .intro {
+                    grid-template-columns: 1fr;
+                    gap: 25px;
+                    padding: 30px 0;
+                }
+                .stats {
+                    gap: 8px;
+                }
+                .stat {
+                    padding: 12px;
+                }
+                .stat strong {
+                    font-size: 20px;
+                }
+                .workspace {
+                    grid-template-columns: 1fr;
+                }
+                .files {
+                    border-right: 0;
+                    border-bottom: 1px solid var(--line);
+                    min-height: 0;
+                }
+                .file-list {
+                    max-height: 180px;
+                }
+                .lower {
+                    grid-template-columns: 1fr;
+                }
+                .badge {
+                    font-size: 9px;
+                }
+                .editor-footer {
+                    flex-wrap: wrap;
+                }
+                footer {
+                    flex-wrap: wrap;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::after {
+                    animation: none !important;
+                    transition: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <header>
+                <div class="brand">
+                    <span class="logo">▤</span> OPFS<span style="font-weight: 400; color: var(--muted)">lab</span>
+                </div>
+                <span class="badge" id="connection">CONNECTING</span>
+            </header>
+            <section class="intro">
+                <div>
+                    <div class="eyebrow">Web platform / Storage playground</div>
+                    <h1>A little filesystem.<br /><span>Right in your browser.</span></h1>
+                    <p>
+                        Meet the Origin Private File System. Write a note, save it locally, and come back to it after a
+                        reload. No server required.
+                    </p>
+                </div>
+                <div class="diagram" id="diagram">
+                    <div class="diagram-label">INSIDE THIS BROWSER · THIS ORIGIN</div>
+                    <div class="flow">
+                        <div class="node">
+                            <div class="node-icon">
+                                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="3" y="5" width="26" height="22" rx="3" />
+                                    <path d="M3 11h26M7 8h2m2 0h2m-2 8-4 3 4 3m10-6 4 3-4 3" />
+                                </svg>
+                            </div>
+                            Your page
+                        </div>
+                        <div class="wire"></div>
+                        <div class="node">
+                            <div class="node-icon">
+                                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <ellipse cx="16" cy="7" rx="11" ry="4" />
+                                    <path d="M5 7v17c0 6 22 6 22 0V7M5 15c0 6 22 6 22 0" />
+                                </svg>
+                            </div>
+                            Private files
+                        </div>
+                    </div>
+                    <div class="diagram-foot">Local storage. Scoped to this origin.</div>
+                </div>
+            </section>
+            <div class="notice" id="notice" role="alert" hidden></div>
+            <section class="stats" aria-label="Storage statistics">
+                <div class="stat">
+                    <div class="stat-top">Files in this lab <span>↗</span></div>
+                    <strong id="file-count">—</strong><small>Inside /opfs-lab/</small>
+                </div>
+                <div class="stat">
+                    <div class="stat-top">Lab file size <span>◫</span></div>
+                    <strong id="lab-size">—</strong><small>Actual bytes written</small>
+                </div>
+                <div class="stat">
+                    <div class="stat-top">Origin storage usage <span>◉</span></div>
+                    <strong id="usage">—</strong>
+                    <div class="bar"><span id="usage-bar"></span></div>
+                    <small id="quota">Checking browser estimate…</small>
+                </div>
+            </section>
+            <main class="workspace">
+                <aside class="files">
+                    <div class="section-head">
+                        <h2>Explorer</h2>
+                        <small>/opfs-lab/</small>
+                    </div>
+                    <div class="file-actions">
+                        <button id="new" disabled>＋ New file</button
+                        ><button id="sample" disabled>↳ Add example</button>
+                    </div>
+                    <div class="file-list" id="file-list"><p class="empty">Opening private storage…</p></div>
+                </aside>
+                <section class="editor" aria-label="File editor">
+                    <div class="section-head">
+                        <div class="editor-title">
+                            <span id="filename">Select a file to begin</span><span id="dirty"></span>
+                        </div>
+                        <small>UTF-8</small>
+                    </div>
+                    <div class="edit-area">
+                        <textarea
+                            id="content"
+                            aria-label="File contents"
+                            spellcheck="false"
+                            disabled
+                            placeholder="Create a file or add an example.&#10;&#10;Your words will live here, in your browser."
+                        ></textarea>
+                    </div>
+                    <div class="editor-footer">
+                        <button class="danger" id="delete" disabled>Delete file</button>
+                        <div class="right">
+                            <button id="download" disabled>↓ Download</button
+                            ><button class="primary" id="save" disabled>
+                                Save to OPFS <span aria-hidden="true">↗</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <div id="status" role="status" aria-live="polite">Connecting to your browser’s private filesystem…</div>
+            <div class="lower">
+                <section class="activity">
+                    <div class="section-head">
+                        <h2>API activity</h2>
+                        <small>LIVE</small>
+                    </div>
+                    <div class="log" id="log" role="log" aria-label="API activity log"></div>
+                </section>
+                <section class="explain">
+                    <h2>Try it: write → save → reload</h2>
+                    <p>
+                        Start with an example, change a few words, then save and reload this page. Your saved file is
+                        read back from OPFS.
+                    </p>
+                    <p>
+                        <code>navigator.storage.getDirectory()</code> opens the root. File handles let us read content
+                        and write it through a writable stream.
+                    </p>
+                    <p>
+                        Files are private to this origin and browser profile. Clearing site data removes them; the
+                        browser may also evict storage. The usage estimate includes other storage for this origin.
+                    </p>
+                </section>
+            </div>
+            <footer>
+                <span>A real Web API experiment. No libraries. No uploads.</span
+                ><a
+                    href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Read the OPFS documentation ↗</a
+                >
+            </footer>
+        </div>
+        <dialog id="new-dialog">
+            <form id="new-form">
+                <h2>Create a file</h2>
+                <label for="new-name">Filename</label
+                ><input id="new-name" placeholder="my-note.txt" maxlength="120" required autocomplete="off" />
+                <p class="dialog-error" id="name-error" role="alert"></p>
+                <div class="buttons">
+                    <button type="button" id="cancel-new">Cancel</button
+                    ><button class="primary" type="submit">Create file</button>
+                </div>
+            </form>
+        </dialog>
+        <script src="script.js"></script>
+    </body>
+</html>
