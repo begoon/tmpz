@@ -22,8 +22,18 @@ import kotlin.test.assertTrue
 
 class RoutesTest {
 
+    @Test
+    fun `stats reads existing and externally added documents on every request`() = testApplication {
+        val store = TestPingStore(mutableListOf(StoredPing("existing", "hello")))
+        application { module(store) }
+        assertContains(client.get("/stats").bodyAsText(), "<dt>MongoDB records</dt><dd>1</dd>")
+        assertContains(client.get("/stats").bodyAsText(), "<dt>Pings since startup</dt><dd>0</dd>")
+        store.save(StoredPing("another-server", "another ping"))
+        assertContains(client.get("/stats").bodyAsText(), "<dt>MongoDB records</dt><dd>2</dd>")
+    }
+
     private fun ApplicationTestBuilder.serverUnderTest() {
-        application { module() }
+        application { module(TestPingStore()) }
     }
 
     @Test
@@ -59,7 +69,8 @@ class RoutesTest {
         assertEquals(HttpStatusCode.OK, response.status)
         assertTrue(response.contentType()?.match(ContentType.Text.Html) == true)
         val html = response.bodyAsText()
-        assertContains(html, "<dt>Pings received</dt><dd>1</dd>")
+        assertContains(html, "<dt>MongoDB records</dt><dd>1</dd>")
+        assertContains(html, "<dt>Pings since startup</dt><dd>1</dd>")
         assertTrue(Regex("<dd>\\d+\\.\\d MB</dd>").containsMatchIn(html), html)
     }
 

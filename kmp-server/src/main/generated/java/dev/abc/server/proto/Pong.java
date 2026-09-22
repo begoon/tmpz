@@ -7,8 +7,8 @@ package dev.abc.server.proto;
 
 /**
  * <pre>
- * Answer to Ping; n is the sequential number of pings the server has received
- * since it started, across all connections.
+ * Answer to Ping; n counts received pings since this application started,
+ * across all connections.
  * </pre>
  *
  * Protobuf type {@code abc.Pong}
@@ -227,8 +227,8 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Answer to Ping; n is the sequential number of pings the server has received
-   * since it started, across all connections.
+   * Answer to Ping; n counts received pings since this application started,
+   * across all connections.
    * </pre>
    *
    * Protobuf type {@code abc.Pong}

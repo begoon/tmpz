@@ -8,14 +8,19 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 
 fun Application.module() {
+    module(mongoPingStore())
+}
+
+fun Application.module(pingStore: PingStore) {
     install(ContentNegotiation) { json() }
     install(WebSockets)
     val pingCounter = PingCounter()
     routing {
         rootRoute()
-        statsRoute(pingCounter)
+        statsRoute(pingCounter, pingStore)
         healthRoute()
         assetsRoute()
-        websocketRoute(pingCounter)
+        websocketRoute(pingCounter, pingStore)
+        browserPingRoute(pingCounter, pingStore)
     }
 }

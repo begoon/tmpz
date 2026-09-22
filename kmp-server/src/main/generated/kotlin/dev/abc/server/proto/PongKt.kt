@@ -12,8 +12,8 @@ public inline fun pong(block: dev.abc.server.proto.PongKt.Dsl.() -> kotlin.Unit)
   dev.abc.server.proto.PongKt.Dsl._create(dev.abc.server.proto.Pong.newBuilder()).apply { block() }._build()
 /**
  * ```
- * Answer to Ping; n is the sequential number of pings the server has received
- * since it started, across all connections.
+ * Answer to Ping; n counts received pings since this application started,
+ * across all connections.
  * ```
  *
  * Protobuf type `abc.Pong`

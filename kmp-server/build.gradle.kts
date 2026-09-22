@@ -36,11 +36,23 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.protobuf.kotlin)
     implementation(libs.logback.classic)
+    implementation(libs.mongodb.kotlin.coroutine)
+    implementation(libs.dotenv.kotlin)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.websockets)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
-    testImplementation(libs.ktor.client.websockets)
+}
+
+tasks.register<JavaExec>("ping") {
+    description = "Send a protobuf ping to the running server over WebSocket"
+    group = "application"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("dev.abc.tools.PingKt")
+    args(providers.gradleProperty("pingMessage").getOrElse("hello"))
+    args(providers.gradleProperty("pingUrl").getOrElse(""))
 }
 
 tasks.test {

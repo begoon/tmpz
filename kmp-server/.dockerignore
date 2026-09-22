@@ -12,3 +12,4 @@ justfile
 .vscode/
 bin/
 .editorconfig
+.env

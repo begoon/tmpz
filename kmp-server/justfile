@@ -20,6 +20,11 @@ fmt-check:
 serve:
     ./gradlew run
 
+# Send a protobuf WebSocket ping (start the server first; PORT overrides 8080)
+[positional-arguments]
+ping message="hello" url="":
+    ./gradlew --quiet ping "-PpingMessage=$1" "-PpingUrl=$2"
+
 # Run endpoint tests
 test:
     ./gradlew test
@@ -42,6 +47,9 @@ htmx:
     curl -fsSL -o src/main/resources/assets/htmx/htmx.min.js \
         "https://cdn.jsdelivr.net/npm/htmx.org@$version/dist/htmx.min.js"
     echo "htmx $version -> src/main/resources/assets/htmx/htmx.min.js"
+    curl -fsSL -o src/main/resources/assets/htmx/hx-ws.min.js \
+        "https://cdn.jsdelivr.net/npm/htmx.org@$version/dist/ext/hx-ws.min.js"
+    echo "hx-ws $version -> src/main/resources/assets/htmx/hx-ws.min.js"
 
 # Stop Gradle daemons and remove all local build output and caches
 clean:
@@ -56,4 +64,4 @@ docker-build:
 
 # Run the Docker image (PORT env var overrides 8080 on the host side)
 docker-run port=env('PORT', '8080'):
-    docker run --rm -it -p {{port}}:8080 {{image}}
+    docker run --rm -it --env-file .env -p {{port}}:8080 {{image}}

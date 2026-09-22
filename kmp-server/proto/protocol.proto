@@ -27,8 +27,8 @@ message Ping {
   string message = 1;
 }
 
-// Answer to Ping; n is the sequential number of pings the server has received
-// since it started, across all connections.
+// Answer to Ping; n counts received pings since this application started,
+// across all connections.
 message Pong {
   int32 n = 1;
 }
