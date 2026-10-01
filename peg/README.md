@@ -19,8 +19,3 @@
 
 - Empty-match guard: `*` breaks if the inner expression matches the empty
   string to avoid infinite loops.
-
-If you want left-recursion support, naming captures, or automatic whitespace
-skipping (“token mode”), I can show how to layer those on top next.
-
-<https://chatgpt.com/share/e/68b6fbcd-cba0-8004-8f7f-abf7475cd6ff>
