@@ -1,8 +1,9 @@
 package api
 
 import (
+	"crypto/sha256"
 	"embed"
-	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -13,10 +14,21 @@ import (
 //go:embed static
 var staticFS embed.FS
 
-var tmpls *template.Template = template.Must(template.ParseFS(tmplFS, "templates/*"))
-
 //go:embed templates
 var tmplFS embed.FS
+
+var tmpls = template.Must(template.New("").Funcs(template.FuncMap{"static": staticURL}).ParseFS(tmplFS, "templates/*"))
+
+// staticURL returns the URL of an embedded static file with a content hash
+// appended, so the immutable CDN cache is bypassed whenever the file changes.
+func staticURL(name string) string {
+	content, err := staticFS.ReadFile("static/" + name)
+	if err != nil {
+		return "/static/" + name
+	}
+	sum := sha256.Sum256(content)
+	return "/static/" + name + "?v=" + hex.EncodeToString(sum[:8])
+}
 
 var secretEnv = map[string]bool{
 	"AWS_ACCESS_KEY_ID":     true,
