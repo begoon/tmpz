@@ -18,6 +18,19 @@ var tmpls *template.Template = template.Must(template.ParseFS(tmplFS, "templates
 //go:embed templates
 var tmplFS embed.FS
 
+var secretEnv = map[string]bool{
+	"AWS_ACCESS_KEY_ID":     true,
+	"AWS_SECRET_ACCESS_KEY": true,
+	"AWS_SESSION_TOKEN":     true,
+}
+
+func redact(s string) string {
+	if len(s) <= 8 {
+		return "..."
+	}
+	return s[:4] + "..." + s[len(s)-4:]
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	if path == "/" {
@@ -38,6 +51,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, v := range os.Environ() {
 		name, value, _ := strings.Cut(v, "=")
+		if secretEnv[name] {
+			value = redact(value)
+		}
 		data[name] = value
 	}
 	err := tmpls.ExecuteTemplate(w, path[1:], data)
