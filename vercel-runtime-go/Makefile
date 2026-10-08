@@ -1,7 +1,6 @@
 all:
 
 build:
-	go generate
 	go build -o ./exe main.go
 
 dev:
