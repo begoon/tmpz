@@ -35,6 +35,8 @@ var secretEnv = map[string]bool{
 	"AWS_ACCESS_KEY_ID":     true,
 	"AWS_SECRET_ACCESS_KEY": true,
 	"AWS_SESSION_TOKEN":     true,
+	"VERCEL_DEPLOYMENT_KEY": true,
+	"VERCEL_ENV_ENC_KEY":    true,
 }
 
 func redact(s string) string {
