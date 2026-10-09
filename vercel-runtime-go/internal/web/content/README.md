@@ -47,7 +47,7 @@ Compilers, interpreters and assemblers, all written from scratch and runnable in
 - [intel8080.com](https://github.com/begoon/intel8080.com) - interactive Intel 8080 and КР580 instruction reference ([online](https://intel8080.com))
 - [rk86-js](https://github.com/begoon/rk86-js) - Радио-86РК emulator, see Highlights; also available as a [web component](https://rk86.ru/web)
 - [i8080-js](https://github.com/begoon/i8080-js) - Intel 8080 core in JavaScript (★48)
-- [rk86-tape](https://github.com/begoon/rk86-tape) - WAV tape decoder for Радио-86РК, with a [signal visualiser](https://demin.ws/rk86-tape/) and a [write-up of the encoding](https://github.com/begoon/rk86-tape/blob/main/README-RU.md)
+- [rk86-tape](https://github.com/begoon/rk86-tape) - WAV tape decoder for Радио-86РК, with a [signal visualiser](https://demin.ws/rk86-tape/) and a [write-up of the encoding](https://github.com/begoon/rk86-tape/blob/main/README-EN.md)
 - [rk86-monitor](https://github.com/begoon/rk86-monitor) - annotated disassembly of the original 2 KB ROM monitor
 - [rk86-reverse](https://github.com/begoon/rk86-reverse) - Claude Code skills for disassembling and reverse-engineering Intel 8080 programs
 - Byte-exact annotated disassemblies and remakes of 1980s Радио-86РК games:
