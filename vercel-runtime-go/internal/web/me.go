@@ -2,14 +2,10 @@ package web
 
 import (
 	"bytes"
-	"context"
-	"fmt"
+	_ "embed"
 	"html/template"
-	"io"
 	"net/http"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -18,11 +14,13 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-const (
-	readmeURL  = "https://raw.githubusercontent.com/begoon/begoon/main/README.md"
-	readmeBase = "https://github.com/begoon/begoon/blob/main/"
-	readmeTTL  = 10 * time.Minute
-)
+// readmeSource is a vendored copy of https://github.com/begoon/begoon/blob/main/README.md.
+//
+//go:embed content/README.md
+var readmeSource []byte
+
+// readmeBase is where relative links in the README resolve to.
+const readmeBase = "https://github.com/begoon/begoon/blob/main/"
 
 // absoluteLinks rewrites relative link destinations in the README so they
 // keep pointing into the GitHub repository when served from this site.
@@ -46,68 +44,19 @@ func (absoluteLinks) Transform(doc *ast.Document, _ text.Reader, _ parser.Contex
 	})
 }
 
-var markdown = goldmark.New(goldmark.WithParserOptions(
-	parser.WithASTTransformers(util.Prioritized(absoluteLinks{}, 100)),
-))
-
-var readme struct {
-	sync.Mutex
-	html    template.HTML
-	fetched time.Time
-}
-
-// readmeHTML returns the rendered README, refetching it from GitHub when the
-// cached copy is older than readmeTTL. A failed refresh serves the stale copy
-// when there is one.
-func readmeHTML(ctx context.Context) (template.HTML, error) {
-	readme.Lock()
-	defer readme.Unlock()
-	if readme.html != "" && time.Since(readme.fetched) < readmeTTL {
-		return readme.html, nil
-	}
-	html, err := fetchReadme(ctx)
-	if err != nil {
-		if readme.html != "" {
-			return readme.html, nil
-		}
-		return "", err
-	}
-	readme.html, readme.fetched = html, time.Now()
-	return html, nil
-}
-
-func fetchReadme(ctx context.Context) (template.HTML, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, readmeURL, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetching README: %s", resp.Status)
-	}
-	source, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return "", err
-	}
+// readmeHTML is the README rendered once at startup.
+var readmeHTML = func() template.HTML {
+	md := goldmark.New(goldmark.WithParserOptions(
+		parser.WithASTTransformers(util.Prioritized(absoluteLinks{}, 100)),
+	))
 	var buf bytes.Buffer
-	if err := markdown.Convert(source, &buf); err != nil {
-		return "", err
+	if err := md.Convert(readmeSource, &buf); err != nil {
+		panic(err)
 	}
-	return template.HTML(buf.String()), nil
-}
+	return template.HTML(buf.String())
+}()
 
-func meHandler(w http.ResponseWriter, r *http.Request) {
-	content, err := readmeHTML(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
+func meHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", "public, s-maxage=600, stale-while-revalidate=3600")
-	render(w, "me.html", "me.html", map[string]any{"Content": content, "Version": version})
+	render(w, "me.html", "me.html", map[string]any{"Content": readmeHTML, "Version": version})
 }
