@@ -1,7 +1,13 @@
 {{ template "base" . }} {{ define "content" }}
 <h1 class="title">HTML!</h1>
-<a class="corner-link left" href="/static/IMG_3751-square.jpeg">IMG_3751-square.jpeg</a>
-<a class="corner-link right" href="/static/r-tape-loading-error.gif">r-tape-loading-error.gif</a>
+<a class="corner-link left" href="/static/IMG_3751-square.jpeg">
+    IMG_3751-square.jpeg
+    <img class="preview" src="/static/IMG_3751-square.jpeg" alt="" loading="lazy" />
+</a>
+<a class="corner-link right" href="/static/r-tape-loading-error.gif">
+    r-tape-loading-error.gif
+    <img class="preview" src="/static/r-tape-loading-error.gif" alt="" loading="lazy" />
+</a>
 
 <div class="search-row">
 <input

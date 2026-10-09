@@ -101,3 +101,18 @@ mark {
     background: #ff0;
     color: inherit;
 }
+
+.preview {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 25vw;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.corner-link:hover .preview {
+    display: block;
+}
