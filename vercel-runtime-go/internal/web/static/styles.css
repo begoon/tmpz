@@ -11,7 +11,7 @@ html {
 
 body {
     margin: 0;
-    padding: 2.5rem;
+    padding: 0 2.5rem 2.5rem;
 }
 
 a {
@@ -22,6 +22,7 @@ a {
 .corner-link {
     position: fixed;
     top: 0;
+    z-index: 2;
 }
 
 .corner-link.left {
@@ -46,8 +47,11 @@ table {
 }
 
 .search-row {
-    position: relative;
-    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 2.5rem 0 1rem;
+    background: #fff;
 }
 
 .search {
