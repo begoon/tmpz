@@ -3,15 +3,22 @@
 <a class="corner-link left" href="/static/IMG_3751-square.jpeg">IMG_3751-square.jpeg</a>
 <a class="corner-link right" href="/static/r-tape-loading-error.gif">r-tape-loading-error.gif</a>
 
+<input
+    class="search"
+    type="search"
+    name="q"
+    value="{{ .Query }}"
+    placeholder="filter by name"
+    autocomplete="off"
+    hx-get="/vars"
+    hx-trigger="input changed delay:3s, search"
+    hx-target="#vars"
+/>
+
 <table>
-    {{ range $key, $value := . }}
-    <tr class="env-name">
-        <td>{{ $key }}</td>
-    </tr>
-    <tr>
-        <td class="env-value">{{ $value }}</td>
-    </tr>
-    {{ end }}
+    <tbody id="vars">
+        {{ template "vars" . }}
+    </tbody>
 </table>
 
 {{ end }}

@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -43,6 +44,30 @@ func redact(s string) string {
 	return s[:4] + "..." + s[len(s)-4:]
 }
 
+type variable struct {
+	Name  string
+	Value string
+}
+
+// variables returns the environment, with secrets redacted, sorted by name
+// and filtered to names containing filter (case-insensitive).
+func variables(filter string) []variable {
+	filter = strings.ToLower(filter)
+	var vars []variable
+	for _, v := range os.Environ() {
+		name, value, _ := strings.Cut(v, "=")
+		if !strings.Contains(strings.ToLower(name), filter) {
+			continue
+		}
+		if secretEnv[name] {
+			value = redact(value)
+		}
+		vars = append(vars, variable{name, value})
+	}
+	sort.Slice(vars, func(i, j int) bool { return vars[i].Name < vars[j].Name })
+	return vars
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	if path == "/" {
@@ -57,18 +82,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// ---
-	data := map[string]interface{}{}
-	for k, v := range r.URL.Query() {
-		data[k] = v
+	q := r.URL.Query().Get("q")
+	data := map[string]any{"Query": q, "Vars": variables(q)}
+	name := path[1:]
+	if path == "/vars" {
+		name = "vars"
 	}
-	for _, v := range os.Environ() {
-		name, value, _ := strings.Cut(v, "=")
-		if secretEnv[name] {
-			value = redact(value)
-		}
-		data[name] = value
-	}
-	err := tmpls.ExecuteTemplate(w, path[1:], data)
+	err := tmpls.ExecuteTemplate(w, name, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

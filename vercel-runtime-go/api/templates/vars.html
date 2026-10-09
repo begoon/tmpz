@@ -1,0 +1,14 @@
+{{ define "vars" }}
+{{ range .Vars }}
+<tr class="env-name">
+    <td>{{ .Name }}</td>
+</tr>
+<tr>
+    <td class="env-value">{{ .Value }}</td>
+</tr>
+{{ else }}
+<tr>
+    <td class="env-empty">no variables match</td>
+</tr>
+{{ end }}
+{{ end }}
