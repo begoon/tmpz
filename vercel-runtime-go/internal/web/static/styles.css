@@ -127,8 +127,7 @@ mark {
 }
 
 .markdown {
-    max-width: 48rem;
-    margin: 2.5rem auto 0;
+    margin-top: 2.5rem;
     line-height: 1.6;
 }
 

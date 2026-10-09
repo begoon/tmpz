@@ -163,11 +163,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{"Query": q, "Variables": variables(q), "Version": version}
 	switch path {
 	case "/":
+		meHandler(w, r)
+	case "/env":
 		render(w, "index.html", "index.html", data)
 	case "/variables":
 		render(w, "index.html", "variables", data)
-	case "/me":
-		meHandler(w, r)
 	default:
 		http.NotFound(w, r)
 	}

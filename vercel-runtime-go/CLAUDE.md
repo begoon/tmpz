@@ -1,7 +1,7 @@
 # vercel-runtime-go
 
-Small Go HTTP server that renders its environment variables as an htmx-filterable
-table. Deployed on Vercel as project `runtime-go` (team `me-default`),
+Small Go HTTP server serving a vendored GitHub profile README at `/` and an
+htmx-filterable table of its environment variables at `/env`. Deployed on Vercel as project `runtime-go` (team `me-default`),
 production URL https://runtime-go.vercel.app.
 
 ## Layout
@@ -49,13 +49,20 @@ production URL https://runtime-go.vercel.app.
 
 ## Environment page
 
-- The index page prints every environment variable. Values of known secrets
+- The `/env` page prints every environment variable. Values of known secrets
   (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`,
   `VERCEL_DEPLOYMENT_KEY`, `VERCEL_ENV_ENC_KEY`) are redacted to
   `xxxx...xxxx` via the `secretEnv` set in `internal/web/index.go`. When a new
   deployment mode exposes new secret-looking variables, add them there.
 
-## /me page
+## Routes
+
+- `/` – the profile README page.
+- `/env` – the environment variable table with the htmx filter.
+- `/variables?q=` – the htmx partial for the table body.
+- `/static/...` – embedded assets.
+
+## Profile page (/)
 
 - Renders `internal/web/content/README.md`, a vendored copy of the GitHub
   profile README (https://github.com/begoon/begoon/blob/main/README.md).
