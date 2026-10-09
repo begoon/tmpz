@@ -10,6 +10,7 @@
     value="{{ .Query }}"
     placeholder="filter by name"
     autocomplete="off"
+    autofocus
     hx-get="/variables"
     hx-trigger="input changed delay:1s, search"
     hx-target="#vars"
