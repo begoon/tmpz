@@ -110,7 +110,10 @@ mark {
     width: 25vw;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    z-index: 1;
+}
+
+.corner-link:hover {
+    z-index: 100;
 }
 
 .corner-link:hover .preview {
