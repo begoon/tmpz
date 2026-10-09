@@ -1,4 +1,4 @@
-package api
+package app
 
 import (
 	"crypto/sha256"

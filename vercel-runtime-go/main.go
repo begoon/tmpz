@@ -1,11 +1,18 @@
 package main
 
 import (
-	"go-vercel/api"
+	"log"
 	"net/http"
+	"os"
+
+	"go-vercel/app"
 )
 
 func main() {
-	http.HandleFunc("/", api.Handler)
-	http.ListenAndServe(":8000", nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+	http.HandleFunc("/", app.Handler)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
