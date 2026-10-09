@@ -141,7 +141,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// ---
 	q := r.URL.Query().Get("q")
-	data := map[string]any{"Query": q, "Vars": variables(q), "Version": version}
+	data := map[string]any{"Query": q, "Variables": variables(q), "Version": version}
 	name := path[1:]
 	if path == "/variables" {
 		name = "variables"
