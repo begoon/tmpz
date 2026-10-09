@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"sort"
 	"strings"
 )
@@ -17,6 +18,36 @@ var staticFS embed.FS
 
 //go:embed templates
 var tmplFS embed.FS
+
+// version is the short git commit the binary was built from. Vercel exposes
+// it through VERCEL_GIT_COMMIT_SHA; local builds fall back to the VCS info
+// that go build stamps into the binary.
+var version = func() string {
+	sha := os.Getenv("VERCEL_GIT_COMMIT_SHA")
+	dirty := false
+	if sha == "" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			for _, s := range info.Settings {
+				switch s.Key {
+				case "vcs.revision":
+					sha = s.Value
+				case "vcs.modified":
+					dirty = s.Value == "true"
+				}
+			}
+		}
+	}
+	if sha == "" {
+		return "dev"
+	}
+	if len(sha) > 7 {
+		sha = sha[:7]
+	}
+	if dirty {
+		sha += "-dirty"
+	}
+	return sha
+}()
 
 var tmpls = template.Must(template.New("").Funcs(template.FuncMap{"static": staticURL}).ParseFS(tmplFS, "templates/*"))
 
@@ -110,7 +141,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// ---
 	q := r.URL.Query().Get("q")
-	data := map[string]any{"Query": q, "Vars": variables(q)}
+	data := map[string]any{"Query": q, "Vars": variables(q), "Version": version}
 	name := path[1:]
 	if path == "/variables" {
 		name = "variables"
