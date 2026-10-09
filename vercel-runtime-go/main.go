@@ -1,9 +1,8 @@
 package main
 
 import (
-	"net/http"
-
 	"go-vercel/api"
+	"net/http"
 )
 
 func main() {
