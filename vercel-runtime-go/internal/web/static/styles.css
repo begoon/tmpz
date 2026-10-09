@@ -32,16 +32,6 @@ a {
     right: 0;
 }
 
-.title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 33.333333%;
-    margin: 0;
-    font-size: inherit;
-    font-weight: inherit;
-}
-
 table {
     border-collapse: collapse;
 }
