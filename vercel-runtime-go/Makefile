@@ -1,7 +1,7 @@
 all:
 
 build:
-	go build -o ./exe main.go
+	go build -o ./exe .
 
 dev:
 	air \
