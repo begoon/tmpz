@@ -53,7 +53,9 @@ var readmeHTML = func() template.HTML {
 	if err := md.Convert(readmeSource, &buf); err != nil {
 		panic(err)
 	}
-	return template.HTML(buf.String())
+	// Colour the star-count glyphs like GitHub does.
+	html := strings.ReplaceAll(buf.String(), "★", `<span class="star">★</span>`)
+	return template.HTML(html)
 }()
 
 func meHandler(w http.ResponseWriter, _ *http.Request) {
