@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"go-vercel/app"
+	"go-vercel/internal/web"
 )
 
 func main() {
@@ -13,6 +13,6 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-	http.HandleFunc("/", app.Handler)
+	http.HandleFunc("/", web.Handler)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
