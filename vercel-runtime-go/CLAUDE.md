@@ -67,7 +67,8 @@ production URL https://runtime-go.vercel.app.
 - Renders `internal/web/content/README.md`, a vendored copy of the GitHub
   profile README (https://github.com/begoon/begoon/blob/main/README.md).
   It is embedded and rendered with goldmark once at startup; there is no
-  runtime fetch. To update the page, replace the file and redeploy.
+  runtime fetch. To update the page, run `make vendor-readme`, commit the
+  result and redeploy.
 - Relative links in the README are rewritten to point into that GitHub repo.
 
 ## Local development
