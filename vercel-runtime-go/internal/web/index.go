@@ -49,7 +49,32 @@ var version = func() string {
 	return sha
 }()
 
-var tmpls = template.Must(template.New("").Funcs(template.FuncMap{"static": staticURL}).ParseFS(tmplFS, "templates/*"))
+// pages holds one template set per page. Every page defines a "content"
+// block for the shared base layout, so each page is parsed into its own clone
+// of the base and partials rather than into one set where the last "content"
+// definition would win.
+var pages = func() map[string]*template.Template {
+	funcs := template.FuncMap{"static": staticURL}
+	shared := template.Must(template.New("").Funcs(funcs).ParseFS(tmplFS, "templates/base.html", "templates/variables.html"))
+	pages := map[string]*template.Template{}
+	for _, name := range []string{"index.html", "me.html"} {
+		set := template.Must(shared.Clone())
+		pages[name] = template.Must(set.ParseFS(tmplFS, "templates/"+name))
+	}
+	return pages
+}()
+
+// render executes page (or a named partial within it) with data.
+func render(w http.ResponseWriter, page, name string, data any) {
+	set, ok := pages[page]
+	if !ok {
+		http.NotFound(w, nil)
+		return
+	}
+	if err := set.ExecuteTemplate(w, name, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
 // staticURL returns the URL of an embedded static file with a content hash
 // appended, so the immutable CDN cache is bypassed whenever the file changes.
@@ -128,26 +153,22 @@ func variables(filter string) []variable {
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	if path == "/" {
-		path = "/index.html"
-	}
 	fmt.Printf("path: %s\n", path)
-	// ---
-	if strings.HasPrefix(path, "/static") {
-		fs := http.FS(staticFS)
+	if strings.HasPrefix(path, "/static/") {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		http.FileServer(fs).ServeHTTP(w, r)
+		http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 		return
 	}
-	// ---
 	q := r.URL.Query().Get("q")
 	data := map[string]any{"Query": q, "Variables": variables(q), "Version": version}
-	name := path[1:]
-	if path == "/variables" {
-		name = "variables"
-	}
-	err := tmpls.ExecuteTemplate(w, name, data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	switch path {
+	case "/":
+		render(w, "index.html", "index.html", data)
+	case "/variables":
+		render(w, "index.html", "variables", data)
+	case "/me":
+		meHandler(w, r)
+	default:
+		http.NotFound(w, r)
 	}
 }

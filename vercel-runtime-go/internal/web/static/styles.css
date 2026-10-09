@@ -125,3 +125,46 @@ mark {
     background: #1d4ed8;
     z-index: 2;
 }
+
+.markdown {
+    max-width: 48rem;
+    margin: 2.5rem auto 0;
+    line-height: 1.6;
+}
+
+.markdown h1 {
+    font-size: 2rem;
+    margin: 0 0 0.5rem;
+}
+
+.markdown h2 {
+    font-size: 1.25rem;
+    margin: 2rem 0 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid #000;
+}
+
+.markdown p,
+.markdown ul {
+    margin: 0 0 1rem;
+}
+
+.markdown ul {
+    padding-left: 1.25rem;
+}
+
+.markdown li {
+    margin-bottom: 0.4rem;
+}
+
+.markdown a {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.markdown code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    padding: 0.1em 0.3em;
+    background: #f1f1f1;
+}
