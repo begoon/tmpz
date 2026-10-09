@@ -85,7 +85,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	data := map[string]any{"Query": q, "Vars": variables(q)}
 	name := path[1:]
-	if path == "/vars" {
+	if path == "/variables" {
 		name = "vars"
 	}
 	err := tmpls.ExecuteTemplate(w, name, data)
