@@ -46,7 +46,32 @@ func redact(s string) string {
 
 type variable struct {
 	Name  string
+	Label template.HTML // Name with matches of the filter wrapped in <mark>
 	Value string
+}
+
+// highlight returns name as safe HTML with every case-insensitive occurrence
+// of filter wrapped in a <mark> element. An empty filter marks nothing.
+func highlight(name, filter string) template.HTML {
+	if filter == "" {
+		return template.HTML(template.HTMLEscapeString(name))
+	}
+	var b strings.Builder
+	lower := strings.ToLower(name)
+	for {
+		i := strings.Index(lower, filter)
+		if i < 0 {
+			b.WriteString(template.HTMLEscapeString(name))
+			break
+		}
+		end := i + len(filter)
+		b.WriteString(template.HTMLEscapeString(name[:i]))
+		b.WriteString("<mark>")
+		b.WriteString(template.HTMLEscapeString(name[i:end]))
+		b.WriteString("</mark>")
+		name, lower = name[end:], lower[end:]
+	}
+	return template.HTML(b.String())
 }
 
 // variables returns the environment, with secrets redacted, sorted by name
@@ -62,7 +87,7 @@ func variables(filter string) []variable {
 		if secretEnv[name] {
 			value = redact(value)
 		}
-		vars = append(vars, variable{name, value})
+		vars = append(vars, variable{name, highlight(name, filter), value})
 	}
 	sort.Slice(vars, func(i, j int) bool { return vars[i].Name < vars[j].Name })
 	return vars

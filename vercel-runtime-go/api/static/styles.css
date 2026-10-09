@@ -96,3 +96,8 @@ table {
         transform: rotate(360deg);
     }
 }
+
+mark {
+    background: #ff0;
+    color: inherit;
+}
