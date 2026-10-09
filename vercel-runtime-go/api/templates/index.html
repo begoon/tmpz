@@ -3,6 +3,7 @@
 <a class="corner-link left" href="/static/IMG_3751-square.jpeg">IMG_3751-square.jpeg</a>
 <a class="corner-link right" href="/static/r-tape-loading-error.gif">r-tape-loading-error.gif</a>
 
+<div class="search-row">
 <input
     class="search"
     type="search"
@@ -14,7 +15,10 @@
     hx-get="/variables"
     hx-trigger="input changed delay:1s, search"
     hx-target="#vars"
+    hx-indicator="#spinner"
 />
+<span id="spinner" class="spinner htmx-indicator" aria-label="loading"></span>
+</div>
 
 <table>
     <tbody id="vars">

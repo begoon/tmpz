@@ -55,10 +55,14 @@ table {
     word-break: break-all;
 }
 
+.search-row {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
 .search {
     display: block;
     width: 100%;
-    margin-bottom: 1rem;
     padding: 0.5rem;
     font: inherit;
     border: 2px solid #000;
@@ -66,4 +70,29 @@ table {
 
 .env-empty {
     color: #666;
+}
+
+.spinner {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    margin-top: -0.5rem;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.spinner.htmx-request {
+    opacity: 1;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
