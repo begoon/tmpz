@@ -130,6 +130,16 @@ mark {
 .markdown {
     margin-top: 2.5rem;
     line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.markdown img {
+    max-width: 100%;
+    height: auto;
+}
+
+.markdown pre {
+    overflow-x: auto;
 }
 
 .markdown h1 {
@@ -171,4 +181,18 @@ mark {
 
 .star {
     color: #e3b341;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 0 1rem 1.5rem;
+    }
+
+    .markdown h1 {
+        font-size: 1.75rem;
+    }
+
+    .markdown h2 {
+        margin-top: 1.5rem;
+    }
 }
