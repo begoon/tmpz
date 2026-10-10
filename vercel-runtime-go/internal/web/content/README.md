@@ -17,6 +17,16 @@ Away from work I write compilers, emulators and solvers, mostly for Soviet-era 8
 
 **Languages and stack:** Go, Python, TypeScript/JavaScript, C, Zig, Assembly (Intel 8080/Z80), Svelte, WASM, GCP, AWS, Kubernetes, Terraform, Docker, GitHub Actions.
 
+## Where I've worked
+
+- **iProov** — biometric identity verification and distributed cloud services
+- **Yoyo Wallet / Teya** — mobile payments, loyalty and merchant payment terminals
+- **Onalytica** — real-time social analytics
+- **Wonga** — loan and risk management, payment systems and banking integrations
+- **Temenos** — core banking infrastructure
+- **Bloomberg** — electronic trading systems and exchange connectivity
+- **Open Transaction Systems** — payment terminal software and smart-card loyalty applications
+
 ## Highlights
 
 - [i8080-core](https://github.com/begoon/i8080-core) (★83) - Cycle-accurate Intel 8080 (KR580VM80A) core in C, verified against the 8080/8085 CPU exercisers; the basis of several emulators
