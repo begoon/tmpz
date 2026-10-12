@@ -57,7 +57,7 @@ var pages = func() map[string]*template.Template {
 	funcs := template.FuncMap{"static": staticURL}
 	shared := template.Must(template.New("").Funcs(funcs).ParseFS(tmplFS, "templates/base.html", "templates/variables.html"))
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"index.html", "me.html"} {
+	for _, name := range []string{"index.html", "front.html"} {
 		set := template.Must(shared.Clone())
 		pages[name] = template.Must(set.ParseFS(tmplFS, "templates/"+name))
 	}
@@ -163,7 +163,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{"Query": q, "Variables": variables(q), "Version": version}
 	switch path {
 	case "/":
-		meHandler(w, r)
+		frontHandler(w, r)
 	case "/env":
 		render(w, "index.html", "index.html", data)
 	case "/variables":

@@ -58,7 +58,7 @@ var readmeHTML = func() template.HTML {
 	return template.HTML(html)
 }()
 
-func meHandler(w http.ResponseWriter, _ *http.Request) {
+func frontHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", "public, s-maxage=600, stale-while-revalidate=3600")
-	render(w, "me.html", "me.html", map[string]any{"Content": readmeHTML, "Version": version})
+	render(w, "front.html", "front.html", map[string]any{"Content": readmeHTML, "Version": version})
 }
