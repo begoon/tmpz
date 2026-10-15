@@ -7,7 +7,10 @@ export const HELP = `Serverless notes bot
 /stats — count your saved and completed notes
 /app — open the Mini App in our private chat
 /share — search your private notes to share in another chat
+/files — list your uploaded documents and download them
 /help — show this help
+
+Attach a document to save it. For photos, choose “Send as file”.
 
 Notes are personal to you within this chat. In groups, your replies are visible to the group. Data is stored in Telegram's built-in database.`;
 

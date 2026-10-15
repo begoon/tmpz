@@ -22,6 +22,7 @@ async function harness(t) {
     async getMe() { return { username: 'ExampleBot', supports_inline_queries: true }; },
     async getChatMenuButton() { return { web_app: { url: 'https://app123.tgcloud.ai/' } }; },
     async sendMessage(params) { calls.push({ method: 'sendMessage', ...params }); },
+    async sendDocument(params) { calls.push({ method: 'sendDocument', ...params }); },
     async answerCallbackQuery(params) { calls.push({ method: 'answerCallbackQuery', ...params }); },
     async answerInlineQuery(params) { calls.push({ method: 'answerInlineQuery', ...params }); },
   };
@@ -261,4 +262,65 @@ test('/share offers a chat picker only when inline mode is enabled', async (t) =
   await h.message(msg('/share'));
   assert.match(h.calls.at(-1).text, /not enabled/);
   assert.equal(h.calls.at(-1).reply_markup, undefined);
+});
+
+const upload = (extra = {}) => msg(undefined, {
+  document: { file_id: 'telegram-file-id', file_unique_id: 'stable-id',
+    file_name: "report's <final>.pdf", mime_type: 'application/pdf', file_size: 1234 },
+  ...extra,
+});
+
+test('document upload stores metadata once and can be listed, downloaded and removed', async (t) => {
+  const h = await harness(t);
+  await h.message(upload());
+  await h.message(upload());
+  const rows = h.sqlite.prepare('SELECT * FROM files').all();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].file_id, 'telegram-file-id');
+  assert.equal(rows[0].name, "report's <final>.pdf");
+  assert.equal(rows[0].size, 1234);
+  assert.equal(rows[0].mime_type, 'application/pdf');
+  await h.message(msg('/files'));
+  assert.match(h.calls.at(-1).text, /report's <final>.pdf \(1234 bytes\)/);
+  assert.equal(h.calls.at(-1).reply_markup.inline_keyboard[0][0].callback_data, 'file:get:100:1');
+  await h.callback(cb('file:get:100:1'));
+  assert.equal(h.calls.at(-2).method, 'answerCallbackQuery');
+  assert.equal(h.calls.at(-1).method, 'sendDocument');
+  assert.equal(h.calls.at(-1).document, 'telegram-file-id');
+  await h.callback(cb('file:delete:100:1'));
+  await h.callback(cb('file:delete:100:1'));
+  assert.equal(h.sqlite.prepare('SELECT COUNT(*) AS n FROM files').get().n, 0);
+  await h.callback(cb('file:get:100:1'));
+  assert.match(h.calls.at(-1).text, /File not found/);
+});
+
+test('file lists and callbacks cannot access another user or chat’s upload', async (t) => {
+  const h = await harness(t);
+  await h.message(upload());
+  for (const extra of [{ from: { id: 8 } }, { message: { chat: { id: 200 }, date: 1000 } }]) {
+    await h.callback(cb('files', extra));
+    assert.match(h.calls.at(-1).text, /No files yet/);
+    await h.callback(cb('file:get:100:1', extra));
+    assert.match(h.calls.at(-1).text, /File not found/);
+    await h.callback(cb('file:delete:100:1', extra));
+  }
+  assert.equal(h.calls.filter(c => c.method === 'sendDocument').length, 0);
+  assert.equal(h.sqlite.prepare('SELECT COUNT(*) AS n FROM files').get().n, 1);
+});
+
+test('documents with missing optional fields work; long file lists remain bounded', async (t) => {
+  const h = await harness(t);
+  await h.message(upload({ document: { file_id: 'id', file_unique_id: 'unique' } }));
+  await h.message(msg('/files'));
+  assert.match(h.calls.at(-1).text, /document \(unknown size\)/);
+  for (let i = 2; i <= 12; i++) {
+    await h.message(upload({ message_id: i, document: {
+      file_id: `id-${i}`, file_unique_id: `unique-${i}`, file_name: 'x'.repeat(1000),
+    } }));
+  }
+  await h.message(msg('/files'));
+  const view = h.calls.at(-1);
+  assert.equal(view.reply_markup.inline_keyboard.length, 11);
+  assert.ok(view.text.length < 4096);
+  assert.ok(h.sqlite.prepare('SELECT name FROM files').all().every(r => r.name.length <= 255));
 });

@@ -7,6 +7,7 @@ const commands = [
   { command: 'stats', description: 'Count saved and completed notes' },
   { command: 'app', description: 'Open the notes Mini App' },
   { command: 'share', description: 'Search your notes to share in another chat' },
+  { command: 'files', description: 'List uploaded documents and download them' },
 ];
 
 async function call(method, params = {}) {

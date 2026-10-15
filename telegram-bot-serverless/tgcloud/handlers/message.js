@@ -1,10 +1,21 @@
 import { api } from 'sdk';
 import { addNote } from '../lib/notes.js';
 import { HELP, notesView, statsView } from '../lib/views.js';
+import { saveFile, filesView } from '../lib/files.js';
 
 // Telegram passes update.message, not the whole update envelope.
 export default async function (message) {
-  if (!message.from || message.from.is_bot || !message.chat || typeof message.text !== 'string') return;
+  if (!message.from || message.from.is_bot || !message.chat) return;
+  if (message.document) {
+    await saveFile(message);
+    await api.sendMessage({
+      chat_id: message.chat.id,
+      text: 'File saved. Use /files to download it later or remove it from your list.',
+      reply_markup: { inline_keyboard: [[{ text: 'My files', callback_data: 'files' }]] },
+    });
+    return;
+  }
+  if (typeof message.text !== 'string') return;
   const match = /^\/([a-zA-Z0-9_]+)(?:@([a-zA-Z0-9_]+))?(?:\s+([\s\S]*))?$/.exec(message.text.trim());
   if (!match) return;
   if (match[2]) {
@@ -15,6 +26,7 @@ export default async function (message) {
   const chatId = message.chat.id;
   let view;
   switch (command) {
+    case 'files': view = await filesView(chatId, message.from.id); break;
     case 'share': {
       const me = await api.getMe();
       view = me.supports_inline_queries ? {

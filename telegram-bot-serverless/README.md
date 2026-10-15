@@ -61,6 +61,32 @@ npm run setup
 5. Send `/stats` or tap **Stats** to run an aggregate query.
 6. In the private bot chat, tap the **My notes** menu button or send `/app` to open the web interface.
 7. Send `/share` to search your private notes and share one in another chat (enable inline mode below first).
+8. Attach a document, then send `/files` to download it again or remove its saved reference.
+
+## File uploads
+
+Send a document to the bot, preferably in its private chat. To try an image as a
+document, choose **Send as file** rather than sending a compressed photo. The bot
+saves its Telegram `file_id`, `file_unique_id`, filename, MIME type, size, uploader,
+chat, and timestamp in the `files` table. `/files` shows your newest ten uploads
+with **Download** and **Remove** buttons.
+
+This example stores **references and metadata in SQLite, not the binary file
+contents**. Telegram retains the bytes. Download looks up the owned database
+record and calls `api.sendDocument({ chat_id, document: file.file_id })`; it does
+not download bytes through the serverless runtime or expose a token-bearing URL.
+`file_unique_id` identifies the file but cannot be used to resend it.
+
+Each record belongs to its uploader in that chat. Other users cannot use its
+buttons to retrieve or remove it. In groups, the uploaded document and bot replies
+are visible to the group; with bot privacy enabled, Telegram may not deliver
+ordinary document messages, so use the private chat for this example. Retried
+delivery of the same upload creates only one record. Uploading the same file in
+a new message creates another record.
+
+**Remove** deletes the database record only. It does not delete existing Telegram
+messages or erase Telegram's stored file. Compressed photos, video/audio messages,
+Mini App file-picker uploads, and binary BLOB storage are not implemented here.
 
 ## Inline mode
 
@@ -115,6 +141,7 @@ Commands addressed to this bot (`/notes@YourBot`) work in groups. Notes belong t
 | `tgcloud/handlers/inline_query.js` | Personal inline note search and paginated sharing results |
 | `tgcloud/schema.js` | Table, defaults, primary key, and ownership index |
 | `tgcloud/lib/notes.js` | Parameterized SQL create/read/update/delete and counts |
+| `tgcloud/lib/files.js` | Upload metadata storage, owned lookup/removal, and file list |
 | `tgcloud/lib/views.js` | Text and inline keyboards |
 | `tgcloud/endpoints/notes.js` | Authenticated Mini App CRUD endpoint |
 | `webapp/` | Mobile HTML/CSS/JS interface, hosted by Telegram |
