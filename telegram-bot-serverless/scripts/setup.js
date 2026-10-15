@@ -6,6 +6,7 @@ const commands = [
   { command: 'notes', description: 'List notes and action buttons' },
   { command: 'stats', description: 'Count saved and completed notes' },
   { command: 'app', description: 'Open the notes Mini App' },
+  { command: 'share', description: 'Search your notes to share in another chat' },
 ];
 
 async function call(method, params = {}) {
@@ -21,6 +22,7 @@ async function call(method, params = {}) {
 try {
   if (!process.env.BOT_TOKEN) throw new Error('Set BOT_TOKEN in .env first');
   const me = await call('getMe');
+  console.log(`Inline mode: ${me.supports_inline_queries ? 'enabled' : 'disabled — enable /setinline in BotFather'}`);
   if (process.argv.includes('--check')) {
     console.log(`Bot token works: @${me.username}`);
   } else {

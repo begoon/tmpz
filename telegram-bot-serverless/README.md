@@ -60,6 +60,32 @@ npm run setup
 4. Tap **Complete**, **Reopen**, or **Delete** to update/delete records through callback queries.
 5. Send `/stats` or tap **Stats** to run an aggregate query.
 6. In the private bot chat, tap the **My notes** menu button or send `/app` to open the web interface.
+7. Send `/share` to search your private notes and share one in another chat (enable inline mode below first).
+
+## Inline mode
+
+Enable it once in **@BotFather**: send `/setinline`, choose your bot, and enter
+`Search your notes to share` as the placeholder. This owner-side setting cannot
+be changed using the Bot API token. `just bot-check` reports whether it is enabled.
+Deploy with `just deploy` to include `inline_query` in the webhook subscriptions.
+
+To try it without messaging anyone else:
+
+1. In the private bot chat, send `/add Buy coffee` (or create a note in the Mini App).
+2. Open **Saved Messages** and type `@koolzilla_bot coffee` (substitute your bot's username).
+3. Tap a result to send that note. Nothing is sent merely by typing the query.
+
+An empty query shows recent notes. Search is a literal substring match, ignoring
+ASCII letter case, with 20 results per page. Only the caller's private-chat notes
+are searched, including notes created in the Mini App; group notes and other
+users' notes are excluded. Results use `is_personal: true` and `cache_time: 0`.
+Selecting a result shares a plain-text copy, without editing/deleting buttons;
+changes to the original note do not change a previously shared message.
+The **Manage your notes** button returns to the bot even when there are no matches.
+
+`tgcloud/handlers/inline_query.js` receives Telegram inline queries and responds
+with `api.answerInlineQuery`. This is separate from the existing
+`callback_query.js`, which handles presses on buttons attached to bot messages.
 
 ## Mini App
 
@@ -86,6 +112,7 @@ Commands addressed to this bot (`/notes@YourBot`) work in groups. Notes belong t
 | --- | --- |
 | `tgcloud/handlers/message.js` | Command routing and validation |
 | `tgcloud/handlers/callback_query.js` | Callback acknowledgement and button actions |
+| `tgcloud/handlers/inline_query.js` | Personal inline note search and paginated sharing results |
 | `tgcloud/schema.js` | Table, defaults, primary key, and ownership index |
 | `tgcloud/lib/notes.js` | Parameterized SQL create/read/update/delete and counts |
 | `tgcloud/lib/views.js` | Text and inline keyboards |

@@ -19,10 +19,11 @@ async function harness(t) {
     },
   ]));
   const api = {
-    async getMe() { return { username: 'ExampleBot' }; },
+    async getMe() { return { username: 'ExampleBot', supports_inline_queries: true }; },
     async getChatMenuButton() { return { web_app: { url: 'https://app123.tgcloud.ai/' } }; },
     async sendMessage(params) { calls.push({ method: 'sendMessage', ...params }); },
     async answerCallbackQuery(params) { calls.push({ method: 'answerCallbackQuery', ...params }); },
+    async answerInlineQuery(params) { calls.push({ method: 'answerInlineQuery', ...params }); },
   };
   const column = (type) => (name) => ({
     name, definition: `${name} ${type}`,
@@ -60,7 +61,8 @@ async function harness(t) {
   const message = (await load('tgcloud/handlers/message.js')).default;
   const callback = (await load('tgcloud/handlers/callback_query.js')).default;
   const endpoint = (await load('tgcloud/endpoints/notes.js')).default;
-  return { sqlite, calls, message, callback, endpoint };
+  const inline = (await load('tgcloud/handlers/inline_query.js')).default;
+  return { sqlite, calls, message, callback, endpoint, inline, api };
 }
 
 const msg = (text, extra = {}) => ({
@@ -196,5 +198,67 @@ test('/app opens the configured Mini App only in private chats', async (t) => {
   assert.equal(h.calls.at(-1).reply_markup.inline_keyboard[0][0].web_app.url, 'https://app123.tgcloud.ai/');
   await h.message(msg('/app', { chat: { id: -100, type: 'group' } }));
   assert.match(h.calls.at(-1).text, /private chat/);
+  assert.equal(h.calls.at(-1).reply_markup, undefined);
+});
+
+test('inline search shares only the caller’s private notes as literal text', async (t) => {
+  const h = await harness(t);
+  await h.message(msg('/add group coffee'));
+  await h.message(msg('/add other coffee', { chat: { id: 8 }, from: { id: 8 } }));
+  await h.message(msg('/add <b>Coffee</b> & 50%_off', { chat: { id: 7 } }));
+  await h.endpoint({ action: 'add', body: 'Mini App coffee', requestId: 'a'.repeat(32) }, { initData: { user: { id: 7 } } });
+  const query = { id: 'inline-1', from: { id: 7 }, query: '  COFFEE ', offset: '' };
+  await h.inline(query);
+  let answer = h.calls.at(-1);
+  assert.equal(answer.method, 'answerInlineQuery');
+  assert.equal(answer.inline_query_id, query.id);
+  assert.equal(answer.is_personal, true);
+  assert.equal(answer.cache_time, 0);
+  assert.equal(answer.results.length, 2);
+  assert.equal(answer.next_offset, '');
+  assert.ok(answer.results.every(r => !r.reply_markup && !r.input_message_content.parse_mode));
+  const literal = answer.results.find(r => r.id === '7:1');
+  assert.equal(literal.input_message_content.message_text, '<b>Coffee</b> & 50%_off');
+  assert.equal(literal.input_message_content.link_preview_options.is_disabled, true);
+  for (const term of ['%', '_', "' OR 1=1 --", 'not found']) {
+    await h.inline({ ...query, query: term });
+    assert.equal(h.calls.at(-1).results.length, ['%', '_'].includes(term) ? 1 : 0);
+  }
+  await h.inline({ ...query, from: { id: 9 } });
+  assert.equal(h.calls.at(-1).results.length, 0);
+});
+
+test('inline empty search paginates, and invalid offsets/identity return no results', async (t) => {
+  const h = await harness(t);
+  for (let i = 1; i <= 23; i++) {
+    await h.message(msg(`/add Note ${i}`, { chat: { id: 7 }, message_id: i, date: i }));
+  }
+  const query = { id: 'inline-2', from: { id: 7 }, query: '', offset: '' };
+  await h.inline(query);
+  const first = h.calls.at(-1);
+  assert.equal(first.results.length, 20);
+  assert.equal(first.next_offset, '20');
+  assert.equal(first.results[0].input_message_content.message_text, 'Note 23');
+  await h.inline({ ...query, offset: first.next_offset });
+  const second = h.calls.at(-1);
+  assert.equal(second.results.length, 3);
+  assert.equal(second.next_offset, '');
+  assert.equal(new Set([...first.results, ...second.results].map(r => r.id)).size, 23);
+  for (const offset of ['-1', '1.5', 'NaN', '1000001', '0 OR 1=1']) {
+    await h.inline({ ...query, offset });
+    assert.equal(h.calls.at(-1).results.length, 0);
+  }
+  await h.inline({ ...query, from: undefined });
+  assert.equal(h.calls.at(-1).results.length, 0);
+  assert.equal(h.calls.at(-1).button.start_parameter, 'inline_notes');
+});
+
+test('/share offers a chat picker only when inline mode is enabled', async (t) => {
+  const h = await harness(t);
+  await h.message(msg('/share'));
+  assert.equal(h.calls.at(-1).reply_markup.inline_keyboard[0][0].switch_inline_query, '');
+  h.api.getMe = async () => ({ username: 'ExampleBot' });
+  await h.message(msg('/share'));
+  assert.match(h.calls.at(-1).text, /not enabled/);
   assert.equal(h.calls.at(-1).reply_markup, undefined);
 });

@@ -15,6 +15,14 @@ export default async function (message) {
   const chatId = message.chat.id;
   let view;
   switch (command) {
+    case 'share': {
+      const me = await api.getMe();
+      view = me.supports_inline_queries ? {
+        text: 'Choose a chat, search your private notes, then tap a result to send it. The selected note will be visible in that chat.',
+        reply_markup: { inline_keyboard: [[{ text: 'Choose chat and share a note', switch_inline_query: '' }]] },
+      } : { text: 'Inline sharing is not enabled yet. The bot owner needs to enable /setinline in BotFather.' };
+      break;
+    }
     case 'app': {
       if (message.chat.type !== 'private') {
         view = { text: 'Open our private chat and use /app to see your personal notes.' };

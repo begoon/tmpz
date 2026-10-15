@@ -24,6 +24,16 @@ export function getStats(chatId, userId) {
     FROM notes WHERE chat_id = :chat AND user_id = :user`, owner(chatId, userId));
 }
 
+export function searchPrivateNotes(userId, query, offset = 0) {
+  // instr treats %, _ and quotes literally. SQLite lower() folds ASCII case.
+  // Fetch one extra row to tell the client whether another page exists.
+  return db.all(`SELECT * FROM notes WHERE chat_id = :user AND user_id = :user
+    AND instr(lower(body), lower(:query)) > 0
+    ORDER BY created_at DESC, id DESC LIMIT 21 OFFSET :offset`, {
+    ':user': userId, ':query': query, ':offset': offset,
+  });
+}
+
 export async function changeNote(action, id, chatId, userId) {
   const params = { ...owner(chatId, userId), ':id': id };
   // Ownership is part of the write itself, including for forged callback payloads.
