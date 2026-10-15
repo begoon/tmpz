@@ -20,6 +20,7 @@ async function harness(t) {
   ]));
   const api = {
     async getMe() { return { username: 'ExampleBot' }; },
+    async getChatMenuButton() { return { web_app: { url: 'https://app123.tgcloud.ai/' } }; },
     async sendMessage(params) { calls.push({ method: 'sendMessage', ...params }); },
     async answerCallbackQuery(params) { calls.push({ method: 'answerCallbackQuery', ...params }); },
   };
@@ -43,7 +44,8 @@ async function harness(t) {
   const synthetic = (exports) => new SyntheticModule(Object.keys(exports), function () {
     for (const [name, value] of Object.entries(exports)) this.setExport(name, value);
   }, { context });
-  const cache = new Map([['sdk', synthetic({ api, db })], ['sdk/db', synthetic(schemaSDK)]]);
+  class EndpointError extends Error {}
+  const cache = new Map([['sdk', synthetic({ api, db, EndpointError })], ['sdk/db', synthetic(schemaSDK)]]);
   function moduleFor(id) {
     if (!cache.has(id)) cache.set(id, new SourceTextModule(readFileSync(id, 'utf8'), { context, identifier: id }));
     return cache.get(id);
@@ -57,7 +59,8 @@ async function harness(t) {
   await load('tgcloud/schema.js');
   const message = (await load('tgcloud/handlers/message.js')).default;
   const callback = (await load('tgcloud/handlers/callback_query.js')).default;
-  return { sqlite, calls, message, callback };
+  const endpoint = (await load('tgcloud/endpoints/notes.js')).default;
+  return { sqlite, calls, message, callback, endpoint };
 }
 
 const msg = (text, extra = {}) => ({
@@ -148,4 +151,50 @@ test('unknown, inline and inaccessible callbacks are acknowledged safely', async
   })]) await h.callback(query);
   assert.equal(h.calls.length, 3);
   assert.ok(h.calls.every(call => call.method === 'answerCallbackQuery'));
+});
+
+test('Mini App CRUD shares private-chat notes and deduplicates retries', async (t) => {
+  const h = await harness(t);
+  const ctx = { initData: { user: { id: 7 } } };
+  await h.message(msg('/add from chat', { chat: { id: 7 } }));
+  const add = { action: 'add', body: 'from app', requestId: 'a'.repeat(32) };
+  let result = await h.endpoint(add, ctx);
+  result = await h.endpoint(add, ctx);
+  assert.equal(result.stats.total, 2);
+  const id = result.notes.find(n => n.body === 'from app').id;
+  result = await h.endpoint({ action: 'done', id }, ctx);
+  assert.equal(result.stats.completed, 1);
+  await h.callback(cb(`note:open:${id}`, { message: { chat: { id: 7 }, date: 1000 } }));
+  result = await h.endpoint({}, ctx);
+  assert.equal(result.stats.completed, 0);
+  result = await h.endpoint({ action: 'delete', id }, ctx);
+  assert.equal(result.stats.total, 1);
+});
+
+test('Mini App trusts only verified identity, rejects bad input, and isolates group data', async (t) => {
+  const h = await harness(t);
+  const ctx = { initData: { user: { id: 7 } } };
+  await h.message(msg('/add group note'));
+  await h.message(msg('/add other user', { chat: { id: 8 }, from: { id: 8 } }));
+  const result = await h.endpoint({ action: 'list', userId: 8, chatId: 100 }, ctx);
+  assert.equal(result.notes.length, 0);
+  await h.endpoint({ action: 'delete', id: '8:1', userId: 8 }, ctx);
+  await h.endpoint({ action: 'done', id: '100:1', chatId: 100 }, ctx);
+  assert.equal(h.sqlite.prepare('SELECT COUNT(*) AS n FROM notes WHERE done = 0').get().n, 2);
+  await assert.rejects(h.endpoint({}, {}), /Open this app/);
+  for (const input of [
+    { action: 'add', body: 'a', requestId: 'invalid' },
+    { action: 'add', body: ' '.repeat(10), requestId: 'a'.repeat(32) },
+    { action: 'add', body: 'a'.repeat(201), requestId: 'a'.repeat(32) },
+    { action: 'delete' }, { action: 'unsupported' },
+  ]) await assert.rejects(h.endpoint(input, ctx));
+});
+
+test('/app opens the configured Mini App only in private chats', async (t) => {
+  const h = await harness(t);
+  await h.message(msg('/app', { chat: { id: 7, type: 'private' } }));
+  assert.equal(h.calls.at(-1).reply_markup.inline_keyboard[0][0].web_app.url, 'https://app123.tgcloud.ai/');
+  await h.message(msg('/app', { chat: { id: -100, type: 'group' } }));
+  assert.match(h.calls.at(-1).text, /private chat/);
+  assert.equal(h.calls.at(-1).reply_markup, undefined);
 });

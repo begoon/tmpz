@@ -8,7 +8,7 @@ and true. For the full SDK reference (db, Bot API, fetch), see
 ## What this project is
 
 A **Telegram notes bot** running on Telegram's serverless platform, with commands,
-callback buttons, and a persistent SQLite database (no Mini App). You write
+callback buttons, a Mini App in `webapp/`, and a persistent SQLite database. You write
 JavaScript modules (database schema, shared library code, update handlers); the
 platform runs them in a V8 isolate. The `tgcloud` CLI syncs this local project
 with the bot's cloud environment — think `wrangler`/`vercel` + `drizzle-kit`.

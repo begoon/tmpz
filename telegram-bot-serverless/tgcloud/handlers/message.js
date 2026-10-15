@@ -15,6 +15,18 @@ export default async function (message) {
   const chatId = message.chat.id;
   let view;
   switch (command) {
+    case 'app': {
+      if (message.chat.type !== 'private') {
+        view = { text: 'Open our private chat and use /app to see your personal notes.' };
+        break;
+      }
+      const menu = await api.getChatMenuButton();
+      view = menu.web_app ? {
+        text: 'Open your notes app:',
+        reply_markup: { inline_keyboard: [[{ text: 'Open notes', web_app: menu.web_app }]] },
+      } : { text: 'The Mini App has not been configured yet.' };
+      break;
+    }
     case 'start':
     case 'help':
       view = { text: HELP, reply_markup: { inline_keyboard: [[

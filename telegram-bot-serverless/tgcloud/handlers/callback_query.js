@@ -8,7 +8,7 @@ export default async function (query) {
   if (!query.from || !query.message?.chat || query.message.date === 0) return;
   const chatId = query.message.chat.id;
   const userId = query.from.id;
-  const match = /^note:(done|open|delete):(-?\d+:\d+)$/.exec(query.data ?? '');
+  const match = /^note:(done|open|delete):(-?\d+:\d+|w:\d+:[a-f0-9]{32})$/.exec(query.data ?? '');
   if (match) {
     await changeNote(match[1], match[2], chatId, userId);
   } else if (query.data !== 'notes' && query.data !== 'stats') {
