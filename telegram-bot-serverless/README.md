@@ -88,6 +88,42 @@ a new message creates another record.
 messages or erase Telegram's stored file. Compressed photos, video/audio messages,
 Mini App file-picker uploads, and binary BLOB storage are not implemented here.
 
+## Secretary Mode
+
+The bot can send an automatic reply on behalf of a connected Telegram account.
+Enable **Secretary Mode** in BotFather, then connect `@koolzilla_bot` from your
+account's Telegram settings, select which private chats it can manage, and grant
+reply permission. `just bot-check` reports bot capability, not whether your
+personal account has connected it. The rule applies to accounts that connect the
+bot and grant it access, within their selected chats.
+
+For each new incoming private message whose sender's **first or last name contains
+`Evgeny`**, ignoring case, the bot replies:
+
+```text
+The message may be recorded for the AI training purposes :-)
+```
+
+It matches name substrings (including `Dr. Evgeny`), not usernames, message text,
+or transliterations such as `Евгений`. Text and media messages are eligible.
+Messages from the connected account itself or other bots, edited messages,
+group messages, and messages older than 24 hours are ignored. Disabled
+connections and connections without `rights.can_reply` do not send replies.
+
+`business_connection.js` records connection/permission changes.
+`business_message.js` checks current permissions with `getBusinessConnection`
+before sending through `business_connection_id`. It stores only connection
+metadata and a delivery identifier, **not the incoming message body**; the notice
+does not enable recording or AI training.
+
+Each incoming message is claimed in SQLite before sending, preventing duplicate
+notices on concurrent delivery or retries. A failed/ambiguous send is not retried,
+so this example prioritizes avoiding duplicate replies over guaranteed delivery.
+Delivery identifiers are retained in `secretary_replies`; no automatic expiry is
+configured. After deployment, test with a new message from a matching sender in
+an allowed chat. Do not use `cloud run` with a real matching message unless you
+intend to send the actual reply.
+
 ## Inline mode
 
 Enable it once in **@BotFather**: send `/setinline`, choose your bot, and enter
@@ -139,6 +175,8 @@ Commands addressed to this bot (`/notes@YourBot`) work in groups. Notes belong t
 | `tgcloud/handlers/message.js` | Command routing and validation |
 | `tgcloud/handlers/callback_query.js` | Callback acknowledgement and button actions |
 | `tgcloud/handlers/inline_query.js` | Personal inline note search and paginated sharing results |
+| `tgcloud/handlers/business_connection.js` | Connected-account permission changes |
+| `tgcloud/handlers/business_message.js` | Name-matched Secretary Mode auto-reply |
 | `tgcloud/schema.js` | Table, defaults, primary key, and ownership index |
 | `tgcloud/lib/notes.js` | Parameterized SQL create/read/update/delete and counts |
 | `tgcloud/lib/files.js` | Upload metadata storage, owned lookup/removal, and file list |

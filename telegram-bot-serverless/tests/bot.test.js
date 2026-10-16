@@ -20,6 +20,9 @@ async function harness(t) {
   ]));
   const api = {
     async getMe() { return { username: 'ExampleBot', supports_inline_queries: true }; },
+    async getBusinessConnection({ business_connection_id }) {
+      return { id: business_connection_id, user: { id: 42 }, is_enabled: true, rights: { can_reply: true } };
+    },
     async getChatMenuButton() { return { web_app: { url: 'https://app123.tgcloud.ai/' } }; },
     async sendMessage(params) { calls.push({ method: 'sendMessage', ...params }); },
     async sendDocument(params) { calls.push({ method: 'sendDocument', ...params }); },
@@ -63,7 +66,9 @@ async function harness(t) {
   const callback = (await load('tgcloud/handlers/callback_query.js')).default;
   const endpoint = (await load('tgcloud/endpoints/notes.js')).default;
   const inline = (await load('tgcloud/handlers/inline_query.js')).default;
-  return { sqlite, calls, message, callback, endpoint, inline, api };
+  const businessConnection = (await load('tgcloud/handlers/business_connection.js')).default;
+  const businessMessage = (await load('tgcloud/handlers/business_message.js')).default;
+  return { sqlite, calls, message, callback, endpoint, inline, businessConnection, businessMessage, api };
 }
 
 const msg = (text, extra = {}) => ({
@@ -323,4 +328,82 @@ test('documents with missing optional fields work; long file lists remain bounde
   assert.equal(view.reply_markup.inline_keyboard.length, 11);
   assert.ok(view.text.length < 4096);
   assert.ok(h.sqlite.prepare('SELECT name FROM files').all().every(r => r.name.length <= 255));
+});
+
+const businessMessage = (extra = {}) => ({
+  business_connection_id: 'connection-1', message_id: 12,
+  date: Math.floor(Date.now() / 1000), chat: { id: 7, type: 'private' },
+  from: { id: 7, first_name: 'Evgeny', is_bot: false }, text: 'Hello', ...extra,
+});
+
+test('secretary replies with exact notice for matching first/last names and media', async (t) => {
+  const h = await harness(t);
+  for (const [index, from] of [
+    { id: 7, first_name: 'Evgeny' },
+    { id: 7, first_name: 'Alex', last_name: 'EVGENY' },
+    { id: 7, first_name: 'Dr. Evgeny' },
+  ].entries()) {
+    await h.businessMessage(businessMessage({ from, message_id: index + 1, text: undefined, document: {} }));
+    const sent = h.calls.at(-1);
+    assert.equal(sent.business_connection_id, 'connection-1');
+    assert.equal(sent.chat_id, 7);
+    assert.equal(sent.text, 'The message may be recorded for the AI training purposes :-)');
+    assert.equal(sent.reply_parameters.message_id, index + 1);
+  }
+  assert.equal(h.calls.length, 3);
+  assert.equal(h.sqlite.prepare('SELECT owner_id FROM business_connections').get().owner_id, 42);
+});
+
+test('secretary ignores nonmatching names, outgoing messages, bots, groups and expired messages', async (t) => {
+  const h = await harness(t);
+  for (const extra of [
+    { from: { id: 7, first_name: 'Alex', username: 'Evgeny' } },
+    { from: { id: 7, first_name: 'Евгений' } },
+    { from: undefined },
+    { from: { id: 42, first_name: 'Evgeny' } },
+    { from: { id: 7, first_name: 'Evgeny', is_bot: true } },
+    { sender_business_bot: { id: 100 } },
+    { chat: { id: -100, type: 'group' } },
+    { chat: { id: 88, type: 'private' } },
+    { business_connection_id: undefined },
+    { date: Math.floor(Date.now() / 1000) - 86401 },
+    { message_id: 0 },
+  ]) await h.businessMessage(businessMessage(extra));
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.sqlite.prepare('SELECT COUNT(*) AS n FROM secretary_replies').get().n, 0);
+});
+
+test('secretary handles connection changes and requires current reply permission', async (t) => {
+  const h = await harness(t);
+  const connection = { id: 'connection-1', user: { id: 42 }, is_enabled: true, rights: { can_reply: true } };
+  await h.businessConnection(connection);
+  await h.businessConnection({ ...connection, is_enabled: false, rights: {} });
+  const stored = h.sqlite.prepare('SELECT * FROM business_connections').get();
+  assert.equal(stored.enabled, 0);
+  assert.equal(stored.can_reply, 0);
+  for (const changed of [
+    { ...connection, is_enabled: false },
+    { ...connection, rights: {} },
+    { ...connection, rights: undefined },
+  ]) {
+    h.api.getBusinessConnection = async () => changed;
+    await h.businessMessage(businessMessage());
+  }
+  assert.equal(h.calls.length, 0);
+  h.api.getBusinessConnection = async () => { throw new Error('Permission lookup failed'); };
+  await assert.rejects(h.businessMessage(businessMessage()), /Permission lookup failed/);
+  assert.equal(h.calls.length, 0);
+});
+
+test('secretary deduplicates concurrent delivery and does not retry ambiguous sends', async (t) => {
+  const h = await harness(t);
+  await Promise.all([h.businessMessage(businessMessage()), h.businessMessage(businessMessage())]);
+  assert.equal(h.calls.length, 1);
+  await h.businessMessage(businessMessage({ message_id: 13 }));
+  assert.equal(h.calls.length, 2);
+  let attempts = 0;
+  h.api.sendMessage = async () => { attempts++; throw new Error('Response lost'); };
+  await assert.rejects(h.businessMessage(businessMessage({ message_id: 14 })), /Response lost/);
+  await h.businessMessage(businessMessage({ message_id: 14 }));
+  assert.equal(attempts, 1);
 });

@@ -21,3 +21,16 @@ export const files = table('files', {
   size: integer('size'),
   createdAt: integer('created_at').notNull(),
 }, (t) => ({ owner: index('files_owner').on(t.chatId, t.userId) }));
+
+export const businessConnections = table('business_connections', {
+  id: text('id').primaryKey(),
+  ownerId: integer('owner_id').notNull(),
+  enabled: integer('enabled').notNull(),
+  canReply: integer('can_reply').notNull(),
+});
+
+// Only delivery identifiers are stored, never the incoming message content.
+export const secretaryReplies = table('secretary_replies', {
+  id: text('id').primaryKey(),
+  createdAt: integer('created_at').notNull(),
+});

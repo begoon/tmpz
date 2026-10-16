@@ -24,6 +24,7 @@ try {
   if (!process.env.BOT_TOKEN) throw new Error('Set BOT_TOKEN in .env first');
   const me = await call('getMe');
   console.log(`Inline mode: ${me.supports_inline_queries ? 'enabled' : 'disabled — enable /setinline in BotFather'}`);
+  console.log(`Secretary mode: ${me.can_connect_to_business ? 'enabled' : 'disabled — enable Secretary Mode in BotFather'}`);
   if (process.argv.includes('--check')) {
     console.log(`Bot token works: @${me.username}`);
   } else {
