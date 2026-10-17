@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bun WebSocket demo</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; color-scheme: light dark; }
+      body { max-width: 640px; margin: 64px auto; padding: 0 24px; }
+      h1 { margin-bottom: 8px; }
+      p { line-height: 1.6; }
+      label { display: block; margin: 24px 0 8px; font-weight: 600; }
+      .compose { display: flex; gap: 12px; }
+      input, button, textarea { font: inherit; border: 1px solid #888; border-radius: 6px; padding: 12px; }
+      input { min-width: 0; flex: 1; }
+      button { cursor: pointer; }
+      button:disabled { cursor: default; opacity: .5; }
+      textarea { box-sizing: border-box; width: 100%; min-height: 260px; resize: vertical; }
+      #status { font-size: .9rem; }
+      #timer, #last-session { font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <h1>Bun WebSocket demo</h1>
+    <p>Send “ping” to receive “pong”. All other messages come back reversed. Press Enter or click Send.</p>
+    <p id="status" role="status">Connecting…</p>
+    <p>Connection time: <span id="timer" role="timer">00:00:00</span><span id="last-session"></span></p>
+    <form id="form">
+      <label for="message">Message</label>
+      <div class="compose">
+        <input id="message" type="text" placeholder="enter message..." autocomplete="off">
+        <button id="send" type="submit" disabled>Send</button>
+      </div>
+    </form>
+    <label for="responses">Responses</label>
+    <textarea id="responses" readonly placeholder="Server responses will appear here."></textarea>
+    <script>
+      const form = document.querySelector('#form');
+      const input = document.querySelector('#message');
+      const send = document.querySelector('#send');
+      const responses = document.querySelector('#responses');
+      const status = document.querySelector('#status');
+      const timer = document.querySelector('#timer');
+      const lastSession = document.querySelector('#last-session');
+      let socket;
+      let timerInterval;
+      let connectedAt;
+
+      function updateTimer() {
+        const elapsed = Math.floor((performance.now() - connectedAt) / 1000);
+        timer.textContent = [
+          Math.floor(elapsed / 3600),
+          Math.floor(elapsed / 60) % 60,
+          elapsed % 60,
+        ].map(value => String(value).padStart(2, '0')).join(':');
+      }
+
+      function connect() {
+        const url = new URL('/ws', location.href);
+        url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(url);
+        socket.addEventListener('open', () => {
+          clearInterval(timerInterval);
+          connectedAt = performance.now();
+          updateTimer();
+          timerInterval = setInterval(updateTimer, 1000);
+          status.textContent = 'Connected';
+          send.disabled = false;
+        });
+        socket.addEventListener('message', (event) => {
+          responses.value += event.data + '\n';
+          responses.scrollTop = responses.scrollHeight;
+        });
+        socket.addEventListener('error', () => {
+          status.textContent = 'WebSocket connection error';
+          send.disabled = true;
+        });
+        socket.addEventListener('close', () => {
+          if (connectedAt !== undefined) {
+            updateTimer();
+            lastSession.textContent = ', last session duration ' + timer.textContent;
+            connectedAt = undefined;
+          }
+          clearInterval(timerInterval);
+          status.textContent = 'Disconnected. Reconnecting…';
+          send.disabled = true;
+          setTimeout(connect, 2000);
+        });
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (socket.readyState !== WebSocket.OPEN) return;
+        socket.send(input.value);
+        input.value = '';
+        input.focus();
+      });
+      connect();
+    </script>
+  </body>
+</html>
