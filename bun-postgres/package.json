@@ -1,0 +1,23 @@
+{
+  "name": "bun-postgres",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run assets && bun --watch server.ts",
+    "start": "bun server.ts",
+    "check": "tsc --noEmit",
+    "test": "bun test",
+    "assets": "bun scripts/bundle-assets.ts",
+    "build": "bun run assets && bun run check",
+    "format": "eslint . --fix && prettier --write .",
+    "format:check": "eslint . && prettier --check ."
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/bun": "latest",
+    "@typescript-eslint/parser": "^8.71.2",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
+  }
+}
