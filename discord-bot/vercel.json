@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "bunVersion": "1.4.x",
+  "framework": "bun",
+  "daemons": {
+    "discord": {
+      "root": ".",
+      "entrypoint": "Dockerfile",
+      "instances": { "lhr1": 1 },
+      "terminationGracePeriodSeconds": 10
+    }
+  }
+}
