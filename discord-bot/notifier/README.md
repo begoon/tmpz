@@ -1,11 +1,15 @@
-# Discord bot
+# notifier
 
 Bun bot for the Operations Discord server (`1048891178008973312`), application `1048889942148907049`.
 
+See the [reactor README](../reactor/README.md) for the separate bot that handles `/info` and `/me` through HTTP interaction callbacks.
+
 - `/ping` replies `pong!`.
+- `/mood` posts a 24-hour poll asking “How are you feeling?” with `good`, `ok`, and `bad` options. Each person can choose one answer. The bot needs **Send Polls** permission in the channel.
 - `/life` uploads the vendored glider image from `assets/glider.png` into the chat. The bot needs **Attach Files** permission in the channel.
 - `/greet` opens a popup with required Firstname and Surname fields. Submitting it posts `Welcome, {Firstname} {Surname}!` in the channel.
-- `/me` shows link buttons for `demin.ws` and `demin.page`. Discord controls how links open in the browser; the bot cannot force a new tab.
+- `/me` replies `I am Notifier`.
+- `/links` shows link buttons for `demin.ws` and `demin.page`. Discord controls how links open in the browser; the bot cannot force a new tab.
 - A user message containing the whole word `aloha` (case insensitive) gets a `welcome!` reply in the same channel.
 - Bot/webhook messages and other servers are ignored. Replies do not ping users.
 
@@ -61,9 +65,11 @@ sequenceDiagram
 4. Leave **Interactions Endpoint URL empty**: this bot handles commands over the Gateway.
 5. Ensure channel permission overrides allow the bot to read and reply. Private threads also require membership.
 
-On startup the bot upserts `/ping`, `/me`, `/greet`, and `/life` in the configured server, preserving other commands.
+On startup the bot upserts `/ping`, `/me`, `/links`, `/greet`, `/life`, and `/mood` in the configured server, preserving other commands.
 
 ## Local development
+
+Run all commands below from the `notifier/` directory. Its `.env`, dependencies, Justfile, and Vercel project link are local to this folder.
 
 ```sh
 bun install
@@ -91,6 +97,7 @@ With Bun, Vercel CLI, and `just` installed, run `just` to list the recipes in `J
 | `just commands-global` | List global Discord commands and their options |
 | `just commands-server` | List commands and their options in the configured server |
 | `just send-message` | Post `ok` to `#general` as the bot |
+| `just webhook-msg` | Post `ok` through the messenger webhook to `#general` |
 | `just check` | Run tests and TypeScript checks |
 | `just link` | Link to the existing Vercel project |
 | `just deploy` | Check and deploy the HTTP service and daemon |
@@ -100,6 +107,16 @@ With Bun, Vercel CLI, and `just` installed, run `just` to list the recipes in `J
 | `just dashboard` | Print the dashboard link for daemon logs and scaling |
 
 Override the message with `just send-message 123` or `just send-message "Hello there!"`. This command reads credentials from `.env` and posts directly through Discord's REST API; no daemon or custom HTTP endpoint is needed. Mentions are disabled. It resolves the unique `#general` text channel in the configured server.
+
+The webhook example uses only `DISCORD_WEBHOOK_URL` from `.env`, without a bot token or running daemon:
+
+```sh
+just webhook-msg                # sends "ok"
+just webhook-msg 123             # sends "123"
+just webhook-msg "Hello there!"  # custom message
+```
+
+The webhook's Discord configuration determines the sender name (`messenger`) and destination (`#general`). Mentions are disabled and the script waits for Discord to confirm delivery. Keep the complete webhook URL secret: it contains the credential that allows posting. Only an empty placeholder belongs in `.env.example`; no Vercel environment change or deployment is needed for this local command.
 
 For daemon logs, open **Daemons → discord** in the Vercel dashboard. The installed CLI's `logs` command supports HTTP logs only. To stop the production bot, set the daemon's scaling override to zero instances. Clear that override to resume the configured single instance; overrides persist across deployments. Stop production before running `just bot` locally to avoid duplicate replies.
 

@@ -2,6 +2,22 @@ import { expect, test } from "bun:test";
 import { containsAloha, handleCommand, handleForm, handleMessage } from "../src/handlers";
 import { MessageFlags, type InteractionReplyOptions, type ModalBuilder } from "discord.js";
 
+test("/mood posts a single-choice 24-hour poll only in the configured guild", async () => {
+  const replies: InteractionReplyOptions[] = [];
+  const command = { guildId: "guild", commandName: "mood", showModal: async () => {}, reply: async (value: InteractionReplyOptions) => { replies.push(value); } };
+  await handleCommand(command, "guild");
+  await handleCommand(command, "other");
+  expect(replies).toEqual([{
+    poll: {
+      question: { text: "How are you feeling?" },
+      answers: [{ text: "good" }, { text: "ok" }, { text: "bad" }],
+      duration: 24,
+      allowMultiselect: false,
+    },
+    allowedMentions: { parse: [] },
+  }]);
+});
+
 test("/life uploads the vendored PNG only in the configured guild", async () => {
   const replies: InteractionReplyOptions[] = [];
   const command = { guildId: "guild", commandName: "life", showModal: async () => {}, reply: async (value: InteractionReplyOptions) => { replies.push(value); } };
@@ -40,9 +56,9 @@ test("/ping replies pong! only in the configured guild", async () => {
   expect(replies).toEqual([{ content: "pong!", allowedMentions: { parse: [] } }]);
 });
 
-test("/me sends two URL buttons only in the configured guild", async () => {
+test("/links sends two URL buttons only in the configured guild", async () => {
   const replies: InteractionReplyOptions[] = [];
-  const command = { guildId: "guild", commandName: "me", showModal: async () => {}, reply: async (value: InteractionReplyOptions) => { replies.push(value); } };
+  const command = { guildId: "guild", commandName: "links", showModal: async () => {}, reply: async (value: InteractionReplyOptions) => { replies.push(value); } };
   await handleCommand(command, "guild");
   await handleCommand(command, "other");
   expect(replies).toHaveLength(1);

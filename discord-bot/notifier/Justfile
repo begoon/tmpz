@@ -31,6 +31,11 @@ commands-server:
 send-message message="ok":
     bun --env-file=.env scripts/send-message.ts "$1"
 
+# Post through the messenger webhook; defaults to "ok".
+[positional-arguments]
+webhook-msg message="ok":
+    bun --env-file=.env scripts/webhook-message.ts "$1"
+
 # Run behavior tests and TypeScript checks.
 check:
     bun test

@@ -18,14 +18,16 @@ client.once(Events.ClientReady, async (ready) => {
     // POST upserts our commands and preserves other application commands.
     const rest = new REST({ version: "10" }).setToken(token);
     for (const command of [
+      new SlashCommandBuilder().setName("me").setDescription("Identify this bot"),
       new SlashCommandBuilder().setName("ping").setDescription("Reply with pong!"),
-      new SlashCommandBuilder().setName("me").setDescription("Open demin.ws and demin.page"),
+      new SlashCommandBuilder().setName("links").setDescription("Open demin.ws and demin.page"),
       new SlashCommandBuilder().setName("greet").setDescription("Enter your first name and surname"),
       new SlashCommandBuilder().setName("life").setDescription("Show a Game of Life glider"),
+      new SlashCommandBuilder().setName("mood").setDescription("Start a mood poll: good, ok, or bad"),
     ]) {
       await rest.post(Routes.applicationGuildCommands(applicationId, guildId), { body: command.toJSON() });
     }
-    console.log("Registered /ping, /me, /greet and /life in the configured server.");
+    console.log("Registered /ping, /me, /links, /greet, /life and /mood in the configured server.");
   } catch {
     console.error("Command registration failed. Check application ID, server ID and bot installation.");
     await client.destroy();

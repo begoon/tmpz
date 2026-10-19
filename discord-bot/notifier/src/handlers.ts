@@ -32,14 +32,26 @@ export interface IncomingCommand {
 
 export async function handleCommand(interaction: IncomingCommand, guildId: string) {
   if (interaction.guildId !== guildId) return;
-  if (interaction.commandName === "ping") {
+  if (interaction.commandName === "me") {
+    await interaction.reply({ content: "I am Notifier", allowedMentions: { parse: [] } });
+  } else if (interaction.commandName === "ping") {
     await interaction.reply({ content: "pong!", allowedMentions: { parse: [] } });
+  } else if (interaction.commandName === "mood") {
+    await interaction.reply({
+      poll: {
+        question: { text: "How are you feeling?" },
+        answers: [{ text: "good" }, { text: "ok" }, { text: "bad" }],
+        duration: 24,
+        allowMultiselect: false,
+      },
+      allowedMentions: { parse: [] },
+    });
   } else if (interaction.commandName === "life") {
     await interaction.reply({
       files: [{ attachment: gliderPath, name: "glider.png", description: "A glider pattern from Conway's Game of Life" }],
       allowedMentions: { parse: [] },
     });
-  } else if (interaction.commandName === "me") {
+  } else if (interaction.commandName === "links") {
     const links = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder().setLabel("demin.ws").setStyle(ButtonStyle.Link).setURL("https://demin.ws"),
       new ButtonBuilder().setLabel("demin.page").setStyle(ButtonStyle.Link).setURL("https://demin.page"),
