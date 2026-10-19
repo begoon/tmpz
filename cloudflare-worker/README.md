@@ -2,7 +2,7 @@
 
 A small Cloudflare Worker with a KV-backed page-load counter and a Flagship-controlled Reset button. Uses plain HTML with no frontend framework.
 
-Live: https://trivia.ademin.workers.dev/
+Live: https://trivia.acula.workers.dev/
 
 ## Routes
 
