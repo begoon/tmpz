@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "trivia",
+	"main": "src/index.js",
+	"compatibility_date": "2026-10-19",
+	"workers_dev": true,
+	"kv_namespaces": [
+		{
+			"binding": "COUNTER",
+			"id": "654b8b98a5ce4191aa6001428de904a5"
+		}
+	],
+	"flagship": [
+		{
+			"binding": "FLAGS",
+			"app_id": "61368047-9dc1-466e-9781-ab012fd7a247"
+		}
+	]
+}
