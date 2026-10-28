@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 )
@@ -20,10 +20,12 @@ type entry struct {
 }
 
 type dict struct {
-	entries  []entry
-	index    map[string]int
-	nActive  int
-	capacity int
+	entries   []entry
+	index     map[string]int
+	nActive   int
+	capacity  int
+	free      []int
+	maxLength int
 }
 
 func newDict(capacity int) *dict {
@@ -35,14 +37,24 @@ func newDict(capacity int) *dict {
 }
 
 func (d *dict) add(b []byte) (int, bool) {
-	if len(d.entries) >= d.capacity {
+	if id, ok := d.index[string(b)]; ok {
+		return id, true
+	}
+	if d.nActive >= d.capacity || len(b) > 1024 {
 		return 0, false
 	}
 	id := len(d.entries)
-	copy := append([]byte{}, b...)
-	d.entries = append(d.entries, entry{bytes: copy, count: 1, active: true})
-	d.index[string(copy)] = id
-	d.nActive += 1
+	e := entry{bytes: bytes.Clone(b), count: 1, active: true}
+	if len(d.free) > 0 {
+		id = d.free[len(d.free)-1]
+		d.free = d.free[:len(d.free)-1]
+		d.entries[id] = e
+	} else {
+		d.entries = append(d.entries, e)
+	}
+	d.index[string(b)] = id
+	d.nActive++
+	d.maxLength = max(d.maxLength, len(b))
 	return id, true
 }
 
@@ -53,6 +65,7 @@ func (d *dict) deactivate(id int) {
 	if e.active {
 		delete(d.index, string(e.bytes))
 		e.active = false
+		d.free = append(d.free, id)
 		if d.nActive > 0 {
 			d.nActive -= 1
 		}
@@ -63,11 +76,9 @@ func (d *dict) longestMatch(buf []byte) (id int, length int, count int, ok bool)
 	var bestID int
 	var bestLen int
 	var bestCount int
-	for i := 1; i <= len(buf) && i <= 1024; i++ {
+	for i := 1; i <= len(buf) && i <= d.maxLength; i++ {
 		if id, found := d.index[string(buf[:i])]; found {
 			bestID, bestLen, bestCount, ok = id, i, d.entries[id].count, true
-		} else {
-			break
 		}
 	}
 	return bestID, bestLen, bestCount, ok
@@ -93,7 +104,7 @@ func (d *dict) thinByMedian() {
 	}
 	median := median(counts)
 	for i := range d.entries {
-		if d.entries[i].active && d.entries[i].count < median {
+		if d.entries[i].active && len(d.entries[i].bytes) > 1 && d.entries[i].count < median {
 			d.deactivate(i)
 		}
 	}
@@ -101,56 +112,38 @@ func (d *dict) thinByMedian() {
 
 func buildDictionary(input []byte) *dict {
 	d := newDict(MaxDict)
-
-	var lastID int = ^int(0)
-	var lastCount int = 0
-
-	for i := 0; i < len(input); i += 0 {
+	// Keep literals permanently available, including bytes first seen after pruning.
+	for i := 0; i < 256; i++ {
+		d.add([]byte{byte(i)})
+	}
+	var last []byte
+	lastCount := 0
+	for i := 0; i < len(input); {
+		if input[i] == '\n' {
+			last = nil
+			lastCount = 0
+			i++
+			continue
+		}
 		look := cutUntilNewLine(input[i:])
-		matchedID, len, count, found := d.longestMatch(look)
-		_ = count // suppress unused variable warning
-		if !found {
-			addedID, added := d.add([]byte{input[i]})
-			if !added {
-				d.thinByMedian()
-				addedID, added = d.add([]byte{input[i]})
-				if !added {
-					panic("dictionary exhausted")
+		id, length, _, _ := d.longestMatch(look)
+		d.inc(id)
+		current := d.entries[id].bytes
+		count := d.entries[id].count
+		free := d.capacity - d.nActive
+		threshold := max(2, d.capacity/max(1, free))
+		if len(last) > 0 && count >= threshold && lastCount >= threshold {
+			concat := append(bytes.Clone(last), current...)
+			if len(concat) <= 1024 {
+				if _, ok := d.add(concat); !ok {
+					d.thinByMedian()
+					d.add(concat)
 				}
 			}
-			matchedID, len, count, found = addedID, 1, d.entries[addedID].count, true
-		} else {
-			d.inc(matchedID)
-			count = d.entries[matchedID].count
 		}
-
-		free := d.capacity - d.nActive
-		threshold := d.capacity
-		if free != 0 {
-			threshold = d.capacity / free
-		}
-		if threshold < 2 {
-			threshold = 2
-		}
-
-		join := lastID != ^int(0) && count >= threshold && lastCount >= threshold
-
-		if join {
-			concat := append(append([]byte{}, d.entries[lastID].bytes...), d.entries[matchedID].bytes...)
-			if _, ok := d.add(concat); !ok {
-				d.thinByMedian()
-				_, _ = d.add(concat)
-			}
-		} else if d.capacity-d.nActive < 2 {
-			d.thinByMedian()
-			if !d.entries[matchedID].active {
-				d.entries[matchedID].count = 0
-			}
-		}
-
-		i += len
-		lastID = matchedID
-		lastCount = d.entries[matchedID].count
+		// Slice values remain valid even when their dictionary slots are recycled.
+		last, lastCount = current, count
+		i += length
 	}
 	return d
 }
@@ -160,24 +153,22 @@ type codebook struct {
 	table    map[byte][]byte // code -> phrase
 }
 
-func chooseSentinel(in []byte) (byte, error) {
-	seen := [256]bool{}
+func chooseSentinel(in []byte) byte {
+	var counts [256]int
 	for _, b := range in {
-		seen[b] = true
+		counts[b]++
 	}
-	for i := 0x21; i < 128; i++ { // or the full range 0..255
-		if !seen[i] {
-			return byte(i), nil
+	sentinel := byte('!')
+	for i, count := range counts {
+		if count < counts[sentinel] {
+			sentinel = byte(i)
 		}
 	}
-	return 0, errors.New("no sentinel available")
+	return sentinel
 }
 
 func buildCodebook(d *dict, in []byte) (*codebook, error) {
-	sentinel, err := chooseSentinel(in)
-	if err != nil {
-		return nil, err
-	}
+	sentinel := chooseSentinel(in)
 	type candidate struct {
 		i    int
 		freq int
@@ -199,15 +190,18 @@ func buildCodebook(d *dict, in []byte) (*codebook, error) {
 		return bytes.Compare(d.entries[c[i].i].bytes, d.entries[c[j].i].bytes) < 0
 	})
 
-	// build printable code list 33..126; include the sentinel if you want "!!"
+	// Keep phrase codes printable; code 0 is reserved for a literal sentinel.
 	codes := make([]byte, 0, 94)
 	for c := byte(33); c <= 126; c++ {
-		codes = append(codes, c) // keep sentinel included to allow "!!"
+		codes = append(codes, c)
 	}
 
 	table := make(map[byte][]byte)
+	if bytes.IndexByte(in, sentinel) >= 0 {
+		table[0] = []byte{sentinel}
+	}
 	idx := 0
-	for _, cand := range c { // c is your sorted candidate list
+	for _, cand := range c {
 		if idx >= len(codes) {
 			break
 		}
@@ -248,11 +242,16 @@ func encode(d *dict, book *codebook, input []byte) ([]byte, map[byte]int) {
 				}
 			}
 		}
-		output.WriteByte(input[i])
+		if input[i] == book.sentinel {
+			output.WriteByte(book.sentinel)
+			output.WriteByte(0)
+			usage[0]++
+		} else {
+			output.WriteByte(input[i])
+		}
 		i += 1
 	next:
 	}
-	fmt.Printf("%s\n", output.String())
 	return output.Bytes(), usage
 }
 
@@ -272,6 +271,9 @@ func decode(r io.Reader, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("reading number of codes: %w", err)
 	}
+	if codesNumber > 256 {
+		return fmt.Errorf("too many codes: %d", codesNumber)
+	}
 	table := make(map[byte][]byte, codesNumber)
 	for i := 0; i < int(codesNumber); i++ {
 		var code [1]byte
@@ -281,6 +283,12 @@ func decode(r io.Reader, w io.Writer) error {
 		sz, err := readU16(r)
 		if err != nil {
 			return fmt.Errorf("reading length for code %d: %w", i, err)
+		}
+		if sz == 0 {
+			return fmt.Errorf("empty phrase for code %d", code[0])
+		}
+		if _, exists := table[code[0]]; exists {
+			return fmt.Errorf("duplicate code %d", code[0])
 		}
 		data := make([]byte, sz)
 		if _, err := io.ReadFull(r, data); err != nil {
@@ -293,7 +301,10 @@ func decode(r io.Reader, w io.Writer) error {
 		return fmt.Errorf("reading data: %w", err)
 	}
 	for i := 0; i < len(data); {
-		if data[i] == sentinel[0] && i+1 < len(data) {
+		if data[i] == sentinel[0] {
+			if i+1 == len(data) {
+				return fmt.Errorf("truncated escape at %d", i)
+			}
 			if phrase, found := table[data[i+1]]; found {
 				if _, err := w.Write(phrase); err != nil {
 					return fmt.Errorf("writing phrase for code %d: %w", data[i+1], err)
@@ -301,6 +312,7 @@ func decode(r io.Reader, w io.Writer) error {
 				i += 2
 				continue
 			}
+			return fmt.Errorf("undefined code %d at %d", data[i+1], i)
 		}
 		if _, err := w.Write(data[i : i+1]); err != nil {
 			return fmt.Errorf("writing data at %d: %w", i, err)
@@ -322,48 +334,29 @@ func compressFile(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("building codebook: %w", err)
 	}
 	data, usage := encode(d, book, src)
-
-	fmt.Println()
-	fmt.Println("*** COMPRESSION STATISTICS ***")
-	fmt.Println("CODE\tFREQ\tUSAGE\tSTRING")
-
-	type row struct {
-		code byte
-		freq int
-		use  int
-		str  []byte
-	}
-
-	rows := make([]row, 0, len(book.table))
-	for code, phrase := range book.table {
-		freq := int(0)
-		if id, found := d.index[string(phrase)]; found && d.entries[id].active {
-			freq = d.entries[id].count
+	// Drop phrases whose actual savings do not pay for their table entry.
+	// Re-encode after removal because shorter phrases can become useful.
+	for {
+		removed := false
+		for code, phrase := range book.table {
+			if len(phrase) > 2 && usage[code]*(len(phrase)-2) <= len(phrase)+3 {
+				delete(book.table, code)
+				removed = true
+			}
 		}
-		rows = append(rows, row{code, freq, usage[code], phrase})
-	}
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].freq != rows[j].freq {
-			return rows[i].freq > rows[j].freq
+		if !removed {
+			break
 		}
-		return rows[i].use > rows[j].use
-	})
-	for _, r := range rows {
-		digram := []byte{book.sentinel, r.code}
-		fmt.Printf("%-2s\t%7d\t%7d\t%s\n",
-			safeString(digram),
-			r.freq, r.use,
-			safeString(r.str),
-		)
-
+		data, usage = encode(d, book, src)
 	}
-
-	fmt.Println()
-	fmt.Printf("CHARACTERS IN INPUT  = %d\n", len(src))
-	fmt.Printf("CHARACTERS IN OUTPUT = %d\n", len(data))
-	fmt.Printf("COMPRESSION RATIO    = %.3f\n", float64(len(data))/float64(len(src)))
-	fmt.Printf("ENCODING TABLE SIZE  = %d\n", len(book.table))
-	fmt.Printf("SENTINEL BYTE        = %d\n\n", book.sentinel)
+	archiveSize := 7 + len(data)
+	for _, phrase := range book.table {
+		archiveSize += 3 + len(phrase)
+	}
+	fmt.Fprintf(os.Stderr, "INPUT BYTES = %d\nARCHIVE BYTES = %d\n", len(src), archiveSize)
+	if len(src) > 0 {
+		fmt.Fprintf(os.Stderr, "COMPRESSION RATIO = %.3f\n", float64(archiveSize)/float64(len(src)))
+	}
 
 	if _, err := out.Write([]byte("MJ2C")); err != nil {
 		return fmt.Errorf("writing magic: %w", err)
@@ -410,54 +403,56 @@ func writeU16(w io.Writer, v uint16) error {
 	return binary.Write(w, binary.LittleEndian, v)
 }
 
-func main() {
-	if len(os.Args) != 4 {
-		fmt.Fprintf(os.Stderr, "usage: %s c|d INPUT OUTPUT\n", os.Args[0])
-		os.Exit(2)
+// Transform to a temporary file, publishing it only after successful completion.
+func run(args []string) error {
+	if len(args) != 3 || (args[0] != "c" && args[0] != "d") {
+		return fmt.Errorf("usage: mjc c|d INPUT OUTPUT")
 	}
-	in, err := os.Open(os.Args[2])
+	in, err := os.Open(args[1])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 	defer in.Close()
-	out, err := os.Create(os.Args[3])
+	info, err := in.Stat()
 	if err != nil {
+		return err
+	}
+	if dest, err := os.Stat(args[2]); err == nil {
+		if os.SameFile(info, dest) {
+			return fmt.Errorf("input and output must be different files")
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	out, err := os.CreateTemp(filepath.Dir(args[2]), ".mjc-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(out.Name())
+	defer out.Close()
+	if args[0] == "c" {
+		err = compressFile(in, out)
+	} else {
+		err = decode(in, out)
+	}
+	if err != nil {
+		return err
+	}
+	if err = out.Close(); err != nil {
+		return err
+	}
+	return os.Rename(out.Name(), args[2])
+}
+
+func main() {
+	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer out.Close()
-
-	switch os.Args[1] {
-	case "c":
-		if err := compressFile(in, out); err != nil {
-			fmt.Fprintln(os.Stderr, "compress:", err)
-			os.Exit(1)
-		}
-	case "d":
-		if err := decode(in, out); err != nil {
-			fmt.Fprintln(os.Stderr, "decompress:", err)
-			os.Exit(1)
-		}
-	default:
-		fmt.Fprintln(os.Stderr, "first argument must be 'c' or 'd'")
-		os.Exit(2)
-	}
-}
-
-func safeString(b []byte) string {
-	var out []byte
-	for _, v := range b {
-		if v <= 0x20 || v > 0x7F {
-			out = append(out, fmt.Sprintf("<%02X>", v)...)
-		} else {
-			out = append(out, v)
-		}
-	}
-	return string(out)
 }
 
 func cutUntilNewLine(b []byte) []byte {
+	b = b[:min(len(b), 1024)]
 	for i, c := range b {
 		if c == '\n' {
 			return b[:i]
