@@ -57,7 +57,7 @@ func directorySize(path string) (int64, error) {
 			if err != nil {
 				return err
 			}
-			size += info.Size()
+			atomic.AddInt64(&size, info.Size())
 		}
 		return nil
 	})
@@ -135,15 +135,16 @@ func deleteFolder(path string) {
 var (
 	N       *int    = flag.Int("n", 10, "number of largest folders (0 for all)")
 	delete  *bool   = flag.Bool("delete", false, "delete")
-	command *string = flag.String("command", "du -hs {}", "command")
+	command *string = flag.String("command", "du -hs {}", "shell command; use unquoted {} for a shell-quoted folder path")
 	script  *string = flag.String("script", "./fsclean.sh", "script name")
 	verbose *bool   = flag.Bool("verbose", false, "verbose")
 )
 
 var CommonFolders = []string{
-	".venv", "__pycache__", ".mypy_cache", ".pytest_cache", // python
-	"node_modules",          // node
-	".zig-cache", "zig-out", // zig
+	".venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache", // python
+	"node_modules", ".svelte-kit", // node
+	".zig-cache", "zig-cache", "zig-out", // zig
+	".gradle",    // gradle
 	"target",     // rust
 	".terraform", // terraform
 	".build",     // swift
@@ -151,6 +152,21 @@ var CommonFolders = []string{
 
 type Settings struct {
 	Folders []string `json:"folders"`
+}
+
+func folderPattern(folders []string) string {
+	patterns := make([]string, len(folders))
+	for i, folder := range folders {
+		patterns[i] = regexp.QuoteMeta(folder)
+	}
+	return "^(" + strings.Join(patterns, "|") + ")$"
+}
+
+// The {} placeholder represents a complete shell argument and must be unquoted
+// in the command template.
+func shellCommand(command, path string) string {
+	quoted := "'" + strings.ReplaceAll(path, "'", "'\"'\"'") + "'"
+	return strings.ReplaceAll(command, "{}", quoted)
 }
 
 func (s *Settings) load() {
@@ -217,7 +233,7 @@ func main() {
 		}
 		settings.Folders = folders
 
-		regexPattern = strings.Join(folders, "|")
+		regexPattern = folderPattern(folders)
 		fmt.Printf("pattern: %s\n", regexPattern)
 	}
 
@@ -274,7 +290,7 @@ func main() {
 		if len(folderSizes) > 0 {
 			aurora.DefaultColorizer = aurora.New(aurora.WithColors(false))
 			for _, result := range folderSizes {
-				cmd := strings.ReplaceAll(*command, "{}", result.path)
+				cmd := shellCommand(*command, result.path)
 				line := fmt.Sprintf("%s # %s", cmd, humanReadableSize(result.size))
 				fmt.Fprintln(scriptFile, line)
 				if *verbose {
