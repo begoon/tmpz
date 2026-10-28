@@ -12,23 +12,23 @@ import (
 func TestDirectorySize(t *testing.T) {
 	root := t.TempDir()
 	const directories, files, bytes = 40, 20, 100
-	for i := 0; i < directories; i++ {
+	for i := range directories {
 		dir := filepath.Join(root, fmt.Sprint(i))
 		if err := os.Mkdir(dir, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		for j := 0; j < files; j++ {
+		for j := range files {
 			if err := os.WriteFile(filepath.Join(dir, fmt.Sprint(j)), make([]byte, bytes), 0o600); err != nil {
 				t.Fatal(err)
 			}
 		}
 	}
-	got, err := directorySize(root)
+	sz, err := directorySize(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := int64(directories * files * bytes); got != want {
-		t.Fatalf("directorySize = %d, want %d", got, want)
+	if want := int64(directories * files * bytes); sz != want {
+		t.Fatalf("directorySize = %d, want %d", sz, want)
 	}
 }
 
@@ -80,7 +80,7 @@ func BenchmarkWalk(b *testing.B) {
 	startFolder := home + "/" + folder
 	re := regexp.MustCompile("venv")
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		walk(startFolder, re)
 	}
 }
