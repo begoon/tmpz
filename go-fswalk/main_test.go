@@ -1,10 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"testing"
 )
@@ -82,5 +84,34 @@ func BenchmarkWalk(b *testing.B) {
 	b.StartTimer()
 	for range b.N {
 		walk(startFolder, re)
+	}
+}
+
+func TestScriptFlag(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"omitted", nil, ""},
+		{"bare", []string{"-script"}, "fsclean.sh"},
+		{"explicit", []string{"-script=custom.sh"}, "custom.sh"},
+		{"empty", []string{"-script="}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := flag.NewFlagSet("fsclean", flag.ContinueOnError)
+			var script scriptFlag
+			fs.Var(&script, "script", "script output")
+			positionals := []string{"/tmp/folders", "node_modules"}
+			if err := fs.Parse(append(tc.args, positionals...)); err != nil {
+				t.Fatal(err)
+			}
+			if string(script) != tc.want {
+				t.Fatalf("script = %q, want %q", script, tc.want)
+			}
+			if !reflect.DeepEqual(fs.Args(), positionals) {
+				t.Fatalf("positional arguments = %q, want %q", fs.Args(), positionals)
+			}
+		})
 	}
 }

@@ -136,9 +136,22 @@ var (
 	N       *int    = flag.Int("n", 10, "number of largest folders (0 for all)")
 	delete  *bool   = flag.Bool("delete", false, "delete")
 	command *string = flag.String("command", "du -hs {}", "shell command; use unquoted {} for a shell-quoted folder path")
-	script  *string = flag.String("script", "./fsclean.sh", "script name")
-	verbose *bool   = flag.Bool("verbose", false, "verbose")
+	script  scriptFlag
+	verbose *bool = flag.Bool("verbose", false, "verbose")
 )
+
+// scriptFlag accepts a bare -script or an explicit -script=filename.
+type scriptFlag string
+
+func (s *scriptFlag) String() string   { return string(*s) }
+func (s *scriptFlag) IsBoolFlag() bool { return true }
+func (s *scriptFlag) Set(value string) error {
+	if value == "true" {
+		value = "fsclean.sh"
+	}
+	*s = scriptFlag(value)
+	return nil
+}
 
 var CommonFolders = []string{
 	".venv", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache", // python
@@ -190,6 +203,7 @@ var (
 )
 
 func init() {
+	flag.Var(&script, "script", "write a script (bare -script uses fsclean.sh; -script=filename uses filename)")
 	var err error
 	homeDir, err = os.UserHomeDir()
 	if err != nil {
@@ -279,9 +293,9 @@ func main() {
 
 	if *command != "" {
 		scriptFile := os.Stdout
-		if *script != "" {
+		if script != "" {
 			var err error
-			scriptFile, err = os.Create(*script)
+			scriptFile, err = os.Create(string(script))
 			if err != nil {
 				log.Fatalf("error creating script file: %s", err)
 			}
@@ -298,8 +312,10 @@ func main() {
 				}
 			}
 			aurora.DefaultColorizer = aurora.New(aurora.WithColors(true))
-			fmt.Printf("script written to %v\n", *script)
-			fmt.Printf("run it with: %s\n", c.Blue("source "+*script).Underline().String())
+			if script != "" {
+				fmt.Printf("script written to %v\n", script)
+				fmt.Printf("run it with: %s\n", c.Blue("source "+string(script)).Underline().String())
+			}
 		}
 		return
 	}
