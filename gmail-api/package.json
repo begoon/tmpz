@@ -1,0 +1,18 @@
+{
+  "name": "gmail-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "auth": "bun run src/auth.ts",
+    "send": "bun run src/send.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@googleapis/gmail": "^22.1.0",
+    "google-auth-library": "^11.3.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}
